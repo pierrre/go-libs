@@ -4,6 +4,8 @@
 .PHONY: noop
 noop:
 
+CI?=false
+
 .PHONY: test
 test:
 	go test -v -cover -coverprofile=coverage.out ./...
@@ -28,7 +30,13 @@ install-golangci-lint: $(GOLANGCI_LINT_BIN)
 GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) -v run
 .PHONY: golangci-lint
 golangci-lint: install-golangci-lint
+ifneq ($(CI),true)
+# Fix errors if possible.
 	$(GOLANGCI_LINT_RUN) --fix
+else
+# Run 2 times in order to provide a human-readable output if there is an error.
+	$(GOLANGCI_LINT_RUN) --out-format=github-actions || $(GOLANGCI_LINT_RUN)
+endif
 
 .PHONY: golangci-lint-cache-clean
 golangci-lint-cache-clean: install-golangci-lint
@@ -47,3 +55,20 @@ mod-tidy:
 clean::
 	git clean -fdX
 	go clean -cache -testcache
+
+ifeq ($(CI),true)
+
+CI_LOG_GROUP_START=@echo "::group::$(1)"
+CI_LOG_GROUP_END=@echo "::endgroup::"
+
+.PHONY: ci
+ci::
+	$(call CI_LOG_GROUP_START,test)
+	$(MAKE) test
+	$(call CI_LOG_GROUP_END)
+
+	$(call CI_LOG_GROUP_START,lint)
+	$(MAKE) lint
+	$(call CI_LOG_GROUP_END)
+
+endif # CI end
