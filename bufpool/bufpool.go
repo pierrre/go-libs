@@ -33,7 +33,7 @@ func (p *Pool) init() {
 // Get gets a buffer from the Pool, resets it and returns it.
 func (p *Pool) Get() *bytes.Buffer {
 	p.o.Do(p.init)
-	buf := p.p.Get().(*bytes.Buffer)
+	buf := p.p.Get().(*bytes.Buffer) //nolint:forcetypeassert // Pool always contains *bytes.Buffer.
 	buf.Reset()
 	return buf
 }

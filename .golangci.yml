@@ -1,0 +1,113 @@
+run:
+  timeout: "10m"
+output:
+  sort-results: true
+linters:
+  disable-all: true
+  enable:
+    - "asciicheck"
+    - "bidichk"
+    - "bodyclose"
+    - "contextcheck"
+    - "deadcode"
+    - "depguard"
+    - "dogsled"
+    - "dupl"
+    - "durationcheck"
+    #- "errchkjson"
+    - "errcheck"
+    - "errname"
+    - "errorlint"
+    - "exhaustive"
+    - "exportloopref"
+    - "forbidigo"
+    - "forcetypeassert"
+    - "goconst"
+    - "gocritic"
+    - "gocyclo"
+    - "godot"
+    - "goerr113"
+    - "gofmt"
+    - "gofumpt"
+    - "goimports"
+    - "gomnd"
+    - "goprintffuncname"
+    - "gosec"
+    - "gosimple"
+    - "govet"
+    - "ineffassign"
+    - "lll"
+    - "makezero"
+    - "misspell"
+    - "nakedret"
+    - "nestif"
+    - "nilerr"
+    - "noctx"
+    - "nolintlint"
+    - "prealloc"
+    - "predeclared"
+    - "revive"
+    - "rowserrcheck"
+    - "sqlclosecheck"
+    - "staticcheck"
+    - "structcheck"
+    - "stylecheck"
+    - "tenv"
+    - "thelper"
+    - "typecheck"
+    - "unconvert"
+    - "unparam"
+    - "unused"
+    - "varcheck"
+    - "wastedassign"
+    - "wrapcheck"
+linters-settings:
+  depguard:
+    list-type: blacklist
+    include-go-root: true
+    packages-with-error-message:
+      - reflect: "shouldn't be used by most application"
+      - unsafe: "it's not safe"
+  dupl:
+    threshold: 100
+  errcheck:
+    check-blank: true
+  gocritic:
+    enabled-tags:
+      - experimental
+      - diagnostic
+      - opinionated
+      - performance
+      - style
+  gocyclo:
+    min-complexity: 10
+  gofumpt:
+    lang-version: "1.17"
+    extra-rules: true
+  gosimple:
+    go: "1.17"
+    checks: [ "all" ]
+  govet:
+    enable-all: true
+    disable:
+      - fieldalignment
+  nolintlint:
+    allow-unused: false
+    allow-leading-space: false
+    allow-no-explanation:
+      - errcheck
+      - misspell
+    require-explanation: true
+    require-specific: true
+  staticcheck:
+    go: "1.17"
+    checks: [ "all" ]
+  stylecheck:
+    go: "1.17"
+    checks: [ "all" ]
+  unused:
+    go: "1.17"
+issues:
+  exclude-use-default: false
+  max-issues-per-linter: 0
+  max-same-issues: 0
