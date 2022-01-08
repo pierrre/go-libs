@@ -67,8 +67,6 @@ linters-settings:
       - unsafe: "it's not safe"
   dupl:
     threshold: 100
-  errcheck:
-    check-blank: true
   gocritic:
     enabled-tags:
       - experimental
