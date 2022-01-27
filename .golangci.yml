@@ -14,7 +14,7 @@ linters:
     - "dogsled"
     - "dupl"
     - "durationcheck"
-    #- "errchkjson"
+    - "errchkjson"
     - "errcheck"
     - "errname"
     - "errorlint"
