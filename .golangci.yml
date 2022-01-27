@@ -33,6 +33,7 @@ linters:
     - "gosec"
     - "gosimple"
     - "govet"
+    - "grouper"
     - "ineffassign"
     - "makezero"
     - "misspell"
@@ -86,6 +87,9 @@ linters-settings:
     enable-all: true
     disable:
       - fieldalignment
+  grouper:
+    import-require-single-import: true
+    import-require-grouping: true
   nolintlint:
     allow-unused: false
     allow-leading-space: false
