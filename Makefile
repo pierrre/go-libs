@@ -34,8 +34,7 @@ ifneq ($(CI),true)
 # Fix errors if possible.
 	$(GOLANGCI_LINT_RUN) --fix
 else
-# Run 2 times in order to provide a human-readable output if there is an error.
-	$(GOLANGCI_LINT_RUN) --out-format=github-actions || $(GOLANGCI_LINT_RUN)
+	$(GOLANGCI_LINT_RUN)
 endif
 
 .PHONY: golangci-lint-cache-clean
