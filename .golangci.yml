@@ -78,10 +78,10 @@ linters-settings:
   gocyclo:
     min-complexity: 10
   gofumpt:
-    lang-version: "1.17"
+    lang-version: "1.18"
     extra-rules: true
   gosimple:
-    go: "1.17"
+    go: "1.18"
     checks: [ "all" ]
   govet:
     enable-all: true
@@ -99,13 +99,13 @@ linters-settings:
     require-explanation: true
     require-specific: true
   staticcheck:
-    go: "1.17"
+    go: "1.18"
     checks: [ "all" ]
   stylecheck:
-    go: "1.17"
+    go: "1.18"
     checks: [ "all" ]
   unused:
-    go: "1.17"
+    go: "1.18"
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
