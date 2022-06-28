@@ -8,56 +8,95 @@ linters:
     - "asciicheck"
     - "bidichk"
     - "bodyclose"
+    - "containedctx"
     - "contextcheck"
+    # - "cyclop" # Redundant with gocyclo.
     - "deadcode"
+    # - "decorder" # Maybe overkill.
     - "depguard"
     - "dogsled"
     - "dupl"
     - "durationcheck"
-    - "errchkjson"
     - "errcheck"
+    - "errchkjson"
     - "errname"
     - "errorlint"
+    - "execinquery"
     - "exhaustive"
+    # - "exhaustivestruct " # Replaced by exhaustruct.
+    # - "exhaustruct" # Too many false positive, and not always relevant.
     - "exportloopref"
     - "forbidigo"
     - "forcetypeassert"
-    #- "gocritic"
+    # - "funlen" # It causes issues in table driven tests, and cyclomatic complexity is more relevant.
+    # - "gci" # Redundant with goimports and grouper.
+    # - "gochecknoglobals" # It's OK.
+    # - "gochecknoinits" # It's OK.
+    # - "gocognit" # Redundant with gocyclo.
+    # - "goconst" # Too many false positive.
+    # - "gocritic" # Must be disabled for Go 1.18.
     - "gocyclo"
     - "godot"
+    # - "godox" # Should not be reported as error.
+    # - "goerr113" # Not useful.
     - "gofmt"
     - "gofumpt"
+    # - "goheader" # Not useful.
     - "goimports"
+    # - "golint" # Replaced by revive.
+    # - "gomnd" # Too many false positive.
+    # - "gomoddirectives" # Not useful.
+    # - "gomodguard" # Redundant with depguard.
     - "goprintffuncname"
     - "gosec"
     - "gosimple"
     - "govet"
     - "grouper"
+    # - "ifshort" # The log syntax is easier to read.
+    - "importas"
     - "ineffassign"
+    # - "interfacer" # Archived.
+    # - "ireturn" # Too many false positive.
+    # - "lll" # We don't use punch cards anymore.
+    # - "maintidx" # Redundant with gocyclo.
     - "makezero"
+    # - "maligned" # Replaced by govet 'fieldalignment'.
     - "misspell"
     - "nakedret"
     - "nestif"
     - "nilerr"
+    - "nilnil"
+    # - "nlreturn" # Is that a good practice ?
     - "noctx"
     - "nolintlint"
+    # - "nonamedreturns" # Named returns are OK.
+    - "nosprintfhostport"
+    # - "paralleltest" # Not useful.
     - "prealloc"
     - "predeclared"
+    # - "promlinter" # Not useful.
     - "revive"
     - "rowserrcheck"
+    # - "scopelint" # Replaced by exportloopref.
     - "sqlclosecheck"
     - "staticcheck"
     - "structcheck"
     - "stylecheck"
+    - "tagliatelle"
     - "tenv"
+    # - "testpackage" # Not useful.
     - "thelper"
+    # - "tparallel" # Not useful.
     - "typecheck"
     - "unconvert"
     - "unparam"
     - "unused"
     - "varcheck"
+    # - "varnamelen" # Maybe overkill.
     - "wastedassign"
+    # - "whitespace" # Not useful.
     - "wrapcheck"
+    # - "wsl" # Not useful.
 linters-settings:
   depguard:
     list-type: blacklist
@@ -65,8 +104,6 @@ linters-settings:
     packages-with-error-message:
       - reflect: "shouldn't be used by most application"
       - unsafe: "it's not safe"
-  dupl:
-    threshold: 100
   gocritic:
     enabled-tags:
       - experimental
@@ -85,7 +122,7 @@ linters-settings:
   govet:
     enable-all: true
     disable:
-      - fieldalignment
+      - fieldalignment # Too many false positive.
   grouper:
     import-require-single-import: true
     import-require-grouping: true
