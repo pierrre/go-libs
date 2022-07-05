@@ -4,14 +4,16 @@ package bufpool
 import (
 	"bytes"
 	"sync"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 const maxCapDefault = 1 << 16 // 64 KiB
 
 // Pool is a pool of *bytes.Buffer.
 type Pool struct {
-	o sync.Once
-	p sync.Pool
+	once sync.Once
+	pool syncutil.Pool[*bytes.Buffer]
 
 	// MaxCap defines the maximum capacity accepted for recycled buffer.
 	// If Put() is called with a buffer larger than this value, it's discarded.
@@ -21,8 +23,12 @@ type Pool struct {
 	MaxCap int
 }
 
+func (p *Pool) ensureInit() {
+	p.once.Do(p.init)
+}
+
 func (p *Pool) init() {
-	p.p.New = func() interface{} {
+	p.pool.New = func() *bytes.Buffer {
 		return new(bytes.Buffer)
 	}
 	if p.MaxCap == 0 {
@@ -32,8 +38,8 @@ func (p *Pool) init() {
 
 // Get gets a buffer from the Pool, resets it and returns it.
 func (p *Pool) Get() *bytes.Buffer {
-	p.o.Do(p.init)
-	buf := p.p.Get().(*bytes.Buffer) //nolint:forcetypeassert // Pool always contains *bytes.Buffer.
+	p.ensureInit()
+	buf, _ := p.pool.Get()
 	buf.Reset()
 	return buf
 }
@@ -41,8 +47,8 @@ func (p *Pool) Get() *bytes.Buffer {
 // Put puts the buffer to the Pool.
 // WARNING: the call MUST NOT reuse the buffer's content after this call.
 func (p *Pool) Put(buf *bytes.Buffer) {
-	p.o.Do(p.init)
+	p.ensureInit()
 	if p.MaxCap < 0 || buf.Cap() <= p.MaxCap {
-		p.p.Put(buf)
+		p.pool.Put(buf)
 	}
 }
