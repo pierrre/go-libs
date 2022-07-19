@@ -80,7 +80,7 @@ linters:
     # - "scopelint" # Replaced by exportloopref.
     - "sqlclosecheck"
     - "staticcheck"
-    - "structcheck"
+    #- "structcheck" # Replaced by unused.
     - "stylecheck"
     - "tagliatelle"
     - "tenv"
