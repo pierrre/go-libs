@@ -1,6 +1,7 @@
 run:
   timeout: "10m"
 output:
+  uniq-by-line: false
   sort-results: true
 linters:
   disable-all: true
@@ -11,7 +12,7 @@ linters:
     - "containedctx"
     - "contextcheck"
     # - "cyclop" # Redundant with gocyclo.
-    - "deadcode"
+    # - "deadcode" # Replaced by unused.
     # - "decorder" # Maybe overkill.
     - "depguard"
     - "dogsled"
@@ -52,7 +53,7 @@ linters:
     - "gosimple"
     - "govet"
     - "grouper"
-    # - "ifshort" # The log syntax is easier to read.
+    # - "ifshort" # The long syntax is easier to read.
     - "importas"
     - "ineffassign"
     # - "interfacer" # Archived.
@@ -91,7 +92,7 @@ linters:
     - "unconvert"
     - "unparam"
     - "unused"
-    - "varcheck"
+    # - "varcheck" # Replaced by unused.
     # - "varnamelen" # Maybe overkill.
     - "wastedassign"
     # - "whitespace" # Not useful.
@@ -114,10 +115,8 @@ linters-settings:
   gocyclo:
     min-complexity: 10
   gofumpt:
-    lang-version: "1.18"
     extra-rules: true
   gosimple:
-    go: "1.18"
     checks: [ "all" ]
   govet:
     enable-all: true
@@ -135,13 +134,9 @@ linters-settings:
     require-explanation: true
     require-specific: true
   staticcheck:
-    go: "1.18"
     checks: [ "all" ]
   stylecheck:
-    go: "1.18"
     checks: [ "all" ]
-  unused:
-    go: "1.18"
 issues:
   exclude-use-default: false
   max-issues-per-linter: 0
