@@ -53,7 +53,7 @@ linters:
     - "gosimple"
     - "govet"
     - "grouper"
-    # - "ifshort" # The long syntax is easier to read.
+    # - "ifshort" # Deprecated.
     - "importas"
     - "ineffassign"
     # - "interfacer" # Archived.
@@ -83,7 +83,7 @@ linters:
     - "staticcheck"
     #- "structcheck" # Replaced by unused.
     - "stylecheck"
-    - "tagliatelle"
+    #- "tagliatelle" # Not useful.
     - "tenv"
     # - "testpackage" # Not useful.
     - "thelper"
@@ -92,6 +92,7 @@ linters:
     - "unconvert"
     - "unparam"
     - "unused"
+    - "usestdlibvars"
     # - "varcheck" # Replaced by unused.
     # - "varnamelen" # Maybe overkill.
     - "wastedassign"
@@ -127,7 +128,6 @@ linters-settings:
     import-require-grouping: true
   nolintlint:
     allow-unused: false
-    allow-leading-space: false
     allow-no-explanation:
       - errcheck
       - misspell
