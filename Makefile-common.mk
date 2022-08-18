@@ -11,12 +11,10 @@ VERSION?=$(shell (git describe --tags --exact-match 2> /dev/null || git rev-pars
 version:
 	@echo $(VERSION)
 
-BUILD=false
-ifneq ($(wildcard ./cmd/*),)
-BUILD=true
 GO_BUILD_DIR=build
 .PHONY: build
 build:
+ifneq ($(wildcard ./cmd/*),)
 	mkdir -p $(GO_BUILD_DIR)
 	go build -v -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
 endif
@@ -86,11 +84,9 @@ CI_LOG_GROUP_END=@echo "::endgroup::"
 
 .PHONY: ci
 ci:
-ifeq ($(BUILD),true)
 	$(call CI_LOG_GROUP_START,build)
 	$(MAKE) build
 	$(call CI_LOG_GROUP_END)
-endif
 
 	$(call CI_LOG_GROUP_START,test)
 	$(MAKE) test
