@@ -86,17 +86,12 @@ lint-rules: ensure-command-pcregrep
 	# - other directory: shouldn't be separated
 	! find . -name "*.go" | pcregrep "[[:upper:]]"
 
-	# A text file must end with a new line. It is a UNIX convention. See https://stackoverflow.com/questions/729692/why-should-text-files-end-with-a-newline
-	! pcregrep -rMLI --exclude-dir="^\.(git|idea)$$" "\\n\\Z" .
-	# A text file line must not end with a space character. Trailing spaces are not useful.
-	! pcregrep -rnI --exclude-dir="^\.(git|idea)$$" --exclude="^coverage\.html$$" "\s$$" .
-
 	# Don't export type/function/variable/constant in main package/test.
 	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(type|func|var|const) [[:upper:]]" .
 	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
 	! pcregrep -rn --include=".+_test\.go$$" "^(type|var|const) [[:upper:]]" .
 	! pcregrep -rnM --include=".+_test\.go$$" "^(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
-	! pcregrep -rn --include=".+_test\.go$$" "^func [[:upper:]]" . | pcregrep -v ":func (Test|Benchmark).*\((t|b) \*testing\.(T|B)\) {"
+	! pcregrep -rn --include=".+_test\.go$$" "^func [[:upper:]]" . | pcregrep -v ":func (Test.*\(t \*testing\.T\)|Benchmark.*\(b \*testing\.B\)|Example.*\(\)) {"
 
 	# Don't declare a var block inside a function.
 	! pcregrep -rn --include=".+\.go$$" "^\t+var \($$" .
