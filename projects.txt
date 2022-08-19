@@ -2,3 +2,4 @@ cellauto
 compare
 di
 file-duplicate
+geohash
