@@ -6,6 +6,8 @@ noop:
 
 CI?=false
 
+ENSURE_COMMAND=@ which $(1) > /dev/null || (echo "Install the '$(1)' command. $(2)"; exit 1)
+
 VERSION?=$(shell (git describe --tags --exact-match 2> /dev/null || git rev-parse HEAD) | sed "s/^v//")
 .PHONY: version
 version:
@@ -33,6 +35,7 @@ generate::
 .PHONY: lint
 lint:
 	$(MAKE) golangci-lint
+	$(MAKE) lint-rules
 
 GOLANGCI_LINT_VERSION=v1.48.0
 GOLANGCI_LINT_DIR=$(shell go env GOPATH)/pkg/golangci-lint/$(GOLANGCI_LINT_VERSION)
@@ -57,6 +60,49 @@ endif
 .PHONY: golangci-lint-cache-clean
 golangci-lint-cache-clean: install-golangci-lint
 	$(GOLANGCI_LINT_BIN) cache clean
+
+.PHONY: ensure-command-pcregrep
+ensure-command-pcregrep:
+	$(call ENSURE_COMMAND,pcregrep,)
+
+.PHONY: lint-rules
+lint-rules: ensure-command-pcregrep
+	# Disallowed files.
+	find . -name ".DS_Store" | xargs -I {} sh -c 'echo {} && false'
+
+	# Mandatory files.
+	[ -e .gitignore ]
+	[ -e README.md ]
+	[ -e .github/workflows/ci.yml ]
+	[ -e go.mod ]
+	[ -e .golangci.yml ]
+	[ -e Makefile ]
+	[ -e Makefile-common.mk ]
+
+	# Don't use upper case letter in file and directory name.
+	# The convention for separator in name is:
+	# - file: "_"
+	# - directory in "/cmd": "-"
+	# - other directory: shouldn't be separated
+	! find . -name "*.go" | pcregrep "[[:upper:]]"
+
+	# A text file must end with a new line. It is a UNIX convention. See https://stackoverflow.com/questions/729692/why-should-text-files-end-with-a-newline
+	! pcregrep -rMLI --exclude-dir="^\.(git|idea)$$" "\\n\\Z" .
+	# A text file line must not end with a space character. Trailing spaces are not useful.
+	! pcregrep -rnI --exclude-dir="^\.(git|idea)$$" --exclude="^coverage\.html$$" "\s$$" .
+
+	# Don't export type/function/variable/constant in main package/test.
+	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(type|func|var|const) [[:upper:]]" .
+	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
+	! pcregrep -rn --include=".+_test\.go$$" "^(type|var|const) [[:upper:]]" .
+	! pcregrep -rnM --include=".+_test\.go$$" "^(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
+	! pcregrep -rn --include=".+_test\.go$$" "^func [[:upper:]]" . | pcregrep -v ":func (Test|Benchmark).*\((t|b) \*testing\.(T|B)\) {"
+
+	# Don't declare a var block inside a function.
+	! pcregrep -rn --include=".+\.go$$" "^\t+var \($$" .
+
+	# Use Go 1.19 in go.mod.
+	! pcregrep -n "^go " go.mod | pcregrep -v "go 1.19$$"
 
 .PHONY: mod-update
 mod-update:
@@ -84,6 +130,10 @@ CI_LOG_GROUP_END=@echo "::endgroup::"
 
 .PHONY: ci
 ci:
+	$(call CI_LOG_GROUP_START,apt)
+	$(MAKE) ci-apt
+	$(call CI_LOG_GROUP_END)
+
 	$(call CI_LOG_GROUP_START,build)
 	$(MAKE) build
 	$(call CI_LOG_GROUP_END)
@@ -95,5 +145,11 @@ ci:
 	$(call CI_LOG_GROUP_START,lint)
 	$(MAKE) lint
 	$(call CI_LOG_GROUP_END)
+
+CI_APT_PACKAGES:=pcregrep
+.PHONY: ci-apt
+ci-apt:
+	sudo apt-get update
+	sudo apt-get install $(CI_APT_PACKAGES)
 
 endif # CI end
