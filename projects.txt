@@ -1,3 +1,4 @@
 cellauto
+compare
 di
 file-duplicate
