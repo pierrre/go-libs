@@ -35,7 +35,7 @@ linters:
     # - "gochecknoinits" # It's OK.
     # - "gocognit" # Redundant with gocyclo.
     # - "goconst" # Too many false positive.
-    - "gocritic"
+    # - "gocritic" # Must be disabled for Go 1.18.
     - "gocyclo"
     - "godot"
     # - "godox" # Should not be reported as error.
