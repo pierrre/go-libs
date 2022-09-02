@@ -46,7 +46,7 @@ type tag struct {
 	value string
 }
 
-func (err *tag) Tag() (key, value string) {
+func (err *tag) Tag() (key string, value string) {
 	return err.key, err.value
 }
 

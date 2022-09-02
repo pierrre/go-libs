@@ -14,7 +14,7 @@ import (
 // Dir is a helper for os.MkdirTemp.
 //
 // The returned close function deletes the directory.
-func Dir(dir, prefix string) (name string, cl closeutil.F, err error) {
+func Dir(dir string, prefix string) (name string, cl closeutil.F, err error) {
 	name, err = os.MkdirTemp(dir, prefix)
 	if err != nil {
 		return "", nil, errors.Wrap(err, "create")
@@ -28,7 +28,7 @@ func Dir(dir, prefix string) (name string, cl closeutil.F, err error) {
 // File is a helper for os.CreateTemp.
 //
 // The returned close function closes and deletes the file.
-func File(dir, pattern string) (f *os.File, cl closeutil.F, err error) {
+func File(dir string, pattern string) (f *os.File, cl closeutil.F, err error) {
 	f, err = os.CreateTemp(dir, pattern)
 	if err != nil {
 		return nil, nil, errors.Wrap(err, "create")
