@@ -2,6 +2,7 @@ cellauto
 compare
 di
 file-duplicate
+file-random
 geohash
 githubhook
 langton
