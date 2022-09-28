@@ -1,6 +1,7 @@
 cellauto
 compare
 di
+errors
 file-duplicate
 file-random
 geohash
