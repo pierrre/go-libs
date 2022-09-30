@@ -1,7 +1,9 @@
 // Package closeutil provides close related utilities.
 package closeutil
 
-import "fmt"
+import (
+	"fmt"
+)
 
 // F represents a function that closes something.
 type F func()
