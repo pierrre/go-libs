@@ -1,9 +1,8 @@
 package closeutil
 
 import (
+	"errors"
 	"testing"
-
-	"github.com/pierrre/go-libs/errors"
 )
 
 func TestFNilNil(t *testing.T) {

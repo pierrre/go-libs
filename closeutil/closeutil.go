@@ -1,9 +1,7 @@
 // Package closeutil provides close related utilities.
 package closeutil
 
-import (
-	"github.com/pierrre/go-libs/errors"
-)
+import "fmt"
 
 // F represents a function that closes something.
 type F func()
@@ -46,7 +44,7 @@ type OnErr func(error)
 // Wrap wraps the OnErr with a message.
 func (f OnErr) Wrap(msg string) OnErr {
 	return func(err error) {
-		f(errors.Wrap(err, msg))
+		f(fmt.Errorf("%s: %w", msg, err))
 	}
 }
 
