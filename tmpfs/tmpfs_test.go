@@ -11,7 +11,7 @@ func TestDir(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer cl()
-	f, err := os.Open(name) //nolint:gosec // THis is not a security issue because we know what "name" contains.
+	f, err := os.Open(name) //nolint:gosec // This is not a security issue because we know what "name" contains.
 	if err != nil {
 		t.Fatal(err)
 	}

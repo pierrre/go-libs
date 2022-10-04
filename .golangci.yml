@@ -118,7 +118,6 @@ linters-settings:
       - "performance"
       - "style"
     disabled-checks:
-      - "externalErrorReassign" # https://github.com/golangci/golangci-lint/issues/3136
       - "paramTypeCombine" # Some false positive.
       - "whyNoLint" # We already have the nolintlint linter.
   gocyclo:
