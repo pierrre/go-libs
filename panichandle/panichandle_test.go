@@ -21,7 +21,7 @@ func TestRecover(t *testing.T) {
 func TestRecoverPanic(t *testing.T) {
 	defer restoreDefaultHandler()
 	called := false
-	Handler = func(r interface{}) {
+	Handler = func(r any) {
 		called = true
 		if r == nil {
 			t.Fatal("nil")

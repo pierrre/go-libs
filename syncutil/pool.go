@@ -19,7 +19,7 @@ func (p *Pool[T]) ensureInit() {
 
 func (p *Pool[T]) init() {
 	if p.New != nil {
-		p.pool.New = func() interface{} {
+		p.pool.New = func() any {
 			return p.New()
 		}
 	}

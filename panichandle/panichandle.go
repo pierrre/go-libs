@@ -6,7 +6,7 @@ var Handler = DefaultHandler
 
 // DefaultHandler is the default Handler.
 // It panics.
-func DefaultHandler(r interface{}) {
+func DefaultHandler(r any) {
 	panic(r)
 }
 
