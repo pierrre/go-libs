@@ -17,6 +17,7 @@ linters:
     - "depguard"
     - "dogsled"
     - "dupl"
+    - "dupword"
     - "durationcheck"
     - "errcheck"
     - "errchkjson"
@@ -89,6 +90,7 @@ linters:
     - "stylecheck"
     #- "tagliatelle" # Not useful.
     - "tenv"
+    - "testableexamples"
     # - "testpackage" # Not useful.
     - "thelper"
     # - "tparallel" # Not useful.
