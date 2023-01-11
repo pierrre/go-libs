@@ -1,3 +1,4 @@
+assert
 cellauto
 compare
 di
