@@ -38,4 +38,4 @@ all-mod-tidy:
 
 .PHONY: all-copy-common
 all-copy-common:
-	$(call ALL_COMMAND,cp -r Makefile-common.mk LICENSE .gitignore .github .golangci.yml ../{})
+	$(call ALL_COMMAND,cp -r Makefile-common.mk LICENSE CODEOWNERS .gitignore .github .golangci.yml ../{})
