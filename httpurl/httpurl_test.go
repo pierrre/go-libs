@@ -6,8 +6,13 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/pierrre/go-libs/internal/testutil"
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
+
+func init() {
+	golibstest.Configure()
+}
 
 func TestGet(t *testing.T) {
 	for _, tc := range []struct {
@@ -74,11 +79,9 @@ func TestGet(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			expected, err := url.Parse(tc.expected)
-			if err != nil {
-				t.Fatal(err)
-			}
+			assert.NoError(t, err)
 			u := Get(tc.req)
-			testutil.Compare(t, "unexpected URL", u, expected)
+			assert.DeepEqual(t, u, expected)
 		})
 	}
 }

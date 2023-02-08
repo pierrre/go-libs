@@ -4,7 +4,14 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
+
+func init() {
+	golibstest.Configure()
+}
 
 func TestGo(t *testing.T) {
 	var called int64
@@ -12,9 +19,7 @@ func TestGo(t *testing.T) {
 		atomic.AddInt64(&called, 1)
 	})
 	wait()
-	if called == 0 {
-		t.Fatal("not called")
-	}
+	assert.Equal(t, called, 1)
 }
 
 func TestWaitGroup(t *testing.T) {
@@ -24,9 +29,7 @@ func TestWaitGroup(t *testing.T) {
 		atomic.AddInt64(&called, 1)
 	})
 	wg.Wait()
-	if called == 0 {
-		t.Fatal("not called")
-	}
+	assert.Equal(t, called, 1)
 }
 
 func TestRunN(t *testing.T) {
@@ -34,7 +37,5 @@ func TestRunN(t *testing.T) {
 	RunN(10, func() {
 		atomic.AddInt64(&called, 1)
 	})
-	if called != 10 {
-		t.Fatalf("unexpected called: got %d, want %d", called, 10)
-	}
+	assert.Equal(t, called, 10)
 }

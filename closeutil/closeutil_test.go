@@ -3,7 +3,14 @@ package closeutil
 import (
 	"errors"
 	"testing"
+
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
+
+func init() {
+	golibstest.Configure()
+}
 
 func TestFNilNil(t *testing.T) {
 	var c1 F
@@ -19,9 +26,7 @@ func TestFNilNotNil(t *testing.T) {
 		called = true
 	}
 	c2()
-	if !called {
-		t.Fatal("not called")
-	}
+	assert.True(t, called)
 }
 
 func TestErrConvertWithError(t *testing.T) {
@@ -34,17 +39,11 @@ func TestErrConvertWithError(t *testing.T) {
 	oeCalled := false
 	oe := func(err error) {
 		oeCalled = true
-		if err == nil {
-			t.Fatal("no error")
-		}
+		assert.Error(t, err)
 	}
 	coe(oe)
-	if !ceCalled {
-		t.Fatal("ce not called")
-	}
-	if !oeCalled {
-		t.Fatal("oe not called")
-	}
+	assert.True(t, ceCalled)
+	assert.True(t, oeCalled)
 }
 
 func TestErrConvertNoError(t *testing.T) {
@@ -67,9 +66,7 @@ func TestErrNilNil(t *testing.T) {
 	var c1 Err
 	c2 := c1.Nil()
 	err := c2()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }
 
 func TestErrNilNotNilWithError(t *testing.T) {
@@ -81,12 +78,8 @@ func TestErrNilNotNilWithError(t *testing.T) {
 		return errors.New("error")
 	}
 	err := c2()
-	if err == nil {
-		t.Fatal("no error")
-	}
-	if !called {
-		t.Fatal("not called")
-	}
+	assert.Error(t, err)
+	assert.True(t, called)
 }
 
 func TestErrNilNotNilNoError(t *testing.T) {
@@ -98,21 +91,15 @@ func TestErrNilNotNilNoError(t *testing.T) {
 		return nil
 	}
 	err := c2()
-	if err != nil {
-		t.Fatal(err)
-	}
-	if !called {
-		t.Fatal("not called")
-	}
+	assert.NoError(t, err)
+	assert.True(t, called)
 }
 
 func TestOnErrWrap(t *testing.T) {
 	oe := OnErr(func(err error) {
 		msg := err.Error()
 		expectedMsg := "test: error"
-		if msg != expectedMsg {
-			t.Fatalf("unexpected message: got %q, want %q", msg, expectedMsg)
-		}
+		assert.Equal(t, msg, expectedMsg)
 	})
 	oe = oe.Wrap("test")
 	oe(errors.New("error"))
@@ -128,14 +115,10 @@ func TestWithOnErrWrap(t *testing.T) {
 		oeCalled = true
 		msg := err.Error()
 		expectedMsg := "test: error"
-		if msg != expectedMsg {
-			t.Fatalf("unexpected message: got %q, want %q", msg, expectedMsg)
-		}
+		assert.Equal(t, msg, expectedMsg)
 	}
 	coe(oe)
-	if !oeCalled {
-		t.Fatal("oe not called")
-	}
+	assert.True(t, oeCalled)
 }
 
 func TestWithOnErrNilNil(t *testing.T) {
@@ -152,7 +135,5 @@ func TestWithOnErrNilNotNil(t *testing.T) {
 		called = true
 	}
 	c2(func(err error) {})
-	if !called {
-		t.Fatal("not called")
-	}
+	assert.True(t, called)
 }

@@ -2,16 +2,19 @@ package panichandle
 
 import (
 	"testing"
+
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
 
+func init() {
+	golibstest.Configure()
+}
+
 func TestDefaultHandler(t *testing.T) {
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("no panic")
-		}
-	}()
-	DefaultHandler("test")
+	assert.Panics(t, func() {
+		DefaultHandler("test")
+	})
 }
 
 func TestRecover(t *testing.T) {
@@ -23,14 +26,10 @@ func TestRecoverPanic(t *testing.T) {
 	called := false
 	Handler = func(r any) {
 		called = true
-		if r == nil {
-			t.Fatal("nil")
-		}
+		assert.NotZero(t, r)
 	}
 	defer func() {
-		if !called {
-			t.Fatal("not called")
-		}
+		assert.True(t, called)
 	}()
 	defer Recover()
 	panic("test")

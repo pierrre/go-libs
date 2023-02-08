@@ -3,36 +3,31 @@ package tmpfs
 import (
 	"os"
 	"testing"
+
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
+
+func init() {
+	golibstest.Configure()
+}
 
 func TestDir(t *testing.T) {
 	name, cl, err := Dir("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	defer cl()
 	f, err := os.Open(name) //nolint:gosec // This is not a security issue because we know what "name" contains.
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	fi, err := f.Stat()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	d := fi.IsDir()
-	if !d {
-		t.Fatal("not dir")
-	}
+	assert.True(t, d)
 }
 
 func TestFile(t *testing.T) {
 	f, cl, err := File("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 	defer cl()
 	_, err = f.Stat()
-	if err != nil {
-		t.Fatal(err)
-	}
+	assert.NoError(t, err)
 }

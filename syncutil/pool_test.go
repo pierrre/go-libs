@@ -2,7 +2,14 @@ package syncutil
 
 import (
 	"testing"
+
+	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/internal/golibstest"
 )
+
+func init() {
+	golibstest.Configure()
+}
 
 func TestPool(t *testing.T) {
 	p := &Pool[string]{
@@ -11,21 +18,15 @@ func TestPool(t *testing.T) {
 		},
 	}
 	s, ok := p.Get()
-	if !ok {
-		t.Fatal("not ok")
-	}
-	if s != "test" {
-		t.Fatalf("unexpected result: got %q, want %q", s, "test")
-	}
+	assert.True(t, ok)
+	assert.Equal(t, s, "test")
 	p.Put(s)
 }
 
 func TestPoolWithoutNew(t *testing.T) {
 	p := &Pool[string]{}
 	_, ok := p.Get()
-	if ok {
-		t.Fatal("ok")
-	}
+	assert.False(t, ok)
 }
 
 func BenchmarkPool(b *testing.B) {
@@ -38,7 +39,7 @@ func BenchmarkPool(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		sp, ok := p.Get()
 		if !ok {
-			b.Fatal("not ok")
+			assert.True(b, ok)
 		}
 		p.Put(sp)
 	}

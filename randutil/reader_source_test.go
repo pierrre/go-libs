@@ -3,6 +3,8 @@ package randutil
 import (
 	"crypto/rand"
 	"testing"
+
+	"github.com/pierrre/assert"
 )
 
 func TestReaderSource(t *testing.T) {
@@ -11,8 +13,6 @@ func TestReaderSource(t *testing.T) {
 	}
 	for i := 0; i < 100; i++ {
 		v := rs.Int63()
-		if v < 0 {
-			t.Fatalf("negative: %d", v)
-		}
+		assert.Positive(t, v)
 	}
 }
