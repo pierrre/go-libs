@@ -35,12 +35,41 @@ func WaitGroup(wg *sync.WaitGroup, f func()) {
 	}()
 }
 
-// RunN runs a function with multiple goroutines.
+// N executes a function with multiple goroutines.
 // It blocks until all goroutines are terminated.
-func RunN(n int, f func()) {
+func N(n int, f func(i int)) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < n; i++ {
-		WaitGroup(wg, f)
+		i := i
+		WaitGroup(wg, func() {
+			f(i)
+		})
+	}
+	wg.Wait()
+}
+
+// Slice executes a function with a different goroutine for each element of the slice.
+// It blocks until all goroutines are terminated.
+func Slice[E any](s []E, f func(i int, e E)) {
+	wg := new(sync.WaitGroup)
+	for i, e := range s {
+		i, e := i, e
+		WaitGroup(wg, func() {
+			f(i, e)
+		})
+	}
+	wg.Wait()
+}
+
+// Map executes a function with a different goroutine for each element of the map.
+// It blocks until all goroutines are terminated.
+func Map[M ~map[K]V, K comparable, V any](m M, f func(k K, v V)) {
+	wg := new(sync.WaitGroup)
+	for k, v := range m {
+		k, v := k, v
+		WaitGroup(wg, func() {
+			f(k, v)
+		})
 	}
 	wg.Wait()
 }
