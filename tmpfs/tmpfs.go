@@ -7,14 +7,12 @@ package tmpfs
 import (
 	"fmt"
 	"os"
-
-	"github.com/pierrre/go-libs/closeutil"
 )
 
 // Dir is a helper for os.MkdirTemp.
 //
 // The returned close function deletes the directory.
-func Dir(dir string, prefix string) (name string, cl closeutil.F, err error) {
+func Dir(dir string, prefix string) (name string, cl func(), err error) {
 	name, err = os.MkdirTemp(dir, prefix)
 	if err != nil {
 		return "", nil, fmt.Errorf("create: %w", err)
@@ -28,7 +26,7 @@ func Dir(dir string, prefix string) (name string, cl closeutil.F, err error) {
 // File is a helper for os.CreateTemp.
 //
 // The returned close function closes and deletes the file.
-func File(dir string, pattern string) (f *os.File, cl closeutil.F, err error) {
+func File(dir string, pattern string) (f *os.File, cl func(), err error) {
 	f, err = os.CreateTemp(dir, pattern)
 	if err != nil {
 		return nil, nil, fmt.Errorf("create: %w", err)
