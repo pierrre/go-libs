@@ -12,35 +12,38 @@ func init() {
 }
 
 func TestPool(t *testing.T) {
-	p := &Pool[string]{
-		New: func() string {
-			return "test"
+	p := &Pool[[]byte]{
+		New: func() *[]byte {
+			b := make([]byte, 1)
+			return &b
 		},
 	}
-	s, ok := p.Get()
-	assert.True(t, ok)
-	assert.Equal(t, s, "test")
-	p.Put(s)
+	for i := 0; i < 10; i++ {
+		bp := p.Get()
+		assert.NotZero(t, bp)
+		assert.SliceLen(t, *bp, 1)
+		p.Put(bp)
+	}
 }
 
 func TestPoolWithoutNew(t *testing.T) {
-	p := &Pool[string]{}
-	_, ok := p.Get()
-	assert.False(t, ok)
+	p := &Pool[[]byte]{}
+	bp := p.Get()
+	assert.Zero(t, bp)
 }
 
 func BenchmarkPool(b *testing.B) {
-	p := &Pool[*string]{
-		New: func() *string {
-			s := "test"
-			return &s
+	p := &Pool[[]byte]{
+		New: func() *[]byte {
+			b := make([]byte, 1)
+			return &b
 		},
 	}
 	for i := 0; i < b.N; i++ {
-		sp, ok := p.Get()
-		if !ok {
-			assert.True(b, ok)
+		bp := p.Get()
+		if bp == nil {
+			assert.NotZero(b, bp)
 		}
-		p.Put(sp)
+		p.Put(bp)
 	}
 }
