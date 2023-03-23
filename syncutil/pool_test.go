@@ -1,10 +1,11 @@
-package syncutil
+package syncutil_test
 
 import (
 	"testing"
 
 	"github.com/pierrre/assert"
 	"github.com/pierrre/go-libs/internal/golibstest"
+	. "github.com/pierrre/go-libs/syncutil"
 )
 
 func init() {
