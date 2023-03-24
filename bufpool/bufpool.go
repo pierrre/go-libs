@@ -10,6 +10,8 @@ import (
 const maxCapDefault = 1 << 16 // 64 KiB
 
 // Pool is a pool of *bytes.Buffer.
+//
+// Nuffers are automatically reset.
 type Pool struct {
 	pool syncutil.Pool[bytes.Buffer]
 
@@ -21,12 +23,10 @@ type Pool struct {
 	MaxCap int
 }
 
-// Get gets a buffer from the Pool, resets it and returns it.
+// Get returns a buffer from the Pool.
 func (p *Pool) Get() *bytes.Buffer {
 	buf := p.pool.Get()
-	if buf != nil {
-		buf.Reset()
-	} else {
+	if buf == nil {
 		buf = new(bytes.Buffer)
 	}
 	return buf
@@ -40,6 +40,7 @@ func (p *Pool) Put(buf *bytes.Buffer) {
 		maxCap = maxCapDefault
 	}
 	if maxCap < 0 || buf.Cap() <= maxCap {
+		buf.Reset()
 		p.pool.Put(buf)
 	}
 }
