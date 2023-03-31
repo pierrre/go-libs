@@ -1,4 +1,4 @@
-package randutil
+package randstr
 
 import (
 	"testing"
@@ -7,10 +7,13 @@ import (
 	"github.com/pierrre/assert"
 )
 
-func TestString(t *testing.T) {
+func TestGenerate(t *testing.T) {
 	n := 15
 	cs := []rune("0123456789abcdefghijklmnopqrstuvwxyz")
-	s := String(n, cs, nil)
+	s := Generate(n, cs, nil)
 	resN := utf8.RuneCountInString(s)
 	assert.Equal(t, resN, n)
+	assert.AllocsPerRun(t, 100, func() {
+		Generate(n, cs, nil)
+	}, 1)
 }
