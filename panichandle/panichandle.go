@@ -2,18 +2,20 @@
 package panichandle
 
 // Handler handles panic.
-var Handler = DefaultHandler
-
-// DefaultHandler is the default Handler.
-// It panics.
-func DefaultHandler(r any) {
-	panic(r)
-}
+//
+// By default there is no handler.
+var Handler func(r any)
 
 // Recover recovers panic and call Handler.
+//
+// If there is no handler, it doesn't recover.
+//
+// It should be called in defer.
 func Recover() {
-	r := recover()
-	if r != nil {
-		Handler(r)
+	if Handler != nil {
+		r := recover()
+		if r != nil {
+			Handler(r)
+		}
 	}
 }
