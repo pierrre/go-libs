@@ -15,11 +15,39 @@ func init() {
 
 func TestGo(t *testing.T) {
 	var called int64
-	wait := Go(func() {
+	done := make(chan struct{})
+	Go(func() {
+		atomic.AddInt64(&called, 1)
+		close(done)
+	})
+	<-done
+	assert.Equal(t, called, 1)
+}
+
+func TestGoAllocs(t *testing.T) {
+	done := make(chan struct{})
+	assert.AllocsPerRun(t, 100, func() {
+		Go(func() {
+			done <- struct{}{}
+		})
+		<-done
+	}, 2)
+}
+
+func TestGoWait(t *testing.T) {
+	var called int64
+	wait := GoWait(func() {
 		atomic.AddInt64(&called, 1)
 	})
 	wait()
 	assert.Equal(t, called, 1)
+}
+
+func TestGoWaitAllocs(t *testing.T) {
+	assert.AllocsPerRun(t, 100, func() {
+		wait := GoWait(func() {})
+		wait()
+	}, 4)
 }
 
 func TestWaitGroup(t *testing.T) {
@@ -30,6 +58,14 @@ func TestWaitGroup(t *testing.T) {
 	})
 	wg.Wait()
 	assert.Equal(t, called, 1)
+}
+
+func TestWaitGroupAllocs(t *testing.T) {
+	wg := new(sync.WaitGroup)
+	assert.AllocsPerRun(t, 100, func() {
+		WaitGroup(wg, func() {})
+		wg.Wait()
+	}, 2)
 }
 
 func TestN(t *testing.T) {

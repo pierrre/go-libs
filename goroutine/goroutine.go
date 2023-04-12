@@ -10,15 +10,23 @@ import (
 )
 
 // Go executes a function in a new goroutine.
-// It returns a function that blocks until the goroutine is terminated.
-// The caller must call this function.
-func Go(f func()) (wait func()) {
-	ch := make(chan struct{})
+func Go(f func()) {
 	go func() {
-		defer close(ch)
 		defer panichandle.Recover()
 		f()
 	}()
+}
+
+// GoWait executes a function in a new goroutine.
+//
+// It returns a function that blocks until the goroutine is terminated.
+// The caller must call this function.
+func GoWait(f func()) (wait func()) {
+	ch := make(chan struct{})
+	Go(func() {
+		defer close(ch)
+		f()
+	})
 	return func() {
 		<-ch
 	}
@@ -28,11 +36,10 @@ func Go(f func()) (wait func()) {
 // It calls WaitGroup.Add() before starting it, and WaitGroup.Done() when the goroutine is terminated.
 func WaitGroup(wg *sync.WaitGroup, f func()) {
 	wg.Add(1)
-	go func() {
+	Go(func() {
 		defer wg.Done()
-		defer panichandle.Recover()
 		f()
-	}()
+	})
 }
 
 // N executes a function with multiple goroutines.
