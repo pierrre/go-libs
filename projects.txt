@@ -9,3 +9,4 @@ geohash
 githubhook
 langton
 mandelbrot
+unlimited-channel
