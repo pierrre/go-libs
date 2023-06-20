@@ -43,6 +43,14 @@ func WriteUint(w io.Writer, i uint64, base int) (int, error) {
 	return w.Write(*bp) //nolint:wrapcheck // It's fine.
 }
 
+// WriteQuote writes the quoted string to the writer.
+func WriteQuote(w io.Writer, s string) (int, error) {
+	bp := bytesPool.Get()
+	defer bytesPool.Put(bp)
+	*bp = strconv.AppendQuote((*bp)[:0], s)
+	return w.Write(*bp) //nolint:wrapcheck // It's fine.
+}
+
 var bytesPool = syncutil.Pool[[]byte]{
 	New: func() *[]byte {
 		var b []byte

@@ -205,3 +205,53 @@ func BenchmarkWriteUint(b *testing.B) {
 		})
 	}
 }
+
+var writeQuoteTestCases = []struct {
+	name     string
+	s        string
+	expected string
+}{
+	{
+		name:     "Empty",
+		s:        "",
+		expected: `""`,
+	},
+	{
+		name:     "Simple",
+		s:        "test",
+		expected: `"test"`,
+	},
+	{
+		name:     "Quote",
+		s:        "\"",
+		expected: `"\""`,
+	},
+}
+
+func TestWriteQuote(t *testing.T) {
+	for _, tc := range writeQuoteTestCases {
+		t.Run(tc.name, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			n, err := WriteQuote(buf, tc.s)
+			assert.NoError(t, err)
+			assert.Equal(t, len(tc.expected), n)
+			assert.Equal(t, tc.expected, buf.String())
+			assert.AllocsPerRun(t, 100, func() {
+				buf.Reset()
+				_, _ = WriteQuote(buf, tc.s)
+			}, 0)
+		})
+	}
+}
+
+func BenchmarkWriteQuote(b *testing.B) {
+	for _, tc := range writeQuoteTestCases {
+		b.Run(tc.name, func(b *testing.B) {
+			buf := new(bytes.Buffer)
+			for n := 0; n < b.N; n++ {
+				buf.Reset()
+				_, _ = WriteQuote(buf, tc.s)
+			}
+		})
+	}
+}
