@@ -21,6 +21,7 @@ func WriteFloat(w io.Writer, f float64, fmt byte, prec, bitSize int) (int, error
 	return n, err //nolint:wrapcheck // It's fine.
 }
 
+// WriteInt writes the string representation of the signed integer to the writer.
 func WriteInt(w io.Writer, i int64, base int) (int, error) {
 	if 0 <= i && i < 100 && base == 10 {
 		return io.WriteString(w, strconv.FormatInt(i, base)) //nolint:wrapcheck // It's fine.

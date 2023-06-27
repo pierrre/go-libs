@@ -151,6 +151,8 @@ linters-settings:
     require-specific: true
   revive:
     rules:
+      - name: "exported"
+        disabled: false
       - name: "unused-parameter" # It's OK.
         disabled: true
   staticcheck:
