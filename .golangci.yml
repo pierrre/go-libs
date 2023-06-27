@@ -153,6 +153,8 @@ linters-settings:
     rules:
       - name: "exported"
         disabled: false
+        arguments:
+          - "disableStutteringCheck"
       - name: "unused-parameter" # It's OK.
         disabled: true
   staticcheck:
