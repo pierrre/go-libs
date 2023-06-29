@@ -12,6 +12,10 @@ GIT_REPOSITORY_PATTERN=git@github.com:pierrre/{}.git
 all-git-clone:
 	$(call ALL_COMMAND,sh -c "(ls ../{} > /dev/null 2>&1 || git -C .. clone $(GIT_REPOSITORY_PATTERN))")
 
+.PHONY: all-copy-common
+all-copy-common:
+	$(call ALL_COMMAND,cp -r Makefile-common.mk LICENSE CODEOWNERS .gitignore .github .golangci.yml ../{})
+
 .PHONY: all-build
 all-build:
 	$(call ALL_RUN,make build)
@@ -20,9 +24,21 @@ all-build:
 all-test:
 	$(call ALL_RUN,make test)
 
+.PHONY: all-generate
+all-generate:
+	$(call ALL_RUN,make generate)
+
 .PHONY: all-lint
 all-lint:
 	$(call ALL_RUN,make lint)
+
+.PHONY: all-golangci-lint
+all-golangci-lint:
+	$(call ALL_RUN,make golangci-lint)
+
+.PHONY: all-lint-rules
+all-lint-rules:
+	$(call ALL_RUN,make lint-rules)
 
 .PHONY: all-clean
 all-clean:
@@ -36,6 +52,6 @@ all-mod-update: all-copy-common
 all-mod-tidy:
 	$(call ALL_RUN,make mod-tidy)
 
-.PHONY: all-copy-common
-all-copy-common:
-	$(call ALL_COMMAND,cp -r Makefile-common.mk LICENSE CODEOWNERS .gitignore .github .golangci.yml ../{})
+.PHONY: all-clean
+all-clean:
+	$(call ALL_RUN,make clean)
