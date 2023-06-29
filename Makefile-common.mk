@@ -6,8 +6,6 @@ noop:
 
 CI?=false
 
-ENSURE_COMMAND=@ which $(1) > /dev/null || (echo "Install the '$(1)' command. $(2)"; exit 1)
-
 VERSION?=$(shell (git describe --tags --exact-match 2> /dev/null || git rev-parse HEAD) | sed "s/^v//")
 .PHONY: version
 version:
@@ -82,20 +80,19 @@ endif
 golangci-lint-cache-clean: install-golangci-lint
 	$(GOLANGCI_LINT_BIN) cache clean
 
-.PHONY: ensure-command-pcregrep
-ensure-command-pcregrep:
-	$(call ENSURE_COMMAND,pcregrep,)
-
 .PHONY: lint-rules
-lint-rules: ensure-command-pcregrep
+lint-rules:
 	# Disallowed files.
-	! find . -name ".DS_Store" | pcregrep "."
+	! find . -name ".DS_Store" | grep "."
 
 	# Mandatory files.
 	[ -e .gitignore ]
 	[ -e README.md ]
+	[ -e LICENSE ]
 	[ -e CODEOWNERS ]
+	[ -e .github/dependabot.yml ]
 	[ -e .github/workflows/ci.yml ]
+	[ -e .github/workflows/dependabot_auto_merge.yml ]
 	[ -e go.mod ]
 	[ -e go.sum ]
 	[ -e .golangci.yml ]
@@ -107,20 +104,10 @@ lint-rules: ensure-command-pcregrep
 	# - file: "_"
 	# - directory in "/cmd": "-"
 	# - other directory: shouldn't be separated
-	! find . -name "*.go" | pcregrep "[[:upper:]]"
-
-	# Don't export type/function/variable/constant in main package/test.
-	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(type|func|var|const) [[:upper:]]" .
-	! pcregrep -rnM --include=".+\.go$$" --exclude=".+_test\.go$$" "^package main\n(.*\n)*(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
-	! pcregrep -rn --include=".+_test\.go$$" "^(type|var|const) [[:upper:]]" .
-	! pcregrep -rnM --include=".+_test\.go$$" "^(var|const) \(\n((\t.*)?\n)*\t[[:upper:]]" .
-	! pcregrep -rn --include=".+_test\.go$$" "^func [[:upper:]]" . | pcregrep -v ":func (Test.*\(t \*testing\.T\)|Benchmark.*\(b \*testing\.B\)|Example.*\(\)) {"
-
-	# Don't declare a var block inside a function.
-	! pcregrep -rn --include=".+\.go$$" "^\t+var \($$" .
+	! find . -name "*.go" | grep "[[:upper:]]"
 
 	# Use Go 1.20 in go.mod.
-	! pcregrep -n "^go " go.mod | pcregrep -v "go 1.20$$"
+	! grep -n "^go " go.mod | grep -v "go 1.20$$"
 
 .PHONY: mod-update
 mod-update:
@@ -156,10 +143,6 @@ ci::
 	$(MAKE) ci-env
 	$(call CI_LOG_GROUP_END)
 
-	$(call CI_LOG_GROUP_START,apt)
-	$(MAKE) ci-apt
-	$(call CI_LOG_GROUP_END)
-
 	$(call CI_LOG_GROUP_START,build)
 	$(MAKE) build
 	$(call CI_LOG_GROUP_END)
@@ -175,12 +158,6 @@ ci::
 .PHONY: ci-env
 ci-env:
 	env
-
-CI_APT_PACKAGES:=pcregrep
-.PHONY: ci-apt
-ci-apt:
-	sudo apt update
-	sudo apt install $(CI_APT_PACKAGES)
 
 ifneq ($(GITHUB_TAG),)
 ci::
