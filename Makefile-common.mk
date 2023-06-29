@@ -35,7 +35,9 @@ endif
 test:
 	go test $(VERBOSE_FLAG) -cover -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out -o=coverage.txt
+ifeq ($(VERBOSE),true)
 	cat coverage.txt
+endif
 	go tool cover -html=coverage.out -o=coverage.html
 
 .PHONY: generate
