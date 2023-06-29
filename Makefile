@@ -40,10 +40,6 @@ all-golangci-lint:
 all-lint-rules:
 	$(call ALL_RUN,make lint-rules)
 
-.PHONY: all-clean
-all-clean:
-	$(call ALL_RUN,make clean)
-
 .PHONY: all-mod-update
 all-mod-update: all-copy-common
 	$(call ALL_RUN,make mod-update)
