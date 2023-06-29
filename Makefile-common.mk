@@ -5,6 +5,16 @@
 noop:
 
 CI?=false
+ifeq ($(CI),true)
+VERBOSE?=true
+endif
+
+VERBOSE?=false
+ifeq ($(VERBOSE),true)
+VERBOSE_FLAG=-v
+else
+VERBOSE_FLAG=
+endif
 
 VERSION?=$(shell (git describe --tags --exact-match 2> /dev/null || git rev-parse HEAD) | sed "s/^v//")
 .PHONY: version
@@ -18,19 +28,19 @@ GO_BUILD_DIR=build
 build:
 ifneq ($(wildcard ./cmd/*),)
 	mkdir -p $(GO_BUILD_DIR)
-	go build -v -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
+	go build $(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
 endif
 
 .PHONY: test
 test:
-	go test -v -cover -coverprofile=coverage.out ./...
+	go test $(VERBOSE_FLAG) -cover -coverprofile=coverage.out ./...
 	go tool cover -func=coverage.out -o=coverage.txt
 	cat coverage.txt
 	go tool cover -html=coverage.out -o=coverage.html
 
 .PHONY: generate
 generate::
-	go generate -v ./...
+	go generate $(VERBOSE_FLAG) ./...
 
 .PHONY: lint
 lint:
@@ -53,20 +63,20 @@ GOLANGCI_LINT_DIR=$(shell go env GOPATH)/pkg/golangci-lint/$(GOLANGCI_LINT_VERSI
 GOLANGCI_LINT_BIN=$(GOLANGCI_LINT_DIR)/golangci-lint
 
 $(GOLANGCI_LINT_BIN):
-	curl -vfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+	curl $(VERBOSE_FLAG) -fL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: install-golangci-lint
 install-golangci-lint: $(GOLANGCI_LINT_BIN)
 
 else ifeq ($(GOLANGCI_LINT_TYPE),source)
 
-GOLANGCI_LINT_BIN=go run -v github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT_BIN=go run $(VERBOSE_FLAG) github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 install-golangci-lint:
 
 endif
 
-GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) -v run
+GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) $(VERBOSE_FLAG) run
 .PHONY: golangci-lint
 golangci-lint: install-golangci-lint
 ifeq ($(CI),true)
@@ -111,12 +121,12 @@ lint-rules:
 
 .PHONY: mod-update
 mod-update:
-	go get -v -u all
+	go get $(VERBOSE_FLAG) -u all
 	$(MAKE) mod-tidy
 
 .PHONY: mod-tidy
 mod-tidy:
-	go mod tidy -v
+	go mod tidy $(VERBOSE_FLAG)
 
 .PHONY: git-latest-release
 git-latest-release:
@@ -168,7 +178,7 @@ ci::
 GO_PROXY_MODULE_TAG_INFO_URL=https://proxy.golang.org/$(GO_MODULE)/@v/$(GITHUB_TAG).info
 .PHONY: ci-tag
 ci-tag:
-	curl -vL --fail-with-body $(GO_PROXY_MODULE_TAG_INFO_URL)
+	curl $(VERBOSE_FLAG) -fL --fail-with-body $(GO_PROXY_MODULE_TAG_INFO_URL)
 # Print an empty line to separate the output of curl and print the log group properly.
 	@echo ""
 endif
