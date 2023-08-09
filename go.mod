@@ -2,10 +2,10 @@ module github.com/pierrre/go-libs
 
 go 1.21
 
-require github.com/pierrre/assert v0.1.7
+require github.com/pierrre/assert v0.2.1
 
 require (
-	github.com/pierrre/compare v1.1.4 // indirect
-	github.com/pierrre/errors v0.4.3 // indirect
-	github.com/pierrre/pretty v0.0.6 // indirect
+	github.com/pierrre/compare v1.1.5 // indirect
+	github.com/pierrre/errors v0.4.4 // indirect
+	github.com/pierrre/pretty v0.0.7 // indirect
 )
