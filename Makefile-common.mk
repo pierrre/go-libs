@@ -180,5 +180,6 @@ ci::
 .PHONY: ci-tag
 ci-tag:
 	GOPROXY=proxy.golang.org go list -x -m $(GO_MODULE)@$(GITHUB_TAG)
+endif
 
 endif # CI end
