@@ -16,7 +16,7 @@ func TestDir(t *testing.T) {
 	name, cl, err := Dir("", "")
 	assert.NoError(t, err)
 	defer cl()
-	f, err := os.Open(name) //nolint:gosec // This is not a security issue because we know what "name" contains.
+	f, err := os.Open(name)
 	assert.NoError(t, err)
 	fi, err := f.Stat()
 	assert.NoError(t, err)
