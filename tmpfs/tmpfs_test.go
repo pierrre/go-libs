@@ -5,12 +5,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/internal/golibstest"
 )
-
-func init() {
-	golibstest.Configure()
-}
 
 func TestDir(t *testing.T) {
 	name, cl, err := Dir("", "")

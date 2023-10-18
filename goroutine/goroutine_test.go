@@ -6,12 +6,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/internal/golibstest"
 )
-
-func init() {
-	golibstest.Configure()
-}
 
 func TestGo(t *testing.T) {
 	var called int64

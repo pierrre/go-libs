@@ -7,12 +7,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/internal/golibstest"
 )
-
-func init() {
-	golibstest.Configure()
-}
 
 func TestGet(t *testing.T) {
 	for _, tc := range []struct {
