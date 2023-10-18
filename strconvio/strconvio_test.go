@@ -1,4 +1,4 @@
-package strconvio
+package strconvio_test
 
 import (
 	"bytes"
@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	. "github.com/pierrre/go-libs/strconvio"
 )
 
 var writeBoolTestCases = []struct {
