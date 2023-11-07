@@ -1,6 +1,6 @@
 // Package goroutine helps to manage goroutines safely.
 //
-// It recovers panic with panichandle.
+// It recovers panic with [panichandle].
 package goroutine
 
 import (
@@ -32,8 +32,8 @@ func GoWait(f func()) (wait func()) {
 	}
 }
 
-// WaitGroup executes a function in a new goroutine with a WaitGroup.
-// It calls WaitGroup.Add() before starting it, and WaitGroup.Done() when the goroutine is terminated.
+// WaitGroup executes a function in a new goroutine with a [sync.WaitGroup].
+// It calls [sync.WaitGroup.Add] before starting it, and [sync.WaitGroup.Done] when the goroutine is terminated.
 func WaitGroup(wg *sync.WaitGroup, f func()) {
 	wg.Add(1)
 	Go(func() {

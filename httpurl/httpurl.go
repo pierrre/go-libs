@@ -6,7 +6,7 @@ import (
 	"net/url"
 )
 
-// Get returns the real URL of the HTTP request.
+// Get returns the real URL of the [http.Request].
 //
 // According to the Go HTTP documentation, the Scheme and Host fields are empty.
 // This function returns the expected URL.

@@ -5,14 +5,14 @@ import (
 	"io"
 )
 
-// ReaderSource is a math/rand.Source implementation that reads data from a io.Reader.
+// ReaderSource is a [math/rand.Source] implementation that reads data from a [io.Reader].
 //
-// It can be used with crypto/rand.Reader.
+// It can be used with [crypto/rand.Reader].
 type ReaderSource struct {
 	Reader io.Reader
 }
 
-// Int63 implements math/rand.Source.
+// Int63 implements [math/rand.Source].
 //
 // It panics if the reader returns an error.
 func (rs *ReaderSource) Int63() int64 {
@@ -21,7 +21,7 @@ func (rs *ReaderSource) Int63() int64 {
 	return int64(ui)
 }
 
-// Uint64 implements math/rand.Source64.
+// Uint64 implements [math/rand.Source64].
 //
 // It panics if the reader returns an error.
 func (rs *ReaderSource) Uint64() uint64 {
@@ -34,7 +34,7 @@ func (rs *ReaderSource) Uint64() uint64 {
 	return ui
 }
 
-// Seed implements math/rand.Source.
+// Seed implements [math/rand.Source].
 //
 // It's not supported and panics.
 func (rs *ReaderSource) Seed(seed int64) {

@@ -9,7 +9,7 @@ import (
 
 // Generate generates a random string from the given length and characters set.
 //
-// If the provided *rand.Rand is nil, the default global instance is used.
+// If the provided [rand.Rand] is nil, the default global instance is used.
 func Generate(n int, cs []rune, r *rand.Rand) string {
 	intn := rand.Intn
 	if r != nil {
