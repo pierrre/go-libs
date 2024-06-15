@@ -4,16 +4,17 @@
 package goroutine
 
 import (
+	"context"
 	"sync"
 
 	"github.com/pierrre/go-libs/panichandle"
 )
 
 // Go executes a function in a new goroutine.
-func Go(f func()) {
+func Go(ctx context.Context, f func(ctx context.Context)) {
 	go func() {
-		defer panichandle.Recover()
-		f()
+		defer panichandle.Recover(ctx)
+		f(ctx)
 	}()
 }
 
@@ -21,11 +22,11 @@ func Go(f func()) {
 //
 // It returns a function that blocks until the goroutine is terminated.
 // The caller must call this function.
-func GoWait(f func()) (wait func()) {
+func GoWait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 	ch := make(chan struct{})
-	Go(func() {
+	Go(ctx, func(ctx context.Context) {
 		defer close(ch)
-		f()
+		f(ctx)
 	})
 	return func() {
 		<-ch
@@ -34,22 +35,22 @@ func GoWait(f func()) (wait func()) {
 
 // WaitGroup executes a function in a new goroutine with a [sync.WaitGroup].
 // It calls [sync.WaitGroup.Add] before starting it, and [sync.WaitGroup.Done] when the goroutine is terminated.
-func WaitGroup(wg *sync.WaitGroup, f func()) {
+func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Context)) {
 	wg.Add(1)
-	Go(func() {
+	Go(ctx, func(ctx context.Context) {
 		defer wg.Done()
-		f()
+		f(ctx)
 	})
 }
 
 // N executes a function with multiple goroutines.
 // It blocks until all goroutines are terminated.
-func N(n int, f func(i int)) {
+func N(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	wg := new(sync.WaitGroup)
 	for i := 0; i < n; i++ {
 		i := i
-		WaitGroup(wg, func() {
-			f(i)
+		WaitGroup(ctx, wg, func(ctx context.Context) {
+			f(ctx, i)
 		})
 	}
 	wg.Wait()
@@ -57,12 +58,12 @@ func N(n int, f func(i int)) {
 
 // Slice executes a function with a different goroutine for each element of the slice.
 // It blocks until all goroutines are terminated.
-func Slice[E any](s []E, f func(i int, e E)) {
+func Slice[S ~[]E, E any](ctx context.Context, s S, f func(ctx context.Context, i int, e E)) {
 	wg := new(sync.WaitGroup)
 	for i, e := range s {
 		i, e := i, e
-		WaitGroup(wg, func() {
-			f(i, e)
+		WaitGroup(ctx, wg, func(ctx context.Context) {
+			f(ctx, i, e)
 		})
 	}
 	wg.Wait()
@@ -70,12 +71,12 @@ func Slice[E any](s []E, f func(i int, e E)) {
 
 // Map executes a function with a different goroutine for each element of the map.
 // It blocks until all goroutines are terminated.
-func Map[M ~map[K]V, K comparable, V any](m M, f func(k K, v V)) {
+func Map[M ~map[K]V, K comparable, V any](ctx context.Context, m M, f func(ctx context.Context, k K, v V)) {
 	wg := new(sync.WaitGroup)
 	for k, v := range m {
 		k, v := k, v
-		WaitGroup(wg, func() {
-			f(k, v)
+		WaitGroup(ctx, wg, func(ctx context.Context) {
+			f(ctx, k, v)
 		})
 	}
 	wg.Wait()

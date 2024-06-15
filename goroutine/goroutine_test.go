@@ -1,6 +1,7 @@
 package goroutine
 
 import (
+	"context"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -9,9 +10,10 @@ import (
 )
 
 func TestGo(t *testing.T) {
+	ctx := context.Background()
 	var called int64
 	done := make(chan struct{})
-	Go(func() {
+	Go(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 		close(done)
 	})
@@ -20,9 +22,10 @@ func TestGo(t *testing.T) {
 }
 
 func TestGoAllocs(t *testing.T) {
+	ctx := context.Background()
 	done := make(chan struct{})
 	assert.AllocsPerRun(t, 100, func() {
-		Go(func() {
+		Go(ctx, func(ctx context.Context) {
 			done <- struct{}{}
 		})
 		<-done
@@ -30,8 +33,9 @@ func TestGoAllocs(t *testing.T) {
 }
 
 func TestGoWait(t *testing.T) {
+	ctx := context.Background()
 	var called int64
-	wait := GoWait(func() {
+	wait := GoWait(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 	})
 	wait()
@@ -39,16 +43,18 @@ func TestGoWait(t *testing.T) {
 }
 
 func TestGoWaitAllocs(t *testing.T) {
+	ctx := context.Background()
 	assert.AllocsPerRun(t, 100, func() {
-		wait := GoWait(func() {})
+		wait := GoWait(ctx, func(ctx context.Context) {})
 		wait()
 	}, 4)
 }
 
 func TestWaitGroup(t *testing.T) {
+	ctx := context.Background()
 	wg := new(sync.WaitGroup)
 	var called int64
-	WaitGroup(wg, func() {
+	WaitGroup(ctx, wg, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 	})
 	wg.Wait()
@@ -56,18 +62,20 @@ func TestWaitGroup(t *testing.T) {
 }
 
 func TestWaitGroupAllocs(t *testing.T) {
+	ctx := context.Background()
 	wg := new(sync.WaitGroup)
 	assert.AllocsPerRun(t, 100, func() {
-		WaitGroup(wg, func() {})
+		WaitGroup(ctx, wg, func(ctx context.Context) {})
 		wg.Wait()
 	}, 2)
 }
 
 func TestN(t *testing.T) {
+	ctx := context.Background()
 	count := 10
 	mu := new(sync.Mutex)
 	is := make(map[int]struct{})
-	N(count, func(i int) {
+	N(ctx, count, func(ctx context.Context, i int) {
 		mu.Lock()
 		defer mu.Unlock()
 		is[i] = struct{}{}
@@ -80,10 +88,11 @@ func TestN(t *testing.T) {
 }
 
 func TestSlice(t *testing.T) {
+	ctx := context.Background()
 	s := []string{"a", "b", "c"}
 	mu := new(sync.Mutex)
 	res := make([]string, len(s))
-	Slice(s, func(i int, e string) {
+	Slice(ctx, s, func(ctx context.Context, i int, e string) {
 		mu.Lock()
 		defer mu.Unlock()
 		res[i] = e
@@ -92,10 +101,11 @@ func TestSlice(t *testing.T) {
 }
 
 func TestMap(t *testing.T) {
+	ctx := context.Background()
 	m := map[string]int{"a": 1, "b": 2, "c": 3}
 	mu := new(sync.Mutex)
 	res := make(map[string]int)
-	Map(m, func(k string, v int) {
+	Map(ctx, m, func(ctx context.Context, k string, v int) {
 		mu.Lock()
 		defer mu.Unlock()
 		res[k] = v
