@@ -55,6 +55,8 @@ func N(n int, f func(i int)) {
 	wg.Wait()
 }
 
+func foo() {}
+
 // Slice executes a function with a different goroutine for each element of the slice.
 // It blocks until all goroutines are terminated.
 func Slice[E any](s []E, f func(i int, e E)) {

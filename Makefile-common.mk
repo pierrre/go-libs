@@ -49,7 +49,7 @@ lint:
 	$(MAKE) golangci-lint
 	$(MAKE) lint-rules
 
-# version:
+# Version:
 # - tag: vX.Y.Z
 # - branch: master
 # - latest
@@ -58,6 +58,11 @@ GOLANGCI_LINT_VERSION?=v1.56.2
 # - binary
 # - source
 GOLANGCI_LINT_TYPE?=binary
+# Colored output:
+# - always
+# - auto
+# - never
+GOLANGCI_LINT_COLOR?=auto
 
 ifeq ($(GOLANGCI_LINT_TYPE),binary)
 
@@ -78,7 +83,7 @@ install-golangci-lint:
 
 endif
 
-GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) $(VERBOSE_FLAG) run
+GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) $(VERBOSE_FLAG) --color=$(GOLANGCI_LINT_COLOR) run
 .PHONY: golangci-lint
 golangci-lint: install-golangci-lint
 ifeq ($(CI),true)
