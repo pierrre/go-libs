@@ -9,11 +9,11 @@ import (
 	"github.com/pierrre/assert"
 )
 
-func TestGo(t *testing.T) {
+func TestStart(t *testing.T) {
 	ctx := context.Background()
 	var called int64
 	done := make(chan struct{})
-	Go(ctx, func(ctx context.Context) {
+	Start(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 		close(done)
 	})
@@ -21,31 +21,31 @@ func TestGo(t *testing.T) {
 	assert.Equal(t, called, 1)
 }
 
-func TestGoAllocs(t *testing.T) {
+func TestStartAllocs(t *testing.T) {
 	ctx := context.Background()
 	done := make(chan struct{})
 	assert.AllocsPerRun(t, 100, func() {
-		Go(ctx, func(ctx context.Context) {
+		Start(ctx, func(ctx context.Context) {
 			done <- struct{}{}
 		})
 		<-done
 	}, 2)
 }
 
-func TestGoWait(t *testing.T) {
+func TestWait(t *testing.T) {
 	ctx := context.Background()
 	var called int64
-	wait := GoWait(ctx, func(ctx context.Context) {
+	wait := Wait(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 	})
 	wait()
 	assert.Equal(t, called, 1)
 }
 
-func TestGoWaitAllocs(t *testing.T) {
+func TestWaitAllocs(t *testing.T) {
 	ctx := context.Background()
 	assert.AllocsPerRun(t, 100, func() {
-		wait := GoWait(ctx, func(ctx context.Context) {})
+		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
 	}, 4)
 }

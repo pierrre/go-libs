@@ -10,21 +10,20 @@ import (
 	"github.com/pierrre/go-libs/panichandle"
 )
 
-// Go executes a function in a new goroutine.
-func Go(ctx context.Context, f func(ctx context.Context)) {
+// Start executes a function in a new goroutine.
+func Start(ctx context.Context, f func(ctx context.Context)) {
 	go func() {
 		defer panichandle.Recover(ctx)
 		f(ctx)
 	}()
 }
 
-// GoWait executes a function in a new goroutine.
-//
+// Wait executes a function in a new goroutine and allows to wait until it terminates.
 // It returns a function that blocks until the goroutine is terminated.
 // The caller must call this function.
-func GoWait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
+func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 	ch := make(chan struct{})
-	Go(ctx, func(ctx context.Context) {
+	Start(ctx, func(ctx context.Context) {
 		defer close(ch)
 		f(ctx)
 	})
@@ -37,7 +36,7 @@ func GoWait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 // It calls [sync.WaitGroup.Add] before starting it, and [sync.WaitGroup.Done] when the goroutine is terminated.
 func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Context)) {
 	wg.Add(1)
-	Go(ctx, func(ctx context.Context) {
+	Start(ctx, func(ctx context.Context) {
 		defer wg.Done()
 		f(ctx)
 	})
