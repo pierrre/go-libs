@@ -17,10 +17,10 @@ func TestRecoverNoPanicWithoutHandler(t *testing.T) {
 func TestRecoverNoPanicWitHandler(t *testing.T) {
 	ctx := context.Background()
 	defer func() {
-		Handle = nil
+		DefaultHandler = nil
 	}()
 	called := false
-	Handle = func(ctx context.Context, r any) {
+	DefaultHandler = func(ctx context.Context, r any) {
 		called = true
 	}
 	defer func() {
@@ -42,10 +42,10 @@ func TestRecoverPanicWithoutHandler(t *testing.T) {
 func TestRecoverPanicWithHandler(t *testing.T) {
 	ctx := context.Background()
 	defer func() {
-		Handle = nil
+		DefaultHandler = nil
 	}()
 	called := false
-	Handle = func(ctx context.Context, r any) {
+	DefaultHandler = func(ctx context.Context, r any) {
 		called = true
 		assert.NotZero(t, r)
 	}
@@ -54,6 +54,34 @@ func TestRecoverPanicWithHandler(t *testing.T) {
 	}()
 	defer Recover(ctx)
 	panic("test")
+}
+
+func TestSetHandlerToContext(t *testing.T) {
+	ctx := context.Background()
+	h := func(ctx context.Context, r any) {}
+	ctx = SetHandlerToContext(ctx, h)
+	h = GetHandlerFromContext(ctx)
+	assert.True(t, h != nil)
+}
+
+func TestGetHandlerFromContextNotSet(t *testing.T) {
+	ctx := context.Background()
+	h := GetHandlerFromContext(ctx)
+	assert.True(t, h == nil)
+}
+
+func TestGetHandlerContextSet(t *testing.T) {
+	ctx := context.Background()
+	h := func(ctx context.Context, r any) {}
+	ctx = SetHandlerToContext(ctx, h)
+	h = GetHandler(ctx)
+	assert.True(t, h != nil)
+}
+
+func TestGetHandlerDefault(t *testing.T) {
+	ctx := context.Background()
+	h := GetHandler(ctx)
+	assert.True(t, h == nil)
 }
 
 func TestErrorHandlerString(t *testing.T) {
