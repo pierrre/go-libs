@@ -7,11 +7,35 @@ import (
 	"os"
 )
 
-// Handle handles error.
-var Handle Handler = StderrHandler
+// DefaultHandler is the default [Handler].
+var DefaultHandler Handler = StderrHandler
 
 // Handler is a function that handles error.
 type Handler func(ctx context.Context, err error)
+
+type contextKey struct{}
+
+// SetHandlerToContext sets a [Handler] to a [context.Context].
+func SetHandlerToContext(ctx context.Context, h Handler) context.Context {
+	return context.WithValue(ctx, contextKey{}, h)
+}
+
+// GetHandlerFromContext gets a [Handler] from a [context.Context].
+//
+// It returns nil if no [Handler] is set.
+func GetHandlerFromContext(ctx context.Context) Handler {
+	h, _ := ctx.Value(contextKey{}).(Handler)
+	return h
+}
+
+// GetHandler gets a [Handler] from a [context.Context] or the DefaultHandler.
+func GetHandler(ctx context.Context) Handler {
+	h := GetHandlerFromContext(ctx)
+	if h != nil {
+		return h
+	}
+	return DefaultHandler
+}
 
 // Handlers is a list of [Handler].
 //

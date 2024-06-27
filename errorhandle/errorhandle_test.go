@@ -8,6 +8,34 @@ import (
 	"github.com/pierrre/assert"
 )
 
+func TestSetHandlerToContext(t *testing.T) {
+	ctx := context.Background()
+	h := func(ctx context.Context, err error) {}
+	ctx = SetHandlerToContext(ctx, h)
+	h = GetHandlerFromContext(ctx)
+	assert.True(t, h != nil)
+}
+
+func TestGetHandlerFromContextNotSet(t *testing.T) {
+	ctx := context.Background()
+	h := GetHandlerFromContext(ctx)
+	assert.True(t, h == nil)
+}
+
+func TestGetHandlerContextSet(t *testing.T) {
+	ctx := context.Background()
+	h := func(ctx context.Context, err error) {}
+	ctx = SetHandlerToContext(ctx, h)
+	h = GetHandler(ctx)
+	assert.True(t, h != nil)
+}
+
+func TestGetHandlerDefault(t *testing.T) {
+	ctx := context.Background()
+	h := GetHandler(ctx)
+	assert.True(t, h != nil)
+}
+
 func TestHandlers(t *testing.T) {
 	ctx := context.Background()
 	called := make([]int, 2)
