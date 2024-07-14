@@ -28,13 +28,18 @@ func GetHandlerFromContext(ctx context.Context) Handler {
 	return h
 }
 
-// GetHandler gets a [Handler] from a [context.Context] or the DefaultHandler.
+// GetHandler gets a [Handler] from a [context.Context] or the [DefaultHandler].
 func GetHandler(ctx context.Context) Handler {
 	h := GetHandlerFromContext(ctx)
 	if h != nil {
 		return h
 	}
 	return DefaultHandler
+}
+
+// Handle calls the [Handler] returned by [GetHandler].
+func Handle(ctx context.Context, err error) {
+	GetHandler(ctx)(ctx, err)
 }
 
 // Handlers is a list of [Handler].
@@ -62,7 +67,7 @@ func (f FilterHandler) Handle(ctx context.Context, err error) {
 	}
 }
 
-// StderrHandler is a [Handler] that writes the error to os.Stderr.
+// StderrHandler is a [Handler] that writes the error to [os.Stderr].
 func StderrHandler(ctx context.Context, err error) {
 	_, _ = fmt.Fprintln(os.Stderr, err)
 }

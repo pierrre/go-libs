@@ -36,6 +36,17 @@ func TestGetHandlerDefault(t *testing.T) {
 	assert.True(t, h != nil)
 }
 
+func TestHandle(t *testing.T) {
+	ctx := context.Background()
+	called := false
+	h := func(ctx context.Context, err error) {
+		called = true
+	}
+	ctx = SetHandlerToContext(ctx, h)
+	Handle(ctx, errors.New("error"))
+	assert.True(t, called)
+}
+
 func TestHandlers(t *testing.T) {
 	ctx := context.Background()
 	called := make([]int, 2)
