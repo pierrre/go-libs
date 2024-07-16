@@ -43,7 +43,9 @@ func GetHandlerFromContext(ctx context.Context) Handler {
 	return h
 }
 
-// GetHandler gets a [Handler] from a [context.Context] or the DefaultHandler.
+// GetHandler gets a [Handler] from a [context.Context] or the [DefaultHandler].
+//
+// It may return nil.
 func GetHandler(ctx context.Context) Handler {
 	h := GetHandlerFromContext(ctx)
 	if h != nil {
@@ -52,9 +54,9 @@ func GetHandler(ctx context.Context) Handler {
 	return DefaultHandler
 }
 
-// ErrorHandler is a [Handler] that converts the recovered value to [error] with Convert, and calls Handler.
+// ErrorHandler is a [Handler] that converts the recovered value to error with Convert, and calls Handler.
 //
-// If the recovered value is already an [error], Convert is not called.
+// If the recovered value is already an error, Convert is not called.
 type ErrorHandler struct {
 	Handler func(ctx context.Context, err error)
 	Convert func(r any) error
