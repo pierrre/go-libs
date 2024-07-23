@@ -1,0 +1,22 @@
+{
+	"entries": [
+		{
+			"equal": "string"
+		},
+		{
+			"equal": "int"
+		},
+		{
+			"equal": "*string"
+		},
+		{
+			"equal": "interface {}"
+		},
+		{
+			"equal": "reflect.Type"
+		},
+		{
+			"equal": "reflect.Value"
+		}
+	]
+}
