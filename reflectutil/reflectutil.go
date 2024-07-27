@@ -18,15 +18,21 @@ func TypeFullName(typ reflect.Type) string {
 	defer typeFullNameCacheMu.Unlock()
 	name, ok := typeFullNameCache[typ]
 	if !ok {
-		pkgPath := typ.PkgPath()
-		if pkgPath != "" {
-			name = pkgPath + "." + typ.Name()
-		} else {
-			name = typ.String()
-		}
+		name = typeFullName(typ)
 		typeFullNameCache[typ] = name
 	}
 	return name
+}
+
+func typeFullName(typ reflect.Type) string {
+	if typ.Kind() == reflect.Ptr {
+		return "*" + typeFullName(typ.Elem())
+	}
+	pkgPath := typ.PkgPath()
+	if pkgPath != "" {
+		return pkgPath + "." + typ.Name()
+	}
+	return typ.String()
 }
 
 // TypeFullNameFor returns the full name of the argument type.

@@ -2,6 +2,7 @@ package reflectutil_test
 
 import (
 	"reflect"
+	"sync/atomic"
 	"testing"
 
 	"github.com/pierrre/assert"
@@ -17,7 +18,11 @@ var types = []reflect.Type{
 	reflect.TypeFor[*string](),
 	reflect.TypeFor[any](),
 	reflect.TypeFor[reflect.Type](),
+	reflect.TypeFor[*reflect.Type](),
 	reflect.TypeFor[reflect.Value](),
+	reflect.TypeFor[*reflect.Value](),
+	reflect.TypeFor[atomic.Value](),
+	reflect.TypeFor[*atomic.Value](),
 }
 
 func TestTypeFullName(t *testing.T) {

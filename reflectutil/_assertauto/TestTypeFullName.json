@@ -16,7 +16,19 @@
 			"equal": "reflect.Type"
 		},
 		{
+			"equal": "*reflect.Type"
+		},
+		{
 			"equal": "reflect.Value"
+		},
+		{
+			"equal": "*reflect.Value"
+		},
+		{
+			"equal": "sync/atomic.Value"
+		},
+		{
+			"equal": "*sync/atomic.Value"
 		}
 	]
 }
