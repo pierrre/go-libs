@@ -43,7 +43,7 @@ func BenchmarkWriteBool(b *testing.B) {
 	for _, tc := range writeBoolTestCases {
 		b.Run(strconv.FormatBool(tc.b), func(b *testing.B) {
 			buf := new(bytes.Buffer)
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				buf.Reset()
 				_, _ = WriteBool(buf, tc.b)
 			}
@@ -89,7 +89,7 @@ func BenchmarkWriteFloat(b *testing.B) {
 	for _, tc := range writeFloatTestCases {
 		b.Run(strconv.FormatFloat(tc.f, 'f', -1, 64), func(b *testing.B) {
 			buf := new(bytes.Buffer)
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				buf.Reset()
 				_, _ = WriteFloat(buf, tc.f, 'f', -1, 64)
 			}
@@ -148,7 +148,7 @@ func BenchmarkWriteInt(b *testing.B) {
 	for _, tc := range writeIntTestCases {
 		b.Run(strconv.FormatInt(tc.i, 10), func(b *testing.B) {
 			buf := new(bytes.Buffer)
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				buf.Reset()
 				_, _ = WriteInt(buf, tc.i, 10)
 			}
@@ -199,7 +199,7 @@ func BenchmarkWriteUint(b *testing.B) {
 	for _, tc := range writeUintTestCases {
 		b.Run(strconv.FormatUint(tc.i, 10), func(b *testing.B) {
 			buf := new(bytes.Buffer)
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				buf.Reset()
 				_, _ = WriteUint(buf, tc.i, 10)
 			}
@@ -249,7 +249,7 @@ func BenchmarkWriteQuote(b *testing.B) {
 	for _, tc := range writeQuoteTestCases {
 		b.Run(tc.name, func(b *testing.B) {
 			buf := new(bytes.Buffer)
-			for n := 0; n < b.N; n++ {
+			for range b.N {
 				buf.Reset()
 				_, _ = WriteQuote(buf, tc.s)
 			}

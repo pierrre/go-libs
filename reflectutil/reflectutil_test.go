@@ -44,7 +44,7 @@ func BenchmarkTypeFullName(b *testing.B) {
 	for _, typ := range types {
 		b.Run(TypeFullName(typ), func(b *testing.B) {
 			var res string
-			for i := 0; i < b.N; i++ {
+			for range b.N {
 				res = TypeFullName(typ)
 			}
 			benchRes = res

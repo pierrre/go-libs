@@ -81,7 +81,7 @@ func TestN(t *testing.T) {
 		is[i] = struct{}{}
 	})
 	isExpected := make(map[int]struct{})
-	for i := 0; i < count; i++ {
+	for i := range count {
 		isExpected[i] = struct{}{}
 	}
 	assert.MapEqual(t, is, isExpected)

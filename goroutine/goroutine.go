@@ -46,7 +46,7 @@ func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Conte
 // It blocks until all goroutines are terminated.
 func N(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	wg := new(sync.WaitGroup)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		i := i
 		WaitGroup(ctx, wg, func(ctx context.Context) {
 			f(ctx, i)

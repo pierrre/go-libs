@@ -7,7 +7,7 @@ import (
 
 func Test(t *testing.T) {
 	p := &Pool{}
-	for i := 0; i < 10; i++ {
+	for range 10 {
 		buf := p.Get()
 		p.Put(buf)
 	}
@@ -20,9 +20,9 @@ var benchmarkResult string
 func BenchmarkBufPool(b *testing.B) {
 	p := &Pool{}
 	var s string
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		buf := p.Get()
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			buf.WriteString(testBenchData)
 		}
 		s = buf.String()
@@ -33,9 +33,9 @@ func BenchmarkBufPool(b *testing.B) {
 
 func BenchmarkBufWithoutPool(b *testing.B) {
 	var s string
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		buf := new(bytes.Buffer)
-		for j := 0; j < 10; j++ {
+		for range 10 {
 			buf.WriteString(testBenchData)
 		}
 		s = buf.String()

@@ -17,7 +17,7 @@ func Generate(n int, cs []rune, r *rand.Rand) string {
 	}
 	buf := bufPool.Get()
 	defer bufPool.Put(buf)
-	for i := 0; i < n; i++ {
+	for range n {
 		buf.WriteRune(cs[intn(len(cs))])
 	}
 	return buf.String()
