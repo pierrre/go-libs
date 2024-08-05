@@ -23,9 +23,9 @@ func TestConvertValueCanInterfaceOK(t *testing.T) {
 func TestConvertValueCanInterfacePointer(t *testing.T) {
 	s1 := "test"
 	p1 := &s1
-	v := reflect.ValueOf(&testStruct{
+	v := reflect.ValueOf(testStruct{
 		pointer: p1,
-	}).Elem().FieldByName("pointer")
+	}).FieldByName("pointer")
 	assert.False(t, v.CanInterface())
 	v = ConvertValueCanInterface(v)
 	assert.True(t, v.CanInterface())
@@ -40,9 +40,9 @@ func TestConvertValueCanInterfacePointerPointer(t *testing.T) {
 	s1 := "test"
 	p1 := &s1
 	pp1 := &p1
-	v := reflect.ValueOf(&testStruct{
+	v := reflect.ValueOf(testStruct{
 		pointerPointer: pp1,
-	}).Elem().FieldByName("pointerPointer")
+	}).FieldByName("pointerPointer")
 	assert.False(t, v.CanInterface())
 	v = ConvertValueCanInterface(v)
 	assert.True(t, v.CanInterface())
