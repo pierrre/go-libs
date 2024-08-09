@@ -45,9 +45,15 @@ TEST_COVER_FLAGS=-cover -coverprofile=coverage.out
 else
 TEST_COVER_FLAGS=
 endif
+TEST_COUNT?=
+ifneq ($(TEST_COUNT),)
+TEST_COUNT_FLAG=-count=$(TEST_COUNT)
+else
+TEST_COUNT_FLAG=
+endif
 .PHONY: test
 test:
-	go test $(VERBOSE_FLAG) $(TEST_FULLPATH_FLAG) $(TEST_COVER_FLAGS) ./...
+	go test $(VERBOSE_FLAG) $(TEST_FULLPATH_FLAG) $(TEST_COVER_FLAGS) $(TEST_COUNT_FLAG) ./...
 ifeq ($(TEST_COVER),true)
 	go tool cover -func=coverage.out -o=coverage.txt
 ifeq ($(VERBOSE),true)
