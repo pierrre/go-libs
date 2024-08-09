@@ -170,6 +170,11 @@ mod-update:
 	$(GO_GET) -u all
 	$(MAKE) mod-tidy
 
+.PHONY: mod-update-pierrre
+mod-update-pierrre:
+	GOWORK=off $(GO_LIST) -m -u -json all | jq -r 'select(.Main==null and (.Path | startswith("github.com/pierrre/")) and .Update!=null) | .Path' | xargs -I {} -t $(GO_GET) -u {}
+	$(MAKE) mod-tidy
+
 .PHONY: mod-tidy
 mod-tidy:
 	$(GO_MOD) tidy$(VERBOSE_FLAG)

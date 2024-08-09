@@ -44,6 +44,10 @@ all-lint-rules:
 all-mod-update: all-copy-common
 	$(call ALL_RUN,make mod-update)
 
+.PHONY: all-mod-update-pierrre
+all-mod-update-pierrre: all-copy-common
+	$(call ALL_RUN,make mod-update-pierrre)
+
 .PHONY: all-mod-tidy
 all-mod-tidy:
 	$(call ALL_RUN,make mod-tidy)
