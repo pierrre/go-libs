@@ -28,12 +28,12 @@ version:
 
 GO_MODULE=$(shell go list -m)
 
-GO_BUILD_DIR=build
+BUILD_DIR=build
 .PHONY: build
 build:
-ifneq ($(wildcard ./cmd/*),)
-	mkdir -p $(GO_BUILD_DIR)
-	go build$(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
+ifneq ($(wildcard ./cmd/*/*.go),)
+	mkdir -p $(BUILD_DIR)
+	go build$(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(BUILD_DIR) ./cmd/...
 endif
 
 TEST_FULLPATH?=false
