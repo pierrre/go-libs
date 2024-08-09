@@ -26,7 +26,15 @@ VERSION?=$(shell (git describe --tags --exact-match 2> /dev/null || git rev-pars
 version:
 	@echo $(VERSION)
 
-GO_MODULE=$(shell go list -m)
+GO?=go
+GO_RUN=$(GO) run$(VERBOSE_FLAG)
+GO_GET=$(GO) get$(VERBOSE_FLAG)
+GO_LIST=$(GO) list$(VERBOSE_FLAG)
+GO_MOD=$(GO) mod
+GO_TOOL=$(GO) tool
+GO_TOOL_COVER=$(GO_TOOL) cover
+
+GO_MODULE=$(shell $(GO_LIST) -m)
 
 GO_TAGS?=
 GO_PURE?=false
@@ -44,7 +52,7 @@ BUILD_DIR=build
 build:
 ifneq ($(wildcard ./cmd/*/*.go),)
 	mkdir -p $(BUILD_DIR)
-	go build$(VERBOSE_FLAG)$(GO_TAGS_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(BUILD_DIR) ./cmd/...
+	$(GO) build$(VERBOSE_FLAG)$(GO_TAGS_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(BUILD_DIR) ./cmd/...
 endif
 
 TEST_FULLPATH?=false
@@ -67,18 +75,18 @@ TEST_COUNT_FLAG=
 endif
 .PHONY: test
 test:
-	go test$(VERBOSE_FLAG)$(TEST_FULLPATH_FLAG)$(GO_TAGS_FLAG)$(TEST_COVER_FLAGS)$(TEST_COUNT_FLAG) ./...
+	$(GO) test$(VERBOSE_FLAG)$(TEST_FULLPATH_FLAG)$(GO_TAGS_FLAG)$(TEST_COVER_FLAGS)$(TEST_COUNT_FLAG) ./...
 ifeq ($(TEST_COVER),true)
-	go tool cover -func=coverage.out -o=coverage.txt
+	$(GO_TOOL_COVER) -func=coverage.out -o=coverage.txt
 ifeq ($(VERBOSE),true)
 	cat coverage.txt
 endif
-	go tool cover -html=coverage.out -o=coverage.html
+	$(GO_TOOL_COVER) -html=coverage.out -o=coverage.html
 endif
 
 .PHONY: generate
 generate::
-	go generate$(VERBOSE_FLAG) ./...
+	$(GO) generate$(VERBOSE_FLAG) ./...
 
 .PHONY: lint
 lint:
@@ -97,7 +105,7 @@ GOLANGCI_LINT_TYPE?=binary
 
 ifeq ($(GOLANGCI_LINT_TYPE),binary)
 
-GOLANGCI_LINT_DIR=$(shell go env GOPATH)/pkg/golangci-lint/$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT_DIR=$(shell $(GO) env GOPATH)/pkg/golangci-lint/$(GOLANGCI_LINT_VERSION)
 GOLANGCI_LINT_BIN=$(GOLANGCI_LINT_DIR)/golangci-lint
 
 $(GOLANGCI_LINT_BIN):
@@ -108,7 +116,7 @@ install-golangci-lint: $(GOLANGCI_LINT_BIN)
 
 else ifeq ($(GOLANGCI_LINT_TYPE),source)
 
-GOLANGCI_LINT_BIN=go run$(VERBOSE_FLAG) github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT_BIN=$(GO_RUN) github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 install-golangci-lint:
 
@@ -159,12 +167,12 @@ lint-rules:
 
 .PHONY: mod-update
 mod-update:
-	go get$(VERBOSE_FLAG) -u all
+	$(GO_GET) -u all
 	$(MAKE) mod-tidy
 
 .PHONY: mod-tidy
 mod-tidy:
-	go mod tidy$(VERBOSE_FLAG)
+	$(GO_MOD) tidy$(VERBOSE_FLAG)
 
 .PHONY: git-latest-release
 git-latest-release:
@@ -215,7 +223,7 @@ ci::
 
 .PHONY: ci-tag
 ci-tag:
-	GOPROXY=proxy.golang.org go list -x -m $(GO_MODULE)@$(GITHUB_TAG)
+	GOPROXY=proxy.golang.org $(GO_LIST) -x -m $(GO_MODULE)@$(GITHUB_TAG)
 endif
 
 endif # CI end
