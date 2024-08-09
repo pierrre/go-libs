@@ -28,12 +28,23 @@ version:
 
 GO_MODULE=$(shell go list -m)
 
+GO_TAGS?=
+GO_PURE?=false
+ifeq ($(GO_PURE),true)
+override GO_TAGS:=$(GO_TAGS),purego
+endif
+ifneq ($(GO_TAGS),)
+GO_TAGS_FLAG=$(SPACE)-tags=$(GO_TAGS)
+else
+GO_TAGS_FLAG=
+endif
+
 BUILD_DIR=build
 .PHONY: build
 build:
 ifneq ($(wildcard ./cmd/*/*.go),)
 	mkdir -p $(BUILD_DIR)
-	go build$(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(BUILD_DIR) ./cmd/...
+	go build$(VERBOSE_FLAG)$(GO_TAGS_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(BUILD_DIR) ./cmd/...
 endif
 
 TEST_FULLPATH?=false
@@ -56,7 +67,7 @@ TEST_COUNT_FLAG=
 endif
 .PHONY: test
 test:
-	go test$(VERBOSE_FLAG)$(TEST_FULLPATH_FLAG)$(TEST_COVER_FLAGS)$(TEST_COUNT_FLAG) ./...
+	go test$(VERBOSE_FLAG)$(TEST_FULLPATH_FLAG)$(GO_TAGS_FLAG)$(TEST_COVER_FLAGS)$(TEST_COUNT_FLAG) ./...
 ifeq ($(TEST_COVER),true)
 	go tool cover -func=coverage.out -o=coverage.txt
 ifeq ($(VERBOSE),true)
