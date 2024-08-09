@@ -1,6 +1,9 @@
 .DEFAULT_GOAL=noop
 .DELETE_ON_ERROR:
 
+NULL:=
+SPACE:=$(NULL) $(NULL)
+
 .PHONY: noop
 noop:
 
@@ -13,7 +16,7 @@ endif
 
 VERBOSE?=false
 ifeq ($(VERBOSE),true)
-VERBOSE_FLAG=-v
+VERBOSE_FLAG=$(SPACE)-v
 else
 VERBOSE_FLAG=
 endif
@@ -30,30 +33,30 @@ GO_BUILD_DIR=build
 build:
 ifneq ($(wildcard ./cmd/*),)
 	mkdir -p $(GO_BUILD_DIR)
-	go build $(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
+	go build$(VERBOSE_FLAG) -ldflags="-s -w -X main.version=$(VERSION)" -o $(GO_BUILD_DIR) ./cmd/...
 endif
 
 TEST_FULLPATH?=false
 ifeq ($(TEST_FULLPATH),true)
-TEST_FULLPATH_FLAG=-fullpath
+TEST_FULLPATH_FLAG=$(SPACE)-fullpath
 else
 TEST_FULLPATH_FLAG=
 endif
 TEST_COVER?=false
 ifeq ($(TEST_COVER),true)
-TEST_COVER_FLAGS=-cover -coverprofile=coverage.out
+TEST_COVER_FLAGS=$(SPACE)-cover -coverprofile=coverage.out
 else
 TEST_COVER_FLAGS=
 endif
 TEST_COUNT?=
 ifneq ($(TEST_COUNT),)
-TEST_COUNT_FLAG=-count=$(TEST_COUNT)
+TEST_COUNT_FLAG=$(SPACE)-count=$(TEST_COUNT)
 else
 TEST_COUNT_FLAG=
 endif
 .PHONY: test
 test:
-	go test $(VERBOSE_FLAG) $(TEST_FULLPATH_FLAG) $(TEST_COVER_FLAGS) $(TEST_COUNT_FLAG) ./...
+	go test$(VERBOSE_FLAG)$(TEST_FULLPATH_FLAG)$(TEST_COVER_FLAGS)$(TEST_COUNT_FLAG) ./...
 ifeq ($(TEST_COVER),true)
 	go tool cover -func=coverage.out -o=coverage.txt
 ifeq ($(VERBOSE),true)
@@ -64,7 +67,7 @@ endif
 
 .PHONY: generate
 generate::
-	go generate $(VERBOSE_FLAG) ./...
+	go generate$(VERBOSE_FLAG) ./...
 
 .PHONY: lint
 lint:
@@ -87,20 +90,20 @@ GOLANGCI_LINT_DIR=$(shell go env GOPATH)/pkg/golangci-lint/$(GOLANGCI_LINT_VERSI
 GOLANGCI_LINT_BIN=$(GOLANGCI_LINT_DIR)/golangci-lint
 
 $(GOLANGCI_LINT_BIN):
-	curl $(VERBOSE_FLAG) -fL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
+	curl$(VERBOSE_FLAG) -fL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(GOLANGCI_LINT_DIR) $(GOLANGCI_LINT_VERSION)
 
 .PHONY: install-golangci-lint
 install-golangci-lint: $(GOLANGCI_LINT_BIN)
 
 else ifeq ($(GOLANGCI_LINT_TYPE),source)
 
-GOLANGCI_LINT_BIN=go run $(VERBOSE_FLAG) github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
+GOLANGCI_LINT_BIN=go run$(VERBOSE_FLAG) github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCI_LINT_VERSION)
 
 install-golangci-lint:
 
 endif
 
-GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN) $(VERBOSE_FLAG) run
+GOLANGCI_LINT_RUN=$(GOLANGCI_LINT_BIN)$(VERBOSE_FLAG) run
 .PHONY: golangci-lint
 golangci-lint: install-golangci-lint
 ifeq ($(CI),true)
@@ -145,12 +148,12 @@ lint-rules:
 
 .PHONY: mod-update
 mod-update:
-	go get $(VERBOSE_FLAG) -u all
+	go get$(VERBOSE_FLAG) -u all
 	$(MAKE) mod-tidy
 
 .PHONY: mod-tidy
 mod-tidy:
-	go mod tidy $(VERBOSE_FLAG)
+	go mod tidy$(VERBOSE_FLAG)
 
 .PHONY: git-latest-release
 git-latest-release:
