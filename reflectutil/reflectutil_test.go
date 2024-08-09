@@ -28,7 +28,7 @@ var types = []reflect.Type{
 func TestTypeFullName(t *testing.T) {
 	for _, typ := range types {
 		s := TypeFullName(typ)
-		assertauto.Equal(t, s, assert.MessageWrap(s))
+		assertauto.Equal(t, s, assertauto.AssertOptions(assert.MessageWrap(s)))
 	}
 }
 
