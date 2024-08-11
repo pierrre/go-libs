@@ -12,19 +12,83 @@ import (
 
 var benchRes any
 
-var types = []reflect.Type{
-	reflect.TypeFor[string](),
-	reflect.TypeFor[**********string](),
-	reflect.TypeFor[chan map[string][][2]*string](),
-	reflect.TypeFor[testType](),
-	reflect.TypeFor[*testType](),
-	reflect.TypeFor[chan map[string][][2]*testType](),
-	reflect.TypeFor[testPointer](),
-	reflect.TypeFor[*testPointer](),
-	reflect.TypeFor[chan map[string][][2]*testPointer](),
-	reflect.TypeFor[testContainer[testType]](),
-	reflect.TypeFor[*testContainer[testType]](),
-	reflect.TypeFor[chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
+type typeFullNameVariantTestCase struct {
+	name    string
+	newFunc func(tc typeFullNameTestCase) func() string
+}
+
+var typeFullNameVariantTestCases = []typeFullNameVariantTestCase{
+	{
+		name: "Normal",
+		newFunc: func(tc typeFullNameTestCase) func() string {
+			return func() string {
+				return TypeFullName(tc.typ)
+			}
+		},
+	},
+	{
+		name: "Internal",
+		newFunc: func(tc typeFullNameTestCase) func() string {
+			return func() string {
+				return TypeFullNameInternal(tc.typ)
+			}
+		},
+	},
+	{
+		name: "For",
+		newFunc: func(tc typeFullNameTestCase) func() string {
+			return tc.forFunc
+		},
+	},
+}
+
+func runTypeFullNameVariantTestCases[TB interface {
+	testing.TB
+	Run(name string, f func(TB)) bool
+}](tb TB, f func(tb TB, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase)) {
+	for _, variantTC := range typeFullNameVariantTestCases {
+		tb.Run(variantTC.name, func(tb TB) {
+			runTypeFullNameTestCases(tb, func(tb TB, tc typeFullNameTestCase) {
+				f(tb, variantTC, tc)
+			})
+		})
+	}
+}
+
+type typeFullNameTestCase struct {
+	typ     reflect.Type
+	forFunc func() string
+}
+
+func newTypeFullNameTestCase[T any]() typeFullNameTestCase {
+	return typeFullNameTestCase{
+		typ:     reflect.TypeFor[T](),
+		forFunc: TypeFullNameFor[T],
+	}
+}
+
+var typeFullNameTestCases = []typeFullNameTestCase{
+	newTypeFullNameTestCase[string](),
+	newTypeFullNameTestCase[**********string](),
+	newTypeFullNameTestCase[chan map[string][][2]*string](),
+	newTypeFullNameTestCase[testType](),
+	newTypeFullNameTestCase[*testType](),
+	newTypeFullNameTestCase[chan map[string][][2]*testType](),
+	newTypeFullNameTestCase[testPointer](),
+	newTypeFullNameTestCase[*testPointer](),
+	newTypeFullNameTestCase[chan map[string][][2]*testPointer](),
+	newTypeFullNameTestCase[testContainer[testType]](),
+	newTypeFullNameTestCase[*testContainer[testType]](),
+	newTypeFullNameTestCase[chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
+}
+
+func runTypeFullNameTestCases[TB interface {
+	testing.TB
+	Run(name string, f func(TB)) bool
+}](tb TB, f func(tb TB, tc typeFullNameTestCase)) {
+	for _, tc := range typeFullNameTestCases {
+		f(tb, tc)
+	}
 }
 
 type testType struct{}
@@ -38,45 +102,26 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 }
 
 func TestTypeFullName(t *testing.T) {
-	for _, typ := range types {
-		assertauto.Equal(t, TypeFullName(typ), assertauto.Name("name"))
+	runTypeFullNameVariantTestCases(t, func(t *testing.T, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // THis is not a test helper.
+		f := variantTC.newFunc(tc)
+		assertauto.Equal(t, f(), assertauto.Name("name"))
 		assertauto.AllocsPerRun(t, 100, func() {
-			_ = TypeFullName(typ)
+			_ = f()
 		}, assertauto.Name("allocs"))
-	}
+	})
 }
 
 func BenchmarkTypeFullName(b *testing.B) {
-	for _, typ := range types {
-		b.Run(getTypeFullNameTestName(typ), func(b *testing.B) {
+	runTypeFullNameVariantTestCases(b, func(b *testing.B, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // THis is not a test helper.
+		f := variantTC.newFunc(tc)
+		b.Run(getTypeFullNameTestName(tc.typ), func(b *testing.B) {
 			var res string
 			for range b.N {
-				res = TypeFullName(typ)
+				res = f()
 			}
 			benchRes = res
 		})
-	}
-}
-
-func TestTypeFullNameInternal(t *testing.T) {
-	for _, typ := range types {
-		assertauto.Equal(t, TypeFullNameInternal(typ), assertauto.Name("name"))
-		assertauto.AllocsPerRun(t, 100, func() {
-			_ = TypeFullNameInternal(typ)
-		}, assertauto.Name("allocs"))
-	}
-}
-
-func BenchmarkTypeFullNameInternal(b *testing.B) {
-	for _, typ := range types {
-		b.Run(getTypeFullNameTestName(typ), func(b *testing.B) {
-			var res string
-			for range b.N {
-				res = TypeFullNameInternal(typ)
-			}
-			benchRes = res
-		})
-	}
+	})
 }
 
 func TestValueInterfaceFor(t *testing.T) {

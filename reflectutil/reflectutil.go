@@ -46,6 +46,18 @@ func typeFullName(typ reflect.Type) string {
 	return typ.String()
 }
 
+func TypeFullNameFor[T any]() string {
+	s := reflect.TypeFor[typeContainer[T]]().String()
+	return s[typeContainerPrefixLen : len(s)-typeContainerSuffixLen]
+}
+
+type typeContainer[T any] struct{}
+
+var (
+	typeContainerSuffixLen = len("]")
+	typeContainerPrefixLen = len(reflect.TypeFor[typeContainer[string]]().String()) - len("string") - typeContainerSuffixLen
+)
+
 // ValueInterfaceFor calls [reflect.Value.Interface] and returns the result as the specified type.
 //
 // The caller must ensure that the type is correct.

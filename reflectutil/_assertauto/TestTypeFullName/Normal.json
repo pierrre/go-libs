@@ -1,0 +1,136 @@
+{
+	"entries": [
+		{
+			"name": "name",
+			"equal": "string"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "**********string"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "chan map[string][][2]*string"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "github.com/pierrre/go-libs/reflectutil_test.testType"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "*github.com/pierrre/go-libs/reflectutil_test.testType"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "github.com/pierrre/go-libs/reflectutil_test.testPointer"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "*github.com/pierrre/go-libs/reflectutil_test.testPointer"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testPointer"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "github.com/pierrre/go-libs/reflectutil_test.testContainer[github.com/pierrre/go-libs/reflectutil_test.testType]"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "*github.com/pierrre/go-libs/reflectutil_test.testContainer[github.com/pierrre/go-libs/reflectutil_test.testType]"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		},
+		{
+			"name": "name",
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testContainer[chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType]"
+		},
+		{
+			"name": "allocs",
+			"allocs_per_run": {
+				"runs": 100,
+				"allocs": 0
+			}
+		}
+	]
+}
