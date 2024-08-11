@@ -3,7 +3,6 @@ package reflectutil_test
 import (
 	"reflect"
 	"strings"
-	"sync/atomic"
 	"testing"
 
 	"github.com/pierrre/assert"
@@ -15,16 +14,18 @@ var benchRes any
 
 var types = []reflect.Type{
 	reflect.TypeFor[string](),
-	reflect.TypeFor[int](),
-	reflect.TypeFor[*string](),
-	reflect.TypeFor[any](),
-	reflect.TypeFor[reflect.Type](),
-	reflect.TypeFor[*reflect.Type](),
-	reflect.TypeFor[reflect.Value](),
-	reflect.TypeFor[*reflect.Value](),
-	reflect.TypeFor[atomic.Value](),
-	reflect.TypeFor[*atomic.Value](),
+	reflect.TypeFor[**********string](),
+	reflect.TypeFor[chan map[string][][2]*string](),
+	reflect.TypeFor[testType](),
+	reflect.TypeFor[*testType](),
+	reflect.TypeFor[chan map[string][][2]*testType](),
+	reflect.TypeFor[testContainer[testType]](),
+	reflect.TypeFor[chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
 }
+
+type testType struct{}
+
+type testContainer[T any] struct{}
 
 func getTypeFullNameTestName(typ reflect.Type) string {
 	return strings.ReplaceAll(TypeFullName(typ), "/", "_")
@@ -32,13 +33,11 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 
 func TestTypeFullName(t *testing.T) {
 	for _, typ := range types {
-		t.Run(getTypeFullNameTestName(typ), func(t *testing.T) {
-			assertauto.Equal(t, TypeFullName(typ), assertauto.Name("name"))
-			allocs := testing.AllocsPerRun(100, func() {
-				_ = TypeFullName(typ)
-			})
-			assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		assertauto.Equal(t, TypeFullName(typ), assertauto.Name("name"))
+		allocs := testing.AllocsPerRun(100, func() {
+			_ = TypeFullName(typ)
 		})
+		assertauto.Equal(t, allocs, assertauto.Name("allocs"))
 	}
 }
 
@@ -56,13 +55,11 @@ func BenchmarkTypeFullName(b *testing.B) {
 
 func TestTypeFullNameInternal(t *testing.T) {
 	for _, typ := range types {
-		t.Run(getTypeFullNameTestName(typ), func(t *testing.T) {
-			assertauto.Equal(t, TypeFullNameInternal(typ), assertauto.Name("name"))
-			allocs := testing.AllocsPerRun(100, func() {
-				_ = TypeFullNameInternal(typ)
-			})
-			assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		assertauto.Equal(t, TypeFullNameInternal(typ), assertauto.Name("name"))
+		allocs := testing.AllocsPerRun(100, func() {
+			_ = TypeFullNameInternal(typ)
 		})
+		assertauto.Equal(t, allocs, assertauto.Name("allocs"))
 	}
 }
 
