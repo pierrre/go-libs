@@ -1,0 +1,12 @@
+{
+	"entries": [
+		{
+			"name": "name",
+			"equal": "sync/atomic.Value"
+		},
+		{
+			"name": "allocs",
+			"equal": 1
+		}
+	]
+}

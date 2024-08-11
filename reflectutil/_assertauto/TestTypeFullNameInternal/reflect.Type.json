@@ -1,0 +1,12 @@
+{
+	"entries": [
+		{
+			"name": "name",
+			"equal": "reflect.Type"
+		},
+		{
+			"name": "allocs",
+			"equal": 1
+		}
+	]
+}

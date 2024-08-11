@@ -2,6 +2,7 @@ package reflectutil_test
 
 import (
 	"reflect"
+	"strings"
 	"sync/atomic"
 	"testing"
 
@@ -25,27 +26,52 @@ var types = []reflect.Type{
 	reflect.TypeFor[*atomic.Value](),
 }
 
-func TestTypeFullName(t *testing.T) {
-	for _, typ := range types {
-		s := TypeFullName(typ)
-		assertauto.Equal(t, s, assertauto.AssertOptions(assert.MessageWrap(s)))
-	}
+func getTypeFullNameTestName(typ reflect.Type) string {
+	return strings.ReplaceAll(TypeFullName(typ), "/", "_")
 }
 
-func TestTypeFullNameAllocs(t *testing.T) {
+func TestTypeFullName(t *testing.T) {
 	for _, typ := range types {
-		assert.AllocsPerRun(t, 100, func() {
-			_ = TypeFullName(typ)
-		}, 0, assert.MessageWrap(TypeFullName(typ)))
+		t.Run(getTypeFullNameTestName(typ), func(t *testing.T) {
+			assertauto.Equal(t, TypeFullName(typ), assertauto.Name("name"))
+			allocs := testing.AllocsPerRun(100, func() {
+				_ = TypeFullName(typ)
+			})
+			assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		})
 	}
 }
 
 func BenchmarkTypeFullName(b *testing.B) {
 	for _, typ := range types {
-		b.Run(TypeFullName(typ), func(b *testing.B) {
+		b.Run(getTypeFullNameTestName(typ), func(b *testing.B) {
 			var res string
 			for range b.N {
 				res = TypeFullName(typ)
+			}
+			benchRes = res
+		})
+	}
+}
+
+func TestTypeFullNameInternal(t *testing.T) {
+	for _, typ := range types {
+		t.Run(getTypeFullNameTestName(typ), func(t *testing.T) {
+			assertauto.Equal(t, TypeFullNameInternal(typ), assertauto.Name("name"))
+			allocs := testing.AllocsPerRun(100, func() {
+				_ = TypeFullNameInternal(typ)
+			})
+			assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		})
+	}
+}
+
+func BenchmarkTypeFullNameInternal(b *testing.B) {
+	for _, typ := range types {
+		b.Run(getTypeFullNameTestName(typ), func(b *testing.B) {
+			var res string
+			for range b.N {
+				res = TypeFullNameInternal(typ)
 			}
 			benchRes = res
 		})

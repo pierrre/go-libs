@@ -1,0 +1,12 @@
+{
+	"entries": [
+		{
+			"name": "name",
+			"equal": "interface {}"
+		},
+		{
+			"name": "allocs",
+			"equal": 0
+		}
+	]
+}
