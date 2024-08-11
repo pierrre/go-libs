@@ -35,3 +35,22 @@ func typeFullName(typ reflect.Type) string {
 	}
 	return typ.String()
 }
+
+// ConvertValueCanInterface attempts to converts a [reflect.Value] so it can be used with [reflect.Value.Interface].
+//
+// The returned boolean indicates if the conversion was successful.
+//
+// If the conversion was successful, the returned [reflect.Value] can be used with [reflect.Value.Interface].
+// If the conversion was not successful, the returned [reflect.Value] is the same as the input [reflect.Value].
+func ConvertValueCanInterface(v reflect.Value) (reflect.Value, bool) {
+	if v.CanInterface() {
+		return v, true
+	}
+	if v.Kind() == reflect.Ptr {
+		return reflect.NewAt(v.Type().Elem(), v.UnsafePointer()), true
+	}
+	if v.CanAddr() {
+		return reflect.NewAt(v.Type(), v.Addr().UnsafePointer()).Elem(), true
+	}
+	return v, false
+}
