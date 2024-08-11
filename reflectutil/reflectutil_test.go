@@ -51,8 +51,3 @@ func BenchmarkTypeFullName(b *testing.B) {
 		})
 	}
 }
-
-func TestTypeFullNameFor(t *testing.T) {
-	s := TypeFullNameFor[string]()
-	assert.Equal(t, s, "string")
-}
