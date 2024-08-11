@@ -50,7 +50,39 @@
 		},
 		{
 			"name": "name",
+			"equal": "github.com/pierrre/go-libs/reflectutil_test.testSlice"
+		},
+		{
+			"name": "allocs",
+			"equal": 0
+		},
+		{
+			"name": "name",
+			"equal": "*github.com/pierrre/go-libs/reflectutil_test.testSlice"
+		},
+		{
+			"name": "allocs",
+			"equal": 0
+		},
+		{
+			"name": "name",
+			"equal": "chan map[string][][2]*reflectutil_test.testSlice"
+		},
+		{
+			"name": "allocs",
+			"equal": 0
+		},
+		{
+			"name": "name",
 			"equal": "github.com/pierrre/go-libs/reflectutil_test.testContainer[github.com/pierrre/go-libs/reflectutil_test.testType]"
+		},
+		{
+			"name": "allocs",
+			"equal": 0
+		},
+		{
+			"name": "name",
+			"equal": "*github.com/pierrre/go-libs/reflectutil_test.testContainer[github.com/pierrre/go-libs/reflectutil_test.testType]"
 		},
 		{
 			"name": "allocs",
