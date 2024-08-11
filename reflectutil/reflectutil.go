@@ -35,10 +35,3 @@ func typeFullName(typ reflect.Type) string {
 	}
 	return typ.String()
 }
-
-// TypeFullNameFor returns the full name of the argument type.
-//
-// See [TypeFullName] for more information.
-func TypeFullNameFor[T any]() string {
-	return TypeFullName(reflect.TypeFor[T]())
-}
