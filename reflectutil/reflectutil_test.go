@@ -52,6 +52,13 @@ func BenchmarkTypeFullName(b *testing.B) {
 	}
 }
 
+func TestValueInterfaceFor(t *testing.T) {
+	s1 := "test"
+	v := reflect.ValueOf(s1)
+	s2 := ValueInterfaceFor[string](v)
+	assert.Equal(t, s1, s2)
+}
+
 func TestConvertValueCanInterfaceAlreadyOK(t *testing.T) {
 	v := reflect.ValueOf("test")
 	assert.True(t, v.CanInterface())
@@ -123,8 +130,46 @@ func TestConvertValueCanInterfaceFail(t *testing.T) {
 	assert.False(t, v.CanInterface())
 }
 
+func TestTryValueInterfaceOK(t *testing.T) {
+	s1 := "test"
+	v := reflect.ValueOf(s1)
+	vi, ok := TryValueInterface(v)
+	assert.True(t, ok)
+	s2, _ := assert.Type[string](t, vi)
+	assert.Equal(t, s1, s2)
+}
+
+func TestTryValueInterfaceFail(t *testing.T) {
+	s1 := "test"
+	v := reflect.ValueOf(testStruct{
+		unexported: s1,
+	}).FieldByName("unexported")
+	vi, ok := TryValueInterface(v)
+	assert.False(t, ok)
+	assert.Zero(t, vi)
+}
+
 type testStruct struct {
 	unexported     string
 	pointer        *string
 	pointerPointer **string
+}
+
+func TestTryValueInterfaceForOK(t *testing.T) {
+	s1 := "test"
+	v := reflect.ValueOf(s1)
+	vi, ok := TryValueInterfaceFor[string](v)
+	assert.True(t, ok)
+	s2, _ := assert.Type[string](t, vi)
+	assert.Equal(t, s1, s2)
+}
+
+func TestTryValueInterfaceForFail(t *testing.T) {
+	s1 := "test"
+	v := reflect.ValueOf(testStruct{
+		unexported: s1,
+	}).FieldByName("unexported")
+	s2, ok := TryValueInterfaceFor[string](v)
+	assert.False(t, ok)
+	assert.Zero(t, s2)
 }
