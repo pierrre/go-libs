@@ -26,12 +26,12 @@ func TypeFullName(typ reflect.Type) string {
 }
 
 func typeFullName(typ reflect.Type) string {
-	if typ.Kind() == reflect.Ptr {
-		return "*" + typeFullName(typ.Elem())
-	}
 	pkgPath := typ.PkgPath()
 	if pkgPath != "" {
 		return pkgPath + "." + typ.Name()
+	}
+	if typ.Kind() == reflect.Ptr {
+		return "*" + typeFullName(typ.Elem())
 	}
 	return typ.String()
 }

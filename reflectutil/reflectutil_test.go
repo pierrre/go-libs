@@ -19,9 +19,9 @@ var types = []reflect.Type{
 	reflect.TypeFor[testType](),
 	reflect.TypeFor[*testType](),
 	reflect.TypeFor[chan map[string][][2]*testType](),
-	reflect.TypeFor[testSlice](),
-	reflect.TypeFor[*testSlice](),
-	reflect.TypeFor[chan map[string][][2]*testSlice](),
+	reflect.TypeFor[testPointer](),
+	reflect.TypeFor[*testPointer](),
+	reflect.TypeFor[chan map[string][][2]*testPointer](),
 	reflect.TypeFor[testContainer[testType]](),
 	reflect.TypeFor[*testContainer[testType]](),
 	reflect.TypeFor[chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
@@ -31,7 +31,7 @@ type testType struct{}
 
 type testContainer[T any] struct{}
 
-type testSlice []testType
+type testPointer *testType
 
 func getTypeFullNameTestName(typ reflect.Type) string {
 	return strings.ReplaceAll(TypeFullName(typ), "/", "_")
