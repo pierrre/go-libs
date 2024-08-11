@@ -40,10 +40,9 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 func TestTypeFullName(t *testing.T) {
 	for _, typ := range types {
 		assertauto.Equal(t, TypeFullName(typ), assertauto.Name("name"))
-		allocs := testing.AllocsPerRun(100, func() {
+		assertauto.AllocsPerRun(t, 100, func() {
 			_ = TypeFullName(typ)
-		})
-		assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		}, assertauto.Name("allocs"))
 	}
 }
 
@@ -62,10 +61,9 @@ func BenchmarkTypeFullName(b *testing.B) {
 func TestTypeFullNameInternal(t *testing.T) {
 	for _, typ := range types {
 		assertauto.Equal(t, TypeFullNameInternal(typ), assertauto.Name("name"))
-		allocs := testing.AllocsPerRun(100, func() {
+		assertauto.AllocsPerRun(t, 100, func() {
 			_ = TypeFullNameInternal(typ)
-		})
-		assertauto.Equal(t, allocs, assertauto.Name("allocs"))
+		}, assertauto.Name("allocs"))
 	}
 }
 
