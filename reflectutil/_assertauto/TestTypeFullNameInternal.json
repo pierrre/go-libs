@@ -22,7 +22,7 @@
 		},
 		{
 			"name": "allocs",
-			"equal": 0
+			"equal": 5
 		},
 		{
 			"name": "name",
@@ -42,11 +42,11 @@
 		},
 		{
 			"name": "name",
-			"equal": "chan map[string][][2]*reflectutil_test.testType"
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType"
 		},
 		{
 			"name": "allocs",
-			"equal": 0
+			"equal": 6
 		},
 		{
 			"name": "name",
@@ -66,11 +66,11 @@
 		},
 		{
 			"name": "name",
-			"equal": "chan map[string][][2]*reflectutil_test.testPointer"
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testPointer"
 		},
 		{
 			"name": "allocs",
-			"equal": 0
+			"equal": 6
 		},
 		{
 			"name": "name",
@@ -90,11 +90,11 @@
 		},
 		{
 			"name": "name",
-			"equal": "chan map[string][][2]*reflectutil_test.testContainer[chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType]"
+			"equal": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testContainer[chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType]"
 		},
 		{
 			"name": "allocs",
-			"equal": 0
+			"equal": 6
 		}
 	]
 }

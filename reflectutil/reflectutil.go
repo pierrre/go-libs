@@ -3,6 +3,7 @@ package reflectutil
 
 import (
 	"reflect"
+	"strconv"
 	"sync"
 )
 
@@ -30,8 +31,17 @@ func typeFullName(typ reflect.Type) string {
 	if pkgPath != "" {
 		return pkgPath + "." + typ.Name()
 	}
-	if typ.Kind() == reflect.Ptr {
+	switch typ.Kind() { //nolint:exhaustive // We only need to handle composite types.
+	case reflect.Pointer:
 		return "*" + typeFullName(typ.Elem())
+	case reflect.Slice:
+		return "[]" + typeFullName(typ.Elem())
+	case reflect.Array:
+		return "[" + strconv.Itoa(typ.Len()) + "]" + typeFullName(typ.Elem())
+	case reflect.Chan:
+		return "chan " + typeFullName(typ.Elem())
+	case reflect.Map:
+		return "map[" + typeFullName(typ.Key()) + "]" + typeFullName(typ.Elem())
 	}
 	return typ.String()
 }
