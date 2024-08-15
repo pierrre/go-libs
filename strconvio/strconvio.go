@@ -4,7 +4,8 @@ package strconvio
 import (
 	"io"
 	"strconv"
-	"sync"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 // WriteBool writes the string representation of the bool to the writer.
@@ -14,7 +15,7 @@ func WriteBool(w io.Writer, b bool) (int, error) {
 
 // WriteFloat writes the string representation of the float to the writer.
 func WriteFloat(w io.Writer, f float64, fmt byte, prec, bitSize int) (int, error) {
-	bp := bytesPool.Get().(*[]byte) //nolint:forcetypeassert // The pool only contains *[]byte.
+	bp := bytesPool.Get()
 	*bp = strconv.AppendFloat((*bp)[:0], f, fmt, prec, bitSize)
 	n, err := w.Write(*bp)
 	bytesPool.Put(bp)
@@ -26,7 +27,7 @@ func WriteInt(w io.Writer, i int64, base int) (int, error) {
 	if 0 <= i && i < 100 && base == 10 {
 		return io.WriteString(w, strconv.FormatInt(i, base)) //nolint:wrapcheck // It's fine.
 	}
-	bp := bytesPool.Get().(*[]byte) //nolint:forcetypeassert // The pool only contains *[]byte.
+	bp := bytesPool.Get()
 	*bp = strconv.AppendInt((*bp)[:0], i, base)
 	n, err := w.Write(*bp)
 	bytesPool.Put(bp)
@@ -38,7 +39,7 @@ func WriteUint(w io.Writer, i uint64, base int) (int, error) {
 	if i < 100 && base == 10 {
 		return io.WriteString(w, strconv.FormatUint(i, base)) //nolint:wrapcheck // It's fine.
 	}
-	bp := bytesPool.Get().(*[]byte) //nolint:forcetypeassert // The pool only contains *[]byte.
+	bp := bytesPool.Get()
 	*bp = strconv.AppendUint((*bp)[:0], i, base)
 	n, err := w.Write(*bp)
 	bytesPool.Put(bp)
@@ -50,7 +51,7 @@ func WriteQuote(w io.Writer, s string) (int, error) {
 	if s == "" {
 		return w.Write(emptyQuotes) //nolint:wrapcheck // It's fine.
 	}
-	bp := bytesPool.Get().(*[]byte) //nolint:forcetypeassert // The pool only contains *[]byte.
+	bp := bytesPool.Get()
 	*bp = strconv.AppendQuote((*bp)[:0], s)
 	n, err := w.Write(*bp)
 	bytesPool.Put(bp)
@@ -59,9 +60,8 @@ func WriteQuote(w io.Writer, s string) (int, error) {
 
 var emptyQuotes = []byte(`""`)
 
-var bytesPool = sync.Pool{
-	New: func() any {
-		var b []byte
-		return &b
+var bytesPool = syncutil.PoolFor[[]byte]{
+	New: func() *[]byte {
+		return new([]byte)
 	},
 }
