@@ -4,20 +4,21 @@ package reflectutil
 import (
 	"reflect"
 	"strconv"
-	"sync"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
-var typeFullNameCache sync.Map
+var typeFullNameCache syncutil.MapFor[reflect.Type, string]
 
 // TypeFullName returns the full name of the type.
 //
 // It contains the full package path if the type is defined in a package.
 func TypeFullName(typ reflect.Type) string {
-	v, ok := typeFullNameCache.Load(typ)
+	name, ok := typeFullNameCache.Load(typ)
 	if ok {
-		return v.(string) //nolint:forcetypeassert // The cache only contain string.
+		return name
 	}
-	name := typeFullName(typ)
+	name = typeFullName(typ)
 	typeFullNameCache.Store(typ, name)
 	return name
 }
