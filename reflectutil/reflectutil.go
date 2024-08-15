@@ -8,21 +8,24 @@ import (
 )
 
 var (
-	typeFullNameCache   = make(map[reflect.Type]string)
-	typeFullNameCacheMu sync.Mutex
+	typeFullNameCache     = make(map[reflect.Type]string)
+	typeFullNameCacheLock sync.RWMutex
 )
 
 // TypeFullName returns the full name of the type.
 //
 // It contains the full package path if the type is defined in a package.
 func TypeFullName(typ reflect.Type) string {
-	typeFullNameCacheMu.Lock()
-	defer typeFullNameCacheMu.Unlock()
+	typeFullNameCacheLock.RLock()
 	name, ok := typeFullNameCache[typ]
-	if !ok {
-		name = typeFullName(typ)
-		typeFullNameCache[typ] = name
+	typeFullNameCacheLock.RUnlock()
+	if ok {
+		return name
 	}
+	name = typeFullName(typ)
+	typeFullNameCacheLock.Lock()
+	typeFullNameCache[typ] = name
+	typeFullNameCacheLock.Unlock()
 	return name
 }
 

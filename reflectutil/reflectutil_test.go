@@ -13,8 +13,9 @@ import (
 var benchRes any
 
 type typeFullNameVariantTestCase struct {
-	name    string
-	newFunc func(tc typeFullNameTestCase) func() string
+	name          string
+	newFunc       func(tc typeFullNameTestCase) func() string
+	benchParallel bool
 }
 
 var typeFullNameVariantTestCases = []typeFullNameVariantTestCase{
@@ -25,6 +26,7 @@ var typeFullNameVariantTestCases = []typeFullNameVariantTestCase{
 				return TypeFullName(tc.typ)
 			}
 		},
+		benchParallel: true,
 	},
 	{
 		name: "Internal",
@@ -102,7 +104,7 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 }
 
 func TestTypeFullName(t *testing.T) {
-	runTypeFullNameVariantTestCases(t, func(t *testing.T, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // THis is not a test helper.
+	runTypeFullNameVariantTestCases(t, func(t *testing.T, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // This is not a test helper.
 		f := variantTC.newFunc(tc)
 		assertauto.Equal(t, f(), assertauto.Name("name"))
 		assertauto.AllocsPerRun(t, 100, func() {
@@ -112,14 +114,30 @@ func TestTypeFullName(t *testing.T) {
 }
 
 func BenchmarkTypeFullName(b *testing.B) {
-	runTypeFullNameVariantTestCases(b, func(b *testing.B, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // THis is not a test helper.
+	runTypeFullNameVariantTestCases(b, func(b *testing.B, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // This is not a test helper.
 		f := variantTC.newFunc(tc)
 		b.Run(getTypeFullNameTestName(tc.typ), func(b *testing.B) {
-			var res string
-			for range b.N {
-				res = f()
+			benchSeq := func(b *testing.B) { //nolint:thelper // This is not a test helper.
+				var res string
+				for range b.N {
+					res = f()
+				}
+				benchRes = res
 			}
-			benchRes = res
+			if variantTC.benchParallel {
+				b.Run("Sequential", benchSeq)
+				b.Run("Parallel", func(b *testing.B) {
+					b.RunParallel(func(pb *testing.PB) {
+						var res string
+						for pb.Next() {
+							res = f()
+						}
+						benchRes = res
+					})
+				})
+			} else {
+				benchSeq(b)
+			}
 		})
 	})
 }
