@@ -3,7 +3,8 @@ package bufpool
 
 import (
 	"bytes"
-	"sync"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 const maxCapDefault = 1 << 16 // 64 KiB
@@ -12,7 +13,7 @@ const maxCapDefault = 1 << 16 // 64 KiB
 //
 // Buffers are automatically reset.
 type Pool struct {
-	pool sync.Pool
+	pool syncutil.PoolFor[bytes.Buffer]
 
 	// MaxCap defines the maximum capacity accepted for recycled buffer.
 	// If Put() is called with a buffer larger than this value, it's discarded.
@@ -24,11 +25,11 @@ type Pool struct {
 
 // Get returns a [bytes.Buffer] from the Pool.
 func (p *Pool) Get() *bytes.Buffer {
-	bufItf := p.pool.Get()
-	if bufItf != nil {
-		return bufItf.(*bytes.Buffer) //nolint:forcetypeassert // The pool only contains *bytes.Buffer.
+	buf := p.pool.Get()
+	if buf == nil {
+		return new(bytes.Buffer)
 	}
-	return new(bytes.Buffer)
+	return buf
 }
 
 // Put puts the [bytes.Buffer] to the Pool.
