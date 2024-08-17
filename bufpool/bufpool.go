@@ -13,7 +13,7 @@ const maxCapDefault = 1 << 16 // 64 KiB
 //
 // Buffers are automatically reset.
 type Pool struct {
-	pool syncutil.PoolForNotPointer[*bytes.Buffer]
+	pool syncutil.PoolFor[*bytes.Buffer]
 
 	// MaxCap defines the maximum capacity accepted for recycled buffer.
 	// If Put() is called with a buffer larger than this value, it's discarded.

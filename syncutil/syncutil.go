@@ -75,23 +75,24 @@ func (m *MapFor[K, V]) Swap(key K, value V) (previous V, loaded bool) {
 // PoolFor is a typed wrapper around [sync.Pool].
 type PoolFor[T any] struct {
 	p   sync.Pool
-	New func() *T
+	New func() T
 }
 
 // Get is a wrapper around [sync.Pool.Get].
-func (p *PoolFor[T]) Get() *T {
+func (p *PoolFor[T]) Get() T {
 	vi := p.p.Get()
 	if vi != nil {
-		return vi.(*T) //nolint:forcetypeassert // The pool is typed.
+		return vi.(T) //nolint:forcetypeassert // The pool is typed.
 	}
 	if p.New != nil {
 		return p.New()
 	}
-	return nil
+	var zero T
+	return zero
 }
 
 // Put is a wrapper around [sync.Pool.Put].
-func (p *PoolFor[T]) Put(v *T) {
+func (p *PoolFor[T]) Put(v T) {
 	p.p.Put(v)
 }
 

@@ -24,7 +24,7 @@ func TestMapFor(t *testing.T) {
 }
 
 func TestPoolFor(t *testing.T) {
-	var p PoolFor[[]byte]
+	var p PoolFor[*[]byte]
 	bp := p.Get()
 	assert.Zero(t, bp)
 	p.Put(new([]byte))
