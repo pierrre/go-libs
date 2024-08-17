@@ -61,7 +61,7 @@ func WriteQuote(w io.Writer, s string) (int, error) {
 
 var emptyQuotes = []byte(`""`)
 
-var bytesPool = syncutil.PoolFor[[]byte]{
+var bytesPool = syncutil.PoolForNotPointer[*[]byte]{
 	New: func() *[]byte {
 		return new([]byte)
 	},
