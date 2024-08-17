@@ -52,10 +52,6 @@ all-mod-update-pierrre: all-copy-common
 all-mod-tidy:
 	$(call ALL_RUN,make mod-tidy)
 
-.PHONY: all-mod-tidy-diff
-all-mod-tidy-diff:
-	$(call ALL_RUN,make mod-tidy-diff)
-
 .PHONY: all-clean
 all-clean:
 	$(call ALL_RUN,make clean)
