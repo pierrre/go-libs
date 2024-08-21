@@ -72,7 +72,7 @@ func ConvertValueCanInterface(v reflect.Value) (reflect.Value, bool) {
 	if v.CanInterface() {
 		return v, true
 	}
-	if v.Kind() == reflect.Ptr {
+	if v.Kind() == reflect.Pointer {
 		return reflect.NewAt(v.Type().Elem(), v.UnsafePointer()), true
 	}
 	if v.CanAddr() {
