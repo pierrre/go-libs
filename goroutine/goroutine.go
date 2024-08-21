@@ -47,7 +47,6 @@ func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Conte
 func N(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	wg := new(sync.WaitGroup)
 	for i := range n {
-		i := i
 		WaitGroup(ctx, wg, func(ctx context.Context) {
 			f(ctx, i)
 		})
@@ -60,7 +59,6 @@ func N(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 func Slice[S ~[]E, E any](ctx context.Context, s S, f func(ctx context.Context, i int, e E)) {
 	wg := new(sync.WaitGroup)
 	for i, e := range s {
-		i, e := i, e
 		WaitGroup(ctx, wg, func(ctx context.Context) {
 			f(ctx, i, e)
 		})
@@ -73,7 +71,6 @@ func Slice[S ~[]E, E any](ctx context.Context, s S, f func(ctx context.Context, 
 func Map[M ~map[K]V, K comparable, V any](ctx context.Context, m M, f func(ctx context.Context, k K, v V)) {
 	wg := new(sync.WaitGroup)
 	for k, v := range m {
-		k, v := k, v
 		WaitGroup(ctx, wg, func(ctx context.Context) {
 			f(ctx, k, v)
 		})
