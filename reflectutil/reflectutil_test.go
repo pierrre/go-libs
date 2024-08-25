@@ -72,16 +72,16 @@ func newTypeFullNameTestCase[T any]() typeFullNameTestCase {
 var typeFullNameTestCases = []typeFullNameTestCase{
 	newTypeFullNameTestCase[string](),
 	newTypeFullNameTestCase[**********string](),
-	newTypeFullNameTestCase[chan map[string][][2]*string](),
+	newTypeFullNameTestCase[<-chan map[string][][2]*string](),
 	newTypeFullNameTestCase[testType](),
 	newTypeFullNameTestCase[*testType](),
-	newTypeFullNameTestCase[chan map[string][][2]*testType](),
+	newTypeFullNameTestCase[<-chan map[string][][2]*testType](),
 	newTypeFullNameTestCase[testPointer](),
 	newTypeFullNameTestCase[*testPointer](),
-	newTypeFullNameTestCase[chan map[string][][2]*testPointer](),
+	newTypeFullNameTestCase[<-chan map[string][][2]*testPointer](),
 	newTypeFullNameTestCase[testContainer[testType]](),
 	newTypeFullNameTestCase[*testContainer[testType]](),
-	newTypeFullNameTestCase[chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
+	newTypeFullNameTestCase[<-chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
 }
 
 func runTypeFullNameTestCases[TB interface {

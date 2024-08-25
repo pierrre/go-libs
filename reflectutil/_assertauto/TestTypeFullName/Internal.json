@@ -32,7 +32,7 @@
 			"name": "name",
 			"equal": {
 				"type": "string",
-				"value": "chan map[string][][2]*string"
+				"value": "<-chan map[string][][2]*string"
 			}
 		},
 		{
@@ -74,7 +74,7 @@
 			"name": "name",
 			"equal": {
 				"type": "string",
-				"value": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType"
+				"value": "<-chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType"
 			}
 		},
 		{
@@ -116,7 +116,7 @@
 			"name": "name",
 			"equal": {
 				"type": "string",
-				"value": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testPointer"
+				"value": "<-chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testPointer"
 			}
 		},
 		{
@@ -158,7 +158,7 @@
 			"name": "name",
 			"equal": {
 				"type": "string",
-				"value": "chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testContainer[chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType]"
+				"value": "<-chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testContainer[chan map[string][][2]*github.com/pierrre/go-libs/reflectutil_test.testType]"
 			}
 		},
 		{

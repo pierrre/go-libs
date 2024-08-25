@@ -36,7 +36,7 @@ func typeFullName(typ reflect.Type) string {
 	case reflect.Array:
 		return "[" + strconv.Itoa(typ.Len()) + "]" + typeFullName(typ.Elem())
 	case reflect.Chan:
-		return "chan " + typeFullName(typ.Elem())
+		return typ.ChanDir().String() + " " + typeFullName(typ.Elem())
 	case reflect.Map:
 		return "map[" + typeFullName(typ.Key()) + "]" + typeFullName(typ.Elem())
 	}
