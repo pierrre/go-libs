@@ -2,6 +2,7 @@ package strconvio_test
 
 import (
 	"bytes"
+	"io"
 	"strconv"
 	"testing"
 
@@ -92,6 +93,62 @@ func BenchmarkWriteFloat(b *testing.B) {
 			for range b.N {
 				buf.Reset()
 				_, _ = WriteFloat(buf, tc.f, 'f', -1, 64)
+			}
+		})
+	}
+}
+
+var writeComplexTestCases = []struct {
+	c        complex128
+	expected string
+}{
+	{
+		c:        0,
+		expected: "(0+0i)",
+	},
+	{
+		c:        1,
+		expected: "(1+0i)",
+	},
+	{
+		c:        1 + 2i,
+		expected: "(1+2i)",
+	},
+	{
+		c:        1.2 - 3.4i,
+		expected: "(1.2-3.4i)",
+	},
+}
+
+func TestWriteComplex(t *testing.T) {
+	for _, tc := range writeComplexTestCases {
+		t.Run(tc.expected, func(t *testing.T) {
+			buf := new(bytes.Buffer)
+			n, err := WriteComplex(buf, tc.c, 'f', -1, 64)
+			assert.NoError(t, err)
+			assert.Equal(t, len(tc.expected), n)
+			assert.Equal(t, tc.expected, buf.String())
+			assert.AllocsPerRun(t, 100, func() {
+				buf.Reset()
+				_, _ = WriteComplex(buf, tc.c, 'f', -1, 64)
+			}, 0)
+		})
+	}
+}
+
+func TestWriteComplexPanicBitSize(t *testing.T) {
+	assert.Panics(t, func() {
+		_, _ = WriteComplex(io.Discard, 0, 'f', -1, 0)
+	})
+}
+
+func BenchmarkWriteComplex(b *testing.B) {
+	for _, tc := range writeComplexTestCases {
+		b.Run(tc.expected, func(b *testing.B) {
+			buf := new(bytes.Buffer)
+			for range b.N {
+				buf.Reset()
+				_, _ = WriteComplex(buf, tc.c, 'f', -1, 64)
 			}
 		})
 	}

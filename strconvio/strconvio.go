@@ -16,11 +16,46 @@ func WriteBool(w io.Writer, b bool) (int, error) {
 
 // WriteFloat writes the string representation of the float to the writer.
 func WriteFloat(w io.Writer, f float64, fmt byte, prec, bitSize int) (int, error) {
-	bp := bytesPool.Get()
-	*bp = strconv.AppendFloat((*bp)[:0], f, fmt, prec, bitSize)
+	bp := getFloatBytes(f, fmt, prec, bitSize)
 	n, err := w.Write(*bp)
 	bytesPool.Put(bp)
 	return n, err //nolint:wrapcheck // It's fine.
+}
+
+func getFloatBytes(f float64, fmt byte, prec, bitSize int) *[]byte {
+	bp := bytesPool.Get()
+	*bp = strconv.AppendFloat((*bp)[:0], f, fmt, prec, bitSize)
+	return bp
+}
+
+// WriteComplex writes the string representation of the complex to the writer.
+func WriteComplex(w io.Writer, c complex128, fmt byte, prec, bitSize int) (int, error) {
+	bp := getComplexBytes(c, fmt, prec, bitSize)
+	n, err := w.Write(*bp)
+	bytesPool.Put(bp)
+	return n, err //nolint:wrapcheck // It's fine.
+}
+
+func getComplexBytes(c complex128, fmt byte, prec, bitSize int) *[]byte {
+	if bitSize != 64 && bitSize != 128 {
+		panic("invalid bitSize")
+	}
+	bitSize >>= 1 // complex64 uses float32 internally
+	bpReal := getFloatBytes(real(c), fmt, prec, bitSize)
+	bpImag := getFloatBytes(imag(c), fmt, prec, bitSize)
+	bp := bytesPool.Get()
+	*bp = (*bp)[:0]
+	*bp = append(*bp, '(')
+	*bp = append(*bp, *bpReal...)
+	// Check if imaginary part has a sign. If not, add one.
+	if (*bpImag)[0] != '+' && (*bpImag)[0] != '-' {
+		*bp = append(*bp, '+')
+	}
+	*bp = append(*bp, *bpImag...)
+	*bp = append(*bp, "i)"...)
+	bytesPool.Put(bpReal)
+	bytesPool.Put(bpImag)
+	return bp
 }
 
 // WriteInt writes the string representation of the signed integer to the writer.
