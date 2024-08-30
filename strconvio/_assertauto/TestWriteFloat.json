@@ -1,0 +1,46 @@
+{
+	"entries": [
+		{
+			"equal": {
+				"type": "string",
+				"value": "0"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "1"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "12.34"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "-1"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "+Inf"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "-Inf"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "NaN"
+			}
+		}
+	]
+}

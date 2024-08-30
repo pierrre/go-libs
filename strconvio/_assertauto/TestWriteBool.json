@@ -1,0 +1,16 @@
+{
+	"entries": [
+		{
+			"equal": {
+				"type": "string",
+				"value": "false"
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "true"
+			}
+		}
+	]
+}

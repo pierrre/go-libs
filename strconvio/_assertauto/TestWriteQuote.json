@@ -1,0 +1,22 @@
+{
+	"entries": [
+		{
+			"equal": {
+				"type": "string",
+				"value": "\"\""
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "\"test\""
+			}
+		},
+		{
+			"equal": {
+				"type": "string",
+				"value": "\"\\\"\""
+			}
+		}
+	]
+}
