@@ -124,13 +124,13 @@ func TestWriteComplex(t *testing.T) {
 	for _, tc := range writeComplexTestCases {
 		t.Run(tc.expected, func(t *testing.T) {
 			buf := new(bytes.Buffer)
-			n, err := WriteComplex(buf, tc.c, 'f', -1, 64)
+			n, err := WriteComplex(buf, tc.c, 'f', -1, 128)
 			assert.NoError(t, err)
 			assert.Equal(t, len(tc.expected), n)
 			assert.Equal(t, tc.expected, buf.String())
 			assert.AllocsPerRun(t, 100, func() {
 				buf.Reset()
-				_, _ = WriteComplex(buf, tc.c, 'f', -1, 64)
+				_, _ = WriteComplex(buf, tc.c, 'f', -1, 128)
 			}, 0)
 		})
 	}

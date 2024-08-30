@@ -37,25 +37,29 @@ func WriteComplex(w io.Writer, c complex128, fmt byte, prec, bitSize int) (int, 
 }
 
 func getComplexBytes(c complex128, fmt byte, prec, bitSize int) *[]byte {
+	bp := bytesPool.Get()
+	*bp = appendComplex((*bp)[:0], c, fmt, prec, bitSize)
+	return bp
+}
+
+func appendComplex(dst []byte, c complex128, fmt byte, prec, bitSize int) []byte {
 	if bitSize != 64 && bitSize != 128 {
 		panic("invalid bitSize")
 	}
 	bitSize >>= 1 // complex64 uses float32 internally
 	bpReal := getFloatBytes(real(c), fmt, prec, bitSize)
 	bpImag := getFloatBytes(imag(c), fmt, prec, bitSize)
-	bp := bytesPool.Get()
-	*bp = (*bp)[:0]
-	*bp = append(*bp, '(')
-	*bp = append(*bp, *bpReal...)
+	dst = append(dst, '(')
+	dst = append(dst, *bpReal...)
 	// Check if imaginary part has a sign. If not, add one.
 	if (*bpImag)[0] != '+' && (*bpImag)[0] != '-' {
-		*bp = append(*bp, '+')
+		dst = append(dst, '+')
 	}
-	*bp = append(*bp, *bpImag...)
-	*bp = append(*bp, "i)"...)
+	dst = append(dst, *bpImag...)
+	dst = append(dst, "i)"...)
 	bytesPool.Put(bpReal)
 	bytesPool.Put(bpImag)
-	return bp
+	return dst
 }
 
 // WriteInt writes the string representation of the signed integer to the writer.
