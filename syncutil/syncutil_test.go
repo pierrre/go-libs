@@ -36,3 +36,44 @@ func TestPoolFor(t *testing.T) {
 	bp = p.Get()
 	assert.NotZero(t, bp)
 }
+
+func TestValuedPool(t *testing.T) {
+	p := &ValuePool[[]byte]{
+		New: func() []byte {
+			return make([]byte, 10)
+		},
+	}
+	b := p.Get()
+	assert.SliceLen(t, b, 10)
+	p.Put(b)
+}
+
+func TestValuePoolNoValue(t *testing.T) {
+	p := &ValuePool[[]byte]{}
+	b := p.Get()
+	assert.SliceNil(t, b)
+}
+
+func TestValuePoolAllocs(t *testing.T) {
+	p := &ValuePool[[]byte]{
+		New: func() []byte {
+			return make([]byte, 10)
+		},
+	}
+	assert.AllocsPerRun(t, 100, func() {
+		b := p.Get()
+		p.Put(b)
+	}, 0)
+}
+
+func BenchmarkValuePool(b *testing.B) {
+	p := &ValuePool[[]byte]{
+		New: func() []byte {
+			return make([]byte, 10)
+		},
+	}
+	for range b.N {
+		b := p.Get()
+		p.Put(b)
+	}
+}
