@@ -29,13 +29,13 @@ func TestGetMapEntries(t *testing.T) {
 	es.Release()
 }
 
-func TestMapEntriesEmpty(t *testing.T) {
+func TestGetMapEntriesEmpty(t *testing.T) {
 	es := GetMapEntries(reflect.ValueOf(map[int]int(nil)))
 	assert.SliceNil(t, es)
 	es.Release()
 }
 
-func TestMapEntriesAllocs(t *testing.T) {
+func TestGetMapEntriesAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		es := GetMapEntries(testMapValue)
 		es.Release()
@@ -43,7 +43,6 @@ func TestMapEntriesAllocs(t *testing.T) {
 }
 
 func BenchmarkGetMapEntries(b *testing.B) {
-	b.ResetTimer()
 	for range b.N {
 		es := GetMapEntries(testMapValue)
 		es.Release()
@@ -67,7 +66,6 @@ func TestGetMapEntriesUnexportedAllocs(t *testing.T) {
 }
 
 func BenchmarkGetMapEntriesUnexported(b *testing.B) {
-	b.ResetTimer()
 	for range b.N {
 		es := GetMapEntries(testMapUnexportedValue)
 		es.Release()

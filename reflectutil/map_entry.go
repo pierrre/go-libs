@@ -70,7 +70,7 @@ func (es MapEntries) Release() {
 	if len(es) == 0 {
 		return
 	}
-	e := es[:1][0]
+	e := es[0]
 	if !e.Key.CanInterface() || !e.Value.CanInterface() {
 		return
 	}
