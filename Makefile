@@ -16,6 +16,10 @@ all-git-clone:
 all-copy-common:
 	$(call ALL_COMMAND,cp -r Makefile-common.mk LICENSE CODEOWNERS .gitignore .github .golangci.yml ../{})
 
+.PHONY: all-all
+all-all:
+	$(call ALL_RUN,make all)
+
 .PHONY: all-build
 all-build:
 	$(call ALL_RUN,make build)

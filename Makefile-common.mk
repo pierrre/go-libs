@@ -1,11 +1,11 @@
-.DEFAULT_GOAL=noop
+.DEFAULT_GOAL=all
 .DELETE_ON_ERROR:
 
 NULL:=
 SPACE:=$(NULL) $(NULL)
 
-.PHONY: noop
-noop:
+.PHONY: all
+all: build test lint
 
 CI?=false
 ifeq ($(CI),true)
