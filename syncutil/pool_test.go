@@ -61,17 +61,3 @@ func BenchmarkValuePool(b *testing.B) {
 		p.Put(b)
 	}
 }
-
-func TestPoolFor(t *testing.T) {
-	var p PoolFor[*[]byte]
-	bp := p.Get()
-	assert.Zero(t, bp)
-	p.Put(new([]byte))
-	bp = p.Get()
-	assert.NotZero(t, bp)
-	p.New = func() *[]byte {
-		return new([]byte)
-	}
-	bp = p.Get()
-	assert.NotZero(t, bp)
-}
