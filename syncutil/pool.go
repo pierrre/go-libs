@@ -5,14 +5,14 @@ import (
 	"sync"
 )
 
-// PoolFor is a typed wrapper around [sync.Pool].
-type PoolFor[T any] struct {
+// Pool is a typed wrapper around [sync.Pool].
+type Pool[T any] struct {
 	p   sync.Pool
 	New func() T
 }
 
 // Get is a wrapper around [sync.Pool.Get].
-func (p *PoolFor[T]) Get() T {
+func (p *Pool[T]) Get() T {
 	vi := p.p.Get()
 	if vi != nil {
 		return vi.(T) //nolint:forcetypeassert // The pool is typed.
@@ -25,14 +25,14 @@ func (p *PoolFor[T]) Get() T {
 }
 
 // Put is a wrapper around [sync.Pool.Put].
-func (p *PoolFor[T]) Put(v T) {
+func (p *Pool[T]) Put(v T) {
 	p.p.Put(v)
 }
 
-// ValuePool is a [PoolFor] that works with normal value (non pointer) types.
+// ValuePool is a [Pool] that works with normal value (non pointer) types.
 type ValuePool[T any] struct {
-	p       PoolFor[*valuePoolEntry[T]]
-	entries PoolFor[*valuePoolEntry[T]]
+	p       Pool[*valuePoolEntry[T]]
+	entries Pool[*valuePoolEntry[T]]
 	New     func() T
 }
 
@@ -62,4 +62,28 @@ func (p *ValuePool[T]) Put(v T) {
 	}
 	e.v = v
 	p.p.Put(e)
+}
+
+// PoolFor is a typed wrapper around [sync.Pool].
+type PoolFor[T any] struct {
+	p   sync.Pool
+	New func() T
+}
+
+// Get is a wrapper around [sync.Pool.Get].
+func (p *PoolFor[T]) Get() T {
+	vi := p.p.Get()
+	if vi != nil {
+		return vi.(T) //nolint:forcetypeassert // The pool is typed.
+	}
+	if p.New != nil {
+		return p.New()
+	}
+	var zero T
+	return zero
+}
+
+// Put is a wrapper around [sync.Pool.Put].
+func (p *PoolFor[T]) Put(v T) {
+	p.p.Put(v)
 }

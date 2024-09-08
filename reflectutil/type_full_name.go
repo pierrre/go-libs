@@ -7,7 +7,7 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
-var typeFullNameCache syncutil.MapFor[reflect.Type, string]
+var typeFullNameCache syncutil.Map[reflect.Type, string]
 
 // TypeFullName returns the full name of the type.
 //
