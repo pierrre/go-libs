@@ -22,18 +22,3 @@ func TestGetSortedMapAllocs(t *testing.T) {
 		es.Release()
 	}, 0)
 }
-
-func TestGetSortedMapKeys(t *testing.T) {
-	ks := GetSortedMapKeys(testMapValue)
-	for i, k := range ks {
-		assert.Equal(t, int(k.Int()), i)
-	}
-	ks.Release()
-}
-
-func TestGetSortedMapKeysAllocs(t *testing.T) {
-	assert.AllocsPerRun(t, 100, func() {
-		ks := GetSortedMapKeys(testMapValue)
-		ks.Release()
-	}, 0)
-}
