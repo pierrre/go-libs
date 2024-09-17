@@ -22,14 +22,9 @@ func Start(ctx context.Context, f func(ctx context.Context)) {
 // It returns a function that blocks until the goroutine is terminated.
 // The caller must call this function.
 func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
-	ch := make(chan struct{})
-	Start(ctx, func(ctx context.Context) {
-		defer close(ch)
-		f(ctx)
-	})
-	return func() {
-		<-ch
-	}
+	wg := new(sync.WaitGroup)
+	WaitGroup(ctx, wg, f)
+	return wg.Wait
 }
 
 // WaitGroup executes a function in a new goroutine with a [sync.WaitGroup].
