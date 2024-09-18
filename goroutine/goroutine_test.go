@@ -107,18 +107,19 @@ func BenchmarkWaitGroup(b *testing.B) {
 func TestN(t *testing.T) {
 	ctx := context.Background()
 	count := 10
-	mu := new(sync.Mutex)
-	is := make(map[int]struct{})
-	N(ctx, count, func(ctx context.Context, i int) {
-		mu.Lock()
-		defer mu.Unlock()
-		is[i] = struct{}{}
+	var called int64
+	N(ctx, count, func(ctx context.Context) {
+		atomic.AddInt64(&called, 1)
 	})
-	isExpected := make(map[int]struct{})
-	for i := range count {
-		isExpected[i] = struct{}{}
-	}
-	assert.MapEqual(t, is, isExpected)
+	assert.Equal(t, called, int64(count))
+}
+
+func TestNAllocs(t *testing.T) {
+	ctx := context.Background()
+	count := 10
+	assert.AllocsPerRun(t, 100, func() {
+		N(ctx, count, func(ctx context.Context) {})
+	}, 20)
 }
 
 func BenchmarkN(b *testing.B) {
@@ -126,7 +127,7 @@ func BenchmarkN(b *testing.B) {
 	count := 10
 	b.ResetTimer()
 	for range b.N {
-		N(ctx, count, func(ctx context.Context, i int) {})
+		N(ctx, count, func(ctx context.Context) {})
 	}
 }
 

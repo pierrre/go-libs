@@ -29,7 +29,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 		outCh := make(chan Out)
 		defer Wait(ctx, func(ctx context.Context) {
 			defer close(outCh)
-			N(ctx, n, func(ctx context.Context, _ int) {
+			N(ctx, n, func(ctx context.Context) {
 				for inV := range inCh {
 					outV := f(ctx, inV)
 					select {
