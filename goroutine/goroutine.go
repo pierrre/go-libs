@@ -49,32 +49,6 @@ func N(ctx context.Context, n int, f func(ctx context.Context)) {
 	waitGroupPool.Put(wg)
 }
 
-// Slice executes a function with a different goroutine for each element of the slice.
-// It blocks until all goroutines are terminated.
-func Slice[S ~[]E, E any](ctx context.Context, s S, f func(ctx context.Context, i int, e E)) {
-	wg := waitGroupPool.Get()
-	for i, e := range s {
-		WaitGroup(ctx, wg, func(ctx context.Context) {
-			f(ctx, i, e)
-		})
-	}
-	wg.Wait()
-	waitGroupPool.Put(wg)
-}
-
-// Map executes a function with a different goroutine for each element of the map.
-// It blocks until all goroutines are terminated.
-func Map[M ~map[K]V, K comparable, V any](ctx context.Context, m M, f func(ctx context.Context, k K, v V)) {
-	wg := waitGroupPool.Get()
-	for k, v := range m {
-		WaitGroup(ctx, wg, func(ctx context.Context) {
-			f(ctx, k, v)
-		})
-	}
-	wg.Wait()
-	waitGroupPool.Put(wg)
-}
-
 var waitGroupPool = syncutil.Pool[*sync.WaitGroup]{
 	New: func() *sync.WaitGroup {
 		return new(sync.WaitGroup)
