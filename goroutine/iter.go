@@ -33,14 +33,16 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 		wg.Add(n)
 		for range n {
 			go func() {
-				defer panichandle.Recover(ctx)
 				defer wg.Done()
 				for inV := range inCh {
-					outV := f(ctx, inV)
-					select {
-					case outCh <- outV:
-					case <-stoppedOutIter:
-					}
+					func() {
+						defer panichandle.Recover(ctx)
+						outV := f(ctx, inV)
+						select {
+						case outCh <- outV:
+						case <-stoppedOutIter:
+						}
+					}()
 				}
 			}()
 		}
