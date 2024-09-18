@@ -13,10 +13,11 @@ func TestStart(t *testing.T) {
 	ctx := context.Background()
 	var called int64
 	done := make(chan struct{})
-	Start(ctx, func(ctx context.Context) {
+	f := func(_ context.Context) {
 		atomic.AddInt64(&called, 1)
-		close(done)
-	})
+		done <- struct{}{}
+	}
+	Start(ctx, f)
 	<-done
 	assert.Equal(t, called, 1)
 }
@@ -24,22 +25,24 @@ func TestStart(t *testing.T) {
 func TestStartAllocs(t *testing.T) {
 	ctx := context.Background()
 	done := make(chan struct{})
+	f := func(_ context.Context) {
+		done <- struct{}{}
+	}
 	assert.AllocsPerRun(t, 100, func() {
-		Start(ctx, func(ctx context.Context) {
-			done <- struct{}{}
-		})
+		Start(ctx, f)
 		<-done
-	}, 2)
+	}, 1)
 }
 
 func BenchmarkStart(b *testing.B) {
 	ctx := context.Background()
 	done := make(chan struct{})
+	f := func(ctx context.Context) {
+		done <- struct{}{}
+	}
 	b.ResetTimer()
 	for range b.N {
-		Start(ctx, func(ctx context.Context) {
-			done <- struct{}{}
-		})
+		Start(ctx, f)
 		<-done
 	}
 }
