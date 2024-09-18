@@ -24,12 +24,7 @@ func Start(ctx context.Context, f func(ctx context.Context)) {
 // The caller must call this function.
 func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
-		defer panichandle.Recover(ctx)
-		defer wg.Done()
-		f(ctx)
-	}()
+	WaitGroup(ctx, wg, f)
 	return wg.Wait
 }
 
