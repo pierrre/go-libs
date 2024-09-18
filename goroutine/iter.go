@@ -14,7 +14,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadows ctx.
 		defer cancel()
 		inCh := make(chan In)
-		defer Wait(ctx, func(ctx context.Context) {
+		go func() {
 			defer close(inCh)
 			for inV := range in {
 				inCh <- inV
@@ -24,10 +24,13 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 				default:
 				}
 			}
-		})()
+		}()
 		stoppedOutIter := make(chan struct{})
 		outCh := make(chan Out)
-		defer Wait(ctx, func(ctx context.Context) {
+		wg := waitGroupPool.Get()
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
 			defer close(outCh)
 			N(ctx, n, func(ctx context.Context) {
 				for inV := range inCh {
@@ -38,7 +41,11 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 					}
 				}
 			})
-		})()
+		}()
+		defer func() {
+			wg.Wait()
+			waitGroupPool.Put(wg)
+		}()
 		defer cancel()
 		defer close(stoppedOutIter)
 		for v := range outCh {
