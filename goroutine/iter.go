@@ -3,6 +3,8 @@ package goroutine
 import (
 	"context"
 	"iter"
+
+	"github.com/pierrre/go-libs/panichandle"
 )
 
 // Func is a function that receives an In value and returns an Out value.
@@ -28,11 +30,11 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 		stoppedOutIter := make(chan struct{})
 		outCh := make(chan Out)
 		wg := waitGroupPool.Get()
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			defer close(outCh)
-			N(ctx, n, func(ctx context.Context) {
+		wg.Add(n)
+		for range n {
+			go func() {
+				defer panichandle.Recover(ctx)
+				defer wg.Done()
 				for inV := range inCh {
 					outV := f(ctx, inV)
 					select {
@@ -40,11 +42,12 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], n int, f Func[In, O
 					case <-stoppedOutIter:
 					}
 				}
-			})
-		}()
-		defer func() {
+			}()
+		}
+		go func() {
 			wg.Wait()
 			waitGroupPool.Put(wg)
+			close(outCh)
 		}()
 		defer cancel()
 		defer close(stoppedOutIter)
