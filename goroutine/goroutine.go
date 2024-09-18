@@ -24,7 +24,12 @@ func Start(ctx context.Context, f func(ctx context.Context)) {
 // The caller must call this function.
 func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 	wg := new(sync.WaitGroup)
-	WaitGroup(ctx, wg, f)
+	wg.Add(1)
+	go func() {
+		defer panichandle.Recover(ctx)
+		defer wg.Done()
+		f(ctx)
+	}()
 	return wg.Wait
 }
 
@@ -32,18 +37,24 @@ func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 // It calls [sync.WaitGroup.Add] before starting it, and [sync.WaitGroup.Done] when the goroutine is terminated.
 func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Context)) {
 	wg.Add(1)
-	Start(ctx, func(ctx context.Context) {
+	go func() {
+		defer panichandle.Recover(ctx)
 		defer wg.Done()
 		f(ctx)
-	})
+	}()
 }
 
 // N executes a function with multiple goroutines.
 // It blocks until all goroutines are terminated.
 func N(ctx context.Context, n int, f func(ctx context.Context)) {
 	wg := waitGroupPool.Get()
+	wg.Add(n)
 	for range n {
-		WaitGroup(ctx, wg, f)
+		go func() {
+			defer panichandle.Recover(ctx)
+			defer wg.Done()
+			f(ctx)
+		}()
 	}
 	wg.Wait()
 	waitGroupPool.Put(wg)

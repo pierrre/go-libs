@@ -91,7 +91,7 @@ func TestWaitGroupAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		WaitGroup(ctx, wg, func(ctx context.Context) {})
 		wg.Wait()
-	}, 2)
+	}, 1)
 }
 
 func BenchmarkWaitGroup(b *testing.B) {
@@ -119,7 +119,7 @@ func TestNAllocs(t *testing.T) {
 	count := 10
 	assert.AllocsPerRun(t, 100, func() {
 		N(ctx, count, func(ctx context.Context) {})
-	}, 20)
+	}, 10)
 }
 
 func BenchmarkN(b *testing.B) {
