@@ -43,13 +43,8 @@ func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Conte
 // It blocks until all goroutines are terminated.
 func N(ctx context.Context, n int, f func(ctx context.Context)) {
 	wg := waitGroupPool.Get()
-	wg.Add(n)
 	for range n {
-		go func() {
-			defer panichandle.Recover(ctx)
-			defer wg.Done()
-			f(ctx)
-		}()
+		WaitGroup(ctx, wg, f)
 	}
 	wg.Wait()
 	waitGroupPool.Put(wg)
