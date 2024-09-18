@@ -62,7 +62,7 @@ func TestWaitAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
-	}, 3)
+	}, 2)
 }
 
 func BenchmarkWait(b *testing.B) {
