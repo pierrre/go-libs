@@ -1,3 +1,4 @@
+// Package iterutil provides utilities for iterators.
 package iterutil
 
 import (
