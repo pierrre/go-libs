@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"slices"
+	"strconv"
 	"sync/atomic"
 	"testing"
 
@@ -68,11 +69,11 @@ func runIterTest(t *testing.T, f func(t *testing.T)) {
 func TestIter(t *testing.T) {
 	ctx := context.Background()
 	in := slices.Values(testIterInputInts)
-	n := 2
+	workers := 2
 	f := func(ctx context.Context, v int) int {
 		return v * 2
 	}
-	out := Iter(ctx, in, n, f)
+	out := Iter(ctx, in, workers, f)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		res := slices.Collect(out)
 		slices.Sort(res)
@@ -85,13 +86,13 @@ func TestIterStopOutputIterator(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := context.Background()
 		in := slices.Values(testIterInputInts)
-		n := 2
+		workers := 2
 		workerCallcount := int64(0)
 		f := func(ctx context.Context, v int) int {
 			atomic.AddInt64(&workerCallcount, 1)
 			return v * 2
 		}
-		out := Iter(ctx, in, n, f)
+		out := Iter(ctx, in, workers, f)
 		iterCount := 0
 		for range out {
 			if iterCount >= 1 {
@@ -108,13 +109,13 @@ func TestIterContextCancel(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		in := slices.Values(testIterInputInts)
-		n := 2
+		workers := 2
 		workerCallcount := int64(0)
 		f := func(ctx context.Context, v int) int {
 			atomic.AddInt64(&workerCallcount, 1)
 			return v * 2
 		}
-		out := Iter(ctx, in, n, f)
+		out := Iter(ctx, in, workers, f)
 		iterCount := 0
 		for range out {
 			cancel()
@@ -129,14 +130,14 @@ func TestWithError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := context.Background()
 		in := slices.Values(testIterInputInts)
-		n := 2
+		workers := 2
 		f := WithError(func(ctx context.Context, v int) (int, error) {
 			if v == 3 {
 				return 0, errors.New("error")
 			}
 			return v * 2, nil
 		})
-		out := Iter(ctx, in, n, f)
+		out := Iter(ctx, in, workers, f)
 		errCount := 0
 		for v := range out {
 			if v.Val == 0 {
@@ -159,14 +160,17 @@ func BenchmarkIter(b *testing.B) {
 			}
 		}
 	}
-	n := 2
 	f := func(ctx context.Context, v int) int {
 		return v * 2
 	}
 	b.ResetTimer()
-	for range b.N {
-		out := Iter(ctx, in, n, f)
-		for range out {
-		}
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out := Iter(ctx, in, workers, f)
+				for range out {
+				}
+			}
+		})
 	}
 }
