@@ -3,6 +3,7 @@ package goroutine
 import (
 	"context"
 	"iter"
+	"sync"
 
 	"github.com/pierrre/go-libs/panichandle"
 )
@@ -10,50 +11,66 @@ import (
 // Iter runs a function on an iterator with concurrent workers.
 func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	return func(yield func(Out) bool) {
-		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadows ctx.
-		defer cancel()
-		inCh := make(chan In)
-		go func() {
-			defer close(inCh)
-			for inV := range in {
-				inCh <- inV
-				select {
-				case <-ctx.Done():
-					return
-				default:
-				}
-			}
-		}()
-		stoppedOutIter := make(chan struct{})
-		outCh := make(chan Out)
-		wg := waitGroupPool.Get()
-		wg.Add(workers)
-		for range workers {
-			go func() {
-				defer wg.Done()
-				for inV := range inCh {
-					func() {
-						defer panichandle.Recover(ctx)
-						outV := f(ctx, inV)
-						select {
-						case outCh <- outV:
-						case <-stoppedOutIter:
-						}
-					}()
-				}
-			}()
+		iterSeq(ctx, in, workers, f, yield)
+	}
+}
+
+func iterSeq[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	inCh := make(chan In)
+	outCh := make(chan Out)
+	stoppedOutIter := make(chan struct{})
+	wg := new(sync.WaitGroup)
+	defer wg.Wait()
+	go iterProducer(ctx, in, inCh)
+	iterWorkers(ctx, wg, workers, f, inCh, outCh, stoppedOutIter)
+	iterConsumer(cancel, stoppedOutIter, outCh, yield)
+}
+
+func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) {
+	defer close(inCh)
+	for inV := range in {
+		inCh <- inV
+		select {
+		case <-ctx.Done():
+			return
+		default:
 		}
-		go func() {
-			wg.Wait()
-			waitGroupPool.Put(wg)
-			close(outCh)
-		}()
-		defer cancel()
-		defer close(stoppedOutIter)
-		for v := range outCh {
-			if !yield(v) {
-				return
+	}
+}
+
+func iterWorkers[In, Out any](ctx context.Context, wg *sync.WaitGroup, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, stoppedOutIter <-chan struct{}) {
+	wg.Add(workers)
+	for range workers {
+		go iterWorker(ctx, wg, f, inCh, outCh, stoppedOutIter)
+	}
+	go func() {
+		wg.Wait()
+		close(outCh)
+	}()
+}
+
+func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, stoppedOutIter <-chan struct{}) {
+	defer wg.Done()
+	for inV := range inCh {
+		func() {
+			defer panichandle.Recover(ctx)
+			outV := f(ctx, inV)
+			select {
+			case outCh <- outV:
+			case <-stoppedOutIter:
 			}
+		}()
+	}
+}
+
+func iterConsumer[Out any](cancel context.CancelFunc, stoppedOutIter chan<- struct{}, outCh <-chan Out, yield func(Out) bool) {
+	for outV := range outCh {
+		if !yield(outV) {
+			cancel()
+			close(stoppedOutIter)
+			return
 		}
 	}
 }
