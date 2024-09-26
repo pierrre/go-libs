@@ -20,12 +20,12 @@ func iterSeq[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f f
 	defer cancel()
 	inCh := make(chan In)
 	outCh := make(chan Out)
-	stoppedOutIter := make(chan struct{})
-	wg := new(sync.WaitGroup)
-	defer wg.Wait()
+	workersWg := new(sync.WaitGroup)
+	defer workersWg.Wait()
+	consumerStopped := make(chan struct{})
 	go iterProducer(ctx, in, inCh)
-	iterWorkers(ctx, wg, workers, f, inCh, outCh, stoppedOutIter)
-	iterConsumer(cancel, stoppedOutIter, outCh, yield)
+	iterWorkers(ctx, workersWg, workers, f, inCh, outCh, consumerStopped)
+	iterConsumer(cancel, consumerStopped, outCh, yield)
 }
 
 func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) {
@@ -51,7 +51,7 @@ func iterWorkers[In, Out any](ctx context.Context, wg *sync.WaitGroup, workers i
 	}()
 }
 
-func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, stoppedOutIter <-chan struct{}) {
+func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, consumerStopped <-chan struct{}) {
 	defer wg.Done()
 	for inV := range inCh {
 		func() {
@@ -59,17 +59,19 @@ func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(con
 			outV := f(ctx, inV)
 			select {
 			case outCh <- outV:
-			case <-stoppedOutIter:
+			case <-consumerStopped:
 			}
 		}()
 	}
 }
 
-func iterConsumer[Out any](cancel context.CancelFunc, stoppedOutIter chan<- struct{}, outCh <-chan Out, yield func(Out) bool) {
+func iterConsumer[Out any](cancel context.CancelFunc, consumerStopped chan<- struct{}, outCh <-chan Out, yield func(Out) bool) {
+	defer func() {
+		cancel()
+		close(consumerStopped)
+	}()
 	for outV := range outCh {
 		if !yield(outV) {
-			cancel()
-			close(stoppedOutIter)
 			return
 		}
 	}
