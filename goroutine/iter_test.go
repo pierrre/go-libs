@@ -126,6 +126,26 @@ func TestIterContextCancel(t *testing.T) {
 	})
 }
 
+func TestIterPanicIterator(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		workerCallcount := int64(0)
+		f := func(ctx context.Context, v int) int {
+			atomic.AddInt64(&workerCallcount, 1)
+			return v * 2
+		}
+		out := Iter(ctx, in, workers, f)
+		assert.Panics(t, func() {
+			for range out {
+				panic("panic")
+			}
+		})
+		assert.LessOrEqual(t, workerCallcount, 4)
+	})
+}
+
 func TestWithError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := context.Background()
