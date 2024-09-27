@@ -40,10 +40,10 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 	}
 }
 
-func iterWorkers[In, Out any](ctx context.Context, wg *sync.WaitGroup, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, stoppedOutIter <-chan struct{}) {
+func iterWorkers[In, Out any](ctx context.Context, wg *sync.WaitGroup, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, consumerStopped <-chan struct{}) {
 	wg.Add(workers)
 	for range workers {
-		go iterWorker(ctx, wg, f, inCh, outCh, stoppedOutIter)
+		go iterWorker(ctx, wg, f, inCh, outCh, consumerStopped)
 	}
 	go func() {
 		wg.Wait()
