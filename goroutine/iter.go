@@ -51,6 +51,7 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 
 func iterWorkers[In, Out any](ctx context.Context, wg *sync.WaitGroup, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out, consumerStopped <-chan struct{}) {
 	// Start all workers.
+	workers = max(workers, 1) // Ensure there is at least 1 worker.
 	wg.Add(workers)
 	for range workers {
 		go iterWorker(ctx, wg, f, inCh, outCh, consumerStopped)
