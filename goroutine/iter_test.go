@@ -30,6 +30,23 @@ func ExampleIter() {
 	// 10
 }
 
+func ExampleIterOrdered() {
+	ctx := context.Background()
+	in := slices.Values([]int{1, 2, 3, 4, 5})
+	out := IterOrdered(ctx, in, 2, func(ctx context.Context, v int) int {
+		return v * 2
+	})
+	for v := range out {
+		fmt.Println(v)
+	}
+	// Output:
+	// 2
+	// 4
+	// 6
+	// 8
+	// 10
+}
+
 func ExampleWithError() {
 	ctx := context.Background()
 	in := slices.Values([]int{1, 2, 3, 4, 5})
@@ -188,6 +205,133 @@ func BenchmarkIter(b *testing.B) {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
 			for range b.N {
 				out := Iter(ctx, in, workers, f)
+				for range out {
+				}
+			}
+		})
+	}
+}
+
+func TestIterOrdered(t *testing.T) {
+	ctx := context.Background()
+	in := slices.Values(testIterInputInts)
+	workers := 2
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	out := IterOrdered(ctx, in, workers, f)
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		res := slices.Collect(out)
+		expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
+		assert.SliceEqual(t, res, expected)
+	})
+}
+
+func TestIterOrderedStopOutputIterator(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		workerCallcount := int64(0)
+		f := func(ctx context.Context, v int) int {
+			atomic.AddInt64(&workerCallcount, 1)
+			return v * 2
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		iterCount := 0
+		for range out {
+			if iterCount >= 1 {
+				break
+			}
+			iterCount++
+		}
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.Equal(t, iterCount, 1)
+	})
+}
+
+func TestIterOrderedContextCancel(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		workerCallcount := int64(0)
+		f := func(ctx context.Context, v int) int {
+			atomic.AddInt64(&workerCallcount, 1)
+			return v * 2
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		iterCount := int64(0)
+		for range out {
+			cancel()
+			iterCount++
+		}
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.LessOrEqual(t, iterCount, int64(len(testIterInputInts)))
+		assert.Equal(t, iterCount, workerCallcount)
+	})
+}
+
+func TestIterOrderedPanicIterator(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		workerCallcount := int64(0)
+		f := func(ctx context.Context, v int) int {
+			atomic.AddInt64(&workerCallcount, 1)
+			return v * 2
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		assert.Panics(t, func() {
+			for range out {
+				panic("panic")
+			}
+		})
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+	})
+}
+
+func TestIterOrderedPanicFunction(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		panicCount := int64(0)
+		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
+			atomic.AddInt64(&panicCount, 1)
+		})
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			panic("panic")
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		iterCount := 0
+		for range out {
+			iterCount++
+		}
+		assert.Equal(t, panicCount, int64(len(testIterInputInts)))
+		assert.Equal(t, iterCount, 0)
+	})
+}
+
+func BenchmarkIterOrdered(b *testing.B) {
+	ctx := context.Background()
+	in := func(yield func(int) bool) {
+		for i := range 100 {
+			if !yield(i) {
+				return
+			}
+		}
+	}
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	b.ResetTimer()
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out := IterOrdered(ctx, in, workers, f)
 				for range out {
 				}
 			}

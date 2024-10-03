@@ -3,12 +3,15 @@ package goroutine
 import (
 	"context"
 	"iter"
+	"reflect"
 
 	"github.com/pierrre/go-libs/panichandle"
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 // Iter runs a function for each values of an input iterator with concurrent workers.
-// It returns an iterator with the output values.
+// It returns an iterator with the unordered output values.
+// For an ordered version, see [IterOrdered].
 //
 // If the context is canceled, it stops reading values from the input iterator.
 // If the caller stops iterating the output iterator, the context is canceled.
@@ -78,6 +81,116 @@ func iterConsumer[Out any](cancel context.CancelFunc, outCh <-chan Out, yield fu
 			stopped = true
 		}
 	}
+}
+
+// IterOrdered is like [Iter] but it keeps the order of the output values.
+func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
+	return func(yield func(Out) bool) {
+		iterOrdered(ctx, in, workers, f, yield)
+	}
+}
+
+func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	workers = max(workers, 1)
+	inCh := make(chan iterOrderedValue[In, Out])
+	outCh := make(chan chan Out, workers)
+	go iterOrderedProducer(ctx, in, inCh, outCh)
+	iterOrderedWorkers(ctx, workers, f, inCh, outCh)
+	iterOrderedConsumer(cancel, outCh, yield)
+}
+
+func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out) {
+	defer close(inCh)
+	chPool := getChannelPool[Out]()
+	for inV := range in {
+		ch := chPool.Get()
+		inCh <- iterOrderedValue[In, Out]{
+			value: inV,
+			ch:    ch,
+		}
+		outCh <- ch
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+	}
+}
+
+func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out], outCh chan<- chan Out) {
+	wg := waitGroupPool.Get()
+	wg.Add(workers)
+	for range workers {
+		go func() {
+			defer wg.Done()
+			iterOrderedWorker(ctx, f, inCh)
+		}()
+	}
+	go func() {
+		wg.Wait()
+		waitGroupPool.Put(wg)
+		close(outCh)
+	}()
+}
+
+func iterOrderedWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out]) {
+	for inV := range inCh {
+		func() {
+			defer panichandle.Recover(ctx)
+			ok := false
+			defer func() {
+				if !ok {
+					close(inV.ch)
+				}
+			}()
+			outV := f(ctx, inV.value)
+			ok = true
+			inV.ch <- outV
+		}()
+	}
+}
+
+func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan Out, yield func(Out) bool) {
+	stopped := false
+	chPool := getChannelPool[Out]()
+	for ch := range outCh {
+		outV, ok := <-ch
+		if !ok {
+			continue
+		}
+		chPool.Put(ch)
+		if stopped {
+			continue
+		}
+		if !yield(outV) {
+			cancel()
+			stopped = true
+		}
+	}
+}
+
+type iterOrderedValue[In, Out any] struct {
+	value In
+	ch    chan<- Out
+}
+
+var channelPools = syncutil.Map[reflect.Type, any]{}
+
+func getChannelPool[T any]() *syncutil.Pool[chan T] {
+	typ := reflect.TypeFor[T]()
+	poolItf, _ := channelPools.Load(typ)
+	pool, ok := poolItf.(*syncutil.Pool[chan T])
+	if !ok {
+		pool = &syncutil.Pool[chan T]{
+			New: func() chan T {
+				return make(chan T, 1)
+			},
+		}
+		channelPools.Store(typ, pool)
+	}
+	return pool
 }
 
 // ValErr is a value with an error.
