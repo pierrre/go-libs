@@ -4,6 +4,8 @@ import (
 	"context"
 	"iter"
 	"sync"
+
+	"github.com/pierrre/go-libs/panichandle"
 )
 
 // Iter runs a function for each values of an input iterator with concurrent workers.
@@ -66,7 +68,7 @@ func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(con
 	defer wg.Done()         // Notify that the worker has finished.
 	for inV := range inCh { // Receive the input value from the producer.
 		func() {
-			// TODO: call a "panic handler" when it's available.
+			defer panichandle.Recover(ctx)
 			outV := f(ctx, inV)
 			select {
 			case outCh <- outV: // Send the output value to the consumer.
