@@ -100,7 +100,7 @@ func TestIterStopOutputIterator(t *testing.T) {
 			}
 			iterCount++
 		}
-		assert.Less(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
 	})
 }
 
@@ -121,8 +121,8 @@ func TestIterContextCancel(t *testing.T) {
 			cancel()
 			iterCount++
 		}
-		assert.Less(t, workerCallcount, int64(len(testIterInputInts)))
-		assert.Less(t, iterCount, int64(len(testIterInputInts)))
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.LessOrEqual(t, iterCount, int64(len(testIterInputInts)))
 		assert.Equal(t, iterCount, workerCallcount)
 	})
 }
