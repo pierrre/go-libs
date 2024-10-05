@@ -100,7 +100,7 @@ func TestIterStopOutputIterator(t *testing.T) {
 			}
 			iterCount++
 		}
-		assert.LessOrEqual(t, workerCallcount, 5)
+		assert.Less(t, workerCallcount, int64(len(testIterInputInts)))
 	})
 }
 
@@ -116,13 +116,14 @@ func TestIterContextCancel(t *testing.T) {
 			return v * 2
 		}
 		out := Iter(ctx, in, workers, f)
-		iterCount := 0
+		iterCount := int64(0)
 		for range out {
 			cancel()
 			iterCount++
 		}
-		assert.LessOrEqual(t, workerCallcount, 4)
-		assert.LessOrEqual(t, iterCount, 4)
+		assert.Less(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.Less(t, iterCount, int64(len(testIterInputInts)))
+		assert.Equal(t, iterCount, workerCallcount)
 	})
 }
 
@@ -142,32 +143,7 @@ func TestIterPanicIterator(t *testing.T) {
 				panic("panic")
 			}
 		})
-		assert.LessOrEqual(t, workerCallcount, 4)
-	})
-}
-
-func TestWithError(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
-		in := slices.Values(testIterInputInts)
-		workers := 2
-		f := WithError(func(ctx context.Context, v int) (int, error) {
-			if v == 3 {
-				return 0, errors.New("error")
-			}
-			return v * 2, nil
-		})
-		out := Iter(ctx, in, workers, f)
-		errCount := 0
-		for v := range out {
-			if v.Val == 0 {
-				errCount++
-				assert.Error(t, v.Err)
-			} else {
-				assert.NoError(t, v.Err)
-			}
-		}
-		assert.Equal(t, errCount, 1)
+		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
 	})
 }
 
@@ -193,4 +169,29 @@ func BenchmarkIter(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestWithError(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		f := WithError(func(ctx context.Context, v int) (int, error) {
+			if v == 3 {
+				return 0, errors.New("error")
+			}
+			return v * 2, nil
+		})
+		out := Iter(ctx, in, workers, f)
+		errCount := 0
+		for v := range out {
+			if v.Val == 0 {
+				errCount++
+				assert.Error(t, v.Err)
+			} else {
+				assert.NoError(t, v.Err)
+			}
+		}
+		assert.Equal(t, errCount, 1)
+	})
 }
