@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/panichandle"
 )
 
 func ExampleIter() {
@@ -144,6 +145,28 @@ func TestIterPanicIterator(t *testing.T) {
 			}
 		})
 		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+	})
+}
+
+func TestIterPanicFunction(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		panicCount := int64(0)
+		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
+			atomic.AddInt64(&panicCount, 1)
+		})
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			panic("panic")
+		}
+		out := Iter(ctx, in, workers, f)
+		iterCount := int64(0)
+		for range out {
+			iterCount++
+		}
+		assert.Equal(t, panicCount, int64(len(testIterInputInts)))
+		assert.LessOrEqual(t, iterCount, 0)
 	})
 }
 
