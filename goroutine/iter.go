@@ -43,13 +43,14 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 }
 
 func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	wg := new(sync.WaitGroup)
+	wg := waitGroupPool.Get()
 	wg.Add(workers)
 	for range workers {
 		go iterWorker(ctx, wg, f, inCh, outCh)
 	}
 	go func() {
 		wg.Wait()
+		waitGroupPool.Put(wg)
 		close(outCh)
 	}()
 }
