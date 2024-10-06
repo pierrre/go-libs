@@ -102,6 +102,7 @@ func TestIterStopOutputIterator(t *testing.T) {
 			iterCount++
 		}
 		assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+		assert.Equal(t, iterCount, 1)
 	})
 }
 
@@ -161,12 +162,12 @@ func TestIterPanicFunction(t *testing.T) {
 			panic("panic")
 		}
 		out := Iter(ctx, in, workers, f)
-		iterCount := int64(0)
+		iterCount := 0
 		for range out {
 			iterCount++
 		}
 		assert.Equal(t, panicCount, int64(len(testIterInputInts)))
-		assert.LessOrEqual(t, iterCount, 0)
+		assert.Equal(t, iterCount, 0)
 	})
 }
 
