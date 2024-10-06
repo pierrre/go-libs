@@ -3,7 +3,6 @@ package goroutine
 import (
 	"context"
 	"iter"
-	"sync"
 
 	"github.com/pierrre/go-libs/panichandle"
 )
@@ -46,7 +45,10 @@ func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.C
 	wg := waitGroupPool.Get()
 	wg.Add(workers)
 	for range workers {
-		go iterWorker(ctx, wg, f, inCh, outCh)
+		go func() {
+			defer wg.Done()
+			iterWorker(ctx, f, inCh, outCh)
+		}()
 	}
 	go func() {
 		wg.Wait()
@@ -55,8 +57,7 @@ func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.C
 	}()
 }
 
-func iterWorker[In, Out any](ctx context.Context, wg *sync.WaitGroup, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	defer wg.Done()
+func iterWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
 	for inV := range inCh {
 		func() {
 			defer panichandle.Recover(ctx)
