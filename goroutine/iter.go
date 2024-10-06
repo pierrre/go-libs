@@ -68,11 +68,14 @@ func iterWorker[In, Out any](ctx context.Context, f func(context.Context, In) Ou
 }
 
 func iterConsumer[Out any](cancel context.CancelFunc, outCh <-chan Out, yield func(Out) bool) {
-	callYield := true
+	stopped := false
 	for outV := range outCh {
-		if callYield && !yield(outV) {
+		if stopped {
+			continue
+		}
+		if !yield(outV) {
 			cancel()
-			callYield = false
+			stopped = true
 		}
 	}
 }
