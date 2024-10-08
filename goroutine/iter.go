@@ -109,7 +109,7 @@ func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 
 // iterOrderedProducer reads values from the input iterator, sends them to the workers and the consumer.
 func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out) {
-	defer close(inCh)
+	defer close(inCh) // Notify the workers that there are no more values to process.
 	chPool := getChannelPool[Out]()
 	for inV := range in {
 		ch := chPool.Get()
@@ -139,7 +139,7 @@ func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(co
 	go func() {
 		wg.Wait()
 		waitGroupPool.Put(wg)
-		close(outCh)
+		close(outCh) // Notify the consumer that all workers are done.
 	}()
 }
 
@@ -175,7 +175,7 @@ func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan O
 			continue // Drain the output channel if the output iterator was stopped.
 		}
 		if !yield(outV) {
-			cancel()
+			cancel() // Notify the producer that the output iterator was stopped.
 			stopped = true
 		}
 	}
