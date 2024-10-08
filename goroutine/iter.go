@@ -21,19 +21,21 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 	}
 }
 
+// iterSeq implements the [Iter] logic.
 func iterSeq[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	workers = max(workers, 1)
 	inCh := make(chan In)
-	outCh := make(chan Out, workers)
+	outCh := make(chan Out, workers) // The buffer helps to not block the workers if the code reading the output iterator is slow.
 	go iterProducer(ctx, in, inCh)
 	iterWorkers(ctx, workers, f, inCh, outCh)
 	iterConsumer(cancel, outCh, yield)
 }
 
+// iterProducer reads values from the input iterator and sends them to the workers.
 func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) {
-	defer close(inCh)
+	defer close(inCh) // Notify the workers that there are no more values to process.
 	for inV := range in {
 		inCh <- inV
 		select {
@@ -44,6 +46,7 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 	}
 }
 
+// iterWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
 	wg := waitGroupPool.Get()
 	wg.Add(workers)
@@ -56,10 +59,11 @@ func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.C
 	go func() {
 		wg.Wait()
 		waitGroupPool.Put(wg)
-		close(outCh)
+		close(outCh) // Notify the consumer that all workers are done.
 	}()
 }
 
+// iterWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
 func iterWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
 	for inV := range inCh {
 		func() {
@@ -70,14 +74,15 @@ func iterWorker[In, Out any](ctx context.Context, f func(context.Context, In) Ou
 	}
 }
 
+// iterConsumer reads the output values from the output channel and yields them to the output iterator.
 func iterConsumer[Out any](cancel context.CancelFunc, outCh <-chan Out, yield func(Out) bool) {
 	stopped := false
 	for outV := range outCh {
 		if stopped {
-			continue
+			continue // Drain the output channel if the output iterator was stopped.
 		}
 		if !yield(outV) {
-			cancel()
+			cancel() // Notify the producer that the output iterator was stopped.
 			stopped = true
 		}
 	}
@@ -90,17 +95,19 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 	}
 }
 
+// iterOrdered implements the [IterOrdered] logic.
 func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	workers = max(workers, 1)
 	inCh := make(chan iterOrderedValue[In, Out])
-	outCh := make(chan chan Out, workers*2)
+	outCh := make(chan chan Out, workers*2) // The buffer helps to not block the workers, if one of the workers is slow, or if the code reading the output iterator is slow.
 	go iterOrderedProducer(ctx, in, inCh, outCh)
 	iterOrderedWorkers(ctx, workers, f, inCh, outCh)
 	iterOrderedConsumer(cancel, outCh, yield)
 }
 
+// iterOrderedProducer reads values from the input iterator, sends them to the workers and the consumer.
 func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out) {
 	defer close(inCh)
 	chPool := getChannelPool[Out]()
@@ -119,6 +126,7 @@ func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh
 	}
 }
 
+// iterOrderedWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out], outCh chan<- chan Out) {
 	wg := waitGroupPool.Get()
 	wg.Add(workers)
@@ -135,6 +143,7 @@ func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(co
 	}()
 }
 
+// iterOrderedWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
 func iterOrderedWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out]) {
 	for inV := range inCh {
 		func() {
@@ -142,27 +151,28 @@ func iterOrderedWorker[In, Out any](ctx context.Context, f func(context.Context,
 			ok := false
 			defer func() {
 				if !ok {
-					close(inV.ch)
+					close(inV.ch) // Close the channel if the worker didn't send a value (panic).
 				}
 			}()
 			outV := f(ctx, inV.value)
-			ok = true
 			inV.ch <- outV
+			ok = true
 		}()
 	}
 }
 
+// iterOrderedConsumer reads the output values from the output channel and yields them to the output iterator.
 func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan Out, yield func(Out) bool) {
 	stopped := false
 	chPool := getChannelPool[Out]()
 	for ch := range outCh {
 		outV, ok := <-ch
 		if !ok {
-			continue
+			continue // Skip the value if the worker didn't send a value.
 		}
 		chPool.Put(ch)
 		if stopped {
-			continue
+			continue // Drain the output channel if the output iterator was stopped.
 		}
 		if !yield(outV) {
 			cancel()
@@ -185,7 +195,7 @@ func getChannelPool[T any]() *syncutil.Pool[chan T] {
 	if !ok {
 		pool = &syncutil.Pool[chan T]{
 			New: func() chan T {
-				return make(chan T, 1)
+				return make(chan T, 1) // The buffer helps to not block the workers if the consumer is not yet reading this value.
 			},
 		}
 		channelPools.Store(typ, pool)
