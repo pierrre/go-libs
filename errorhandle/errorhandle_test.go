@@ -3,10 +3,20 @@ package errorhandle
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/pierrre/assert"
 )
+
+func Example() {
+	ctx := context.Background()
+	ctx = SetHandlerToContext(ctx, func(ctx context.Context, err error) {
+		fmt.Println("Error:", err)
+	})
+	Handle(ctx, errors.New("test"))
+	// Output: Error: test
+}
 
 func TestSetHandlerToContext(t *testing.T) {
 	ctx := context.Background()
