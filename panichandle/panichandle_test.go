@@ -9,6 +9,16 @@ import (
 	"github.com/pierrre/assert"
 )
 
+func Example() {
+	ctx := context.Background()
+	ctx = SetHandlerToContext(ctx, func(ctx context.Context, r any) {
+		fmt.Println("Panic:", r)
+	})
+	defer Recover(ctx)
+	panic("test")
+	// Output: Panic: test
+}
+
 func TestRecoverNoPanicWithoutHandler(t *testing.T) {
 	ctx := context.Background()
 	Recover(ctx)
