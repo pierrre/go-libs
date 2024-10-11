@@ -74,6 +74,38 @@ func BenchmarkWait(b *testing.B) {
 	}
 }
 
+func TestCancelWait(t *testing.T) {
+	ctx := context.Background()
+	var called int64
+	cancelWait := CancelWait(ctx, func(ctx context.Context) {
+		atomic.AddInt64(&called, 1)
+		<-ctx.Done()
+	})
+	cancelWait()
+	assert.Equal(t, called, 1)
+}
+
+func TestCancelWaitAllocs(t *testing.T) {
+	ctx := context.Background()
+	assert.AllocsPerRun(t, 100, func() {
+		cancelWait := CancelWait(ctx, func(ctx context.Context) {
+			<-ctx.Done()
+		})
+		cancelWait()
+	}, 5)
+}
+
+func BenchmarkCancelWait(b *testing.B) {
+	ctx := context.Background()
+	b.ResetTimer()
+	for range b.N {
+		cancelWait := CancelWait(ctx, func(ctx context.Context) {
+			<-ctx.Done()
+		})
+		cancelWait()
+	}
+}
+
 func TestWaitGroup(t *testing.T) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)

@@ -19,13 +19,31 @@ func Start(ctx context.Context, f func(ctx context.Context)) {
 	}()
 }
 
-// Wait executes a function in a new goroutine and allows to wait until it terminates.
+// Wait executes a function in a new goroutine.
 // It returns a function that blocks until the goroutine is terminated.
 // The caller must call this function.
 func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 	wg := new(sync.WaitGroup)
 	WaitGroup(ctx, wg, f)
 	return wg.Wait
+}
+
+// CancelWait executes a function in a new goroutine.
+// It returns a function that cancels the context and blocks until the goroutine is terminated.
+// The caller must call this function.
+func CancelWait(ctx context.Context, f func(ctx context.Context)) (cancelWait func()) {
+	ctx, cancel := context.WithCancel(ctx)
+	wg := new(sync.WaitGroup)
+	wg.Add(1)
+	go func() {
+		defer panichandle.Recover(ctx)
+		defer wg.Done()
+		f(ctx)
+	}()
+	return func() {
+		cancel()
+		wg.Wait()
+	}
 }
 
 // WaitGroup executes a function in a new goroutine with a [sync.WaitGroup].
