@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/assert/assertauto"
 )
 
 func TestStart(t *testing.T) {
@@ -28,10 +29,10 @@ func TestStartAllocs(t *testing.T) {
 	f := func(_ context.Context) {
 		done <- struct{}{}
 	}
-	assert.AllocsPerRun(t, 100, func() {
+	assertauto.AllocsPerRun(t, 100, func() {
 		Start(ctx, f)
 		<-done
-	}, 1)
+	})
 }
 
 func BenchmarkStart(b *testing.B) {
@@ -59,10 +60,10 @@ func TestWait(t *testing.T) {
 
 func TestWaitAllocs(t *testing.T) {
 	ctx := context.Background()
-	assert.AllocsPerRun(t, 100, func() {
+	assertauto.AllocsPerRun(t, 100, func() {
 		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
-	}, 2)
+	})
 }
 
 func BenchmarkWait(b *testing.B) {
@@ -87,12 +88,12 @@ func TestCancelWait(t *testing.T) {
 
 func TestCancelWaitAllocs(t *testing.T) {
 	ctx := context.Background()
-	assert.AllocsPerRun(t, 100, func() {
+	assertauto.AllocsPerRun(t, 100, func() {
 		cancelWait := CancelWait(ctx, func(ctx context.Context) {
 			<-ctx.Done()
 		})
 		cancelWait()
-	}, 5)
+	})
 }
 
 func BenchmarkCancelWait(b *testing.B) {
@@ -120,10 +121,10 @@ func TestWaitGroup(t *testing.T) {
 func TestWaitGroupAllocs(t *testing.T) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	assert.AllocsPerRun(t, 100, func() {
+	assertauto.AllocsPerRun(t, 100, func() {
 		WaitGroup(ctx, wg, func(ctx context.Context) {})
 		wg.Wait()
-	}, 1)
+	})
 }
 
 func BenchmarkWaitGroup(b *testing.B) {
@@ -149,9 +150,9 @@ func TestN(t *testing.T) {
 func TestNAllocs(t *testing.T) {
 	ctx := context.Background()
 	count := 10
-	assert.AllocsPerRun(t, 100, func() {
+	assertauto.AllocsPerRun(t, 100, func() {
 		N(ctx, count, func(ctx context.Context) {})
-	}, 10)
+	})
 }
 
 func BenchmarkN(b *testing.B) {
