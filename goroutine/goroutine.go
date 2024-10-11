@@ -34,12 +34,7 @@ func Wait(ctx context.Context, f func(ctx context.Context)) (wait func()) {
 func CancelWait(ctx context.Context, f func(ctx context.Context)) (cancelWait func()) {
 	ctx, cancel := context.WithCancel(ctx)
 	wg := new(sync.WaitGroup)
-	wg.Add(1)
-	go func() {
-		defer panichandle.Recover(ctx)
-		defer wg.Done()
-		f(ctx)
-	}()
+	WaitGroup(ctx, wg, f)
 	return func() {
 		cancel()
 		wg.Wait()
