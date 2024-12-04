@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/panichandle"
 )
 
@@ -51,8 +52,8 @@ func ExampleIterOrdered() {
 
 func ExampleSlice() {
 	ctx := context.Background()
-	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, v int) int {
-		return v * 2
+	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	})
 	fmt.Println(out)
 	// Output:
@@ -67,8 +68,8 @@ func ExampleMap() {
 		3: 3,
 		4: 4,
 		5: 5,
-	}, 2, func(ctx context.Context, v int) int {
-		return v * 2
+	}, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	})
 	fmt.Println(out)
 	// Output:
@@ -370,8 +371,8 @@ func BenchmarkIterOrdered(b *testing.B) {
 func TestSlice(t *testing.T) {
 	ctx := context.Background()
 	workers := 2
-	f := func(ctx context.Context, v int) int {
-		return v * 2
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	}
 	out := Slice(ctx, testIterInputInts, workers, f)
 	expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
@@ -384,8 +385,8 @@ func BenchmarkSlice(b *testing.B) {
 	for i := range in {
 		in[i] = i
 	}
-	f := func(ctx context.Context, v int) int {
-		return v * 2
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	}
 	b.ResetTimer()
 	var res []int
@@ -410,8 +411,8 @@ func TestMap(t *testing.T) {
 		5: 5,
 	}
 	workers := 2
-	f := func(ctx context.Context, v int) int {
-		return v * 2
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	}
 	out := Map(ctx, in, workers, f)
 	expected := map[int]int{
@@ -430,8 +431,8 @@ func BenchmarkMap(b *testing.B) {
 	for i := range 100 {
 		in[i] = i
 	}
-	f := func(ctx context.Context, v int) int {
-		return v * 2
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	}
 	b.ResetTimer()
 	var res map[int]int

@@ -207,14 +207,18 @@ func getChannelPool[T any]() *syncutil.Pool[chan T] {
 }
 
 // Slice is a [Iter] wrapper for slices.
-func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(context.Context, In) Out) SOut {
+func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(context.Context, iterutil.KeyVal[int, In]) Out) SOut {
 	out := make(SOut, len(in))
 	res := Iter(ctx, iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
 		func(ctx context.Context, i iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
+			out := f(ctx, iterutil.KeyVal[int, In]{
+				Key: i.Key,
+				Val: i.Val,
+			})
 			return iterutil.KeyVal[int, Out]{
 				Key: i.Key,
-				Val: f(ctx, i.Val),
+				Val: out,
 			}
 		},
 	)
@@ -225,14 +229,18 @@ func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, work
 }
 
 // Map is a [Iter] wrapper for maps.
-func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(context.Context, In) Out) MOut {
+func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) MOut {
 	out := make(MOut, len(in))
 	res := Iter(ctx, iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
 		func(ctx context.Context, i iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
+			out := f(ctx, iterutil.KeyVal[K, In]{
+				Key: i.Key,
+				Val: i.Val,
+			})
 			return iterutil.KeyVal[K, Out]{
 				Key: i.Key,
-				Val: f(ctx, i.Val),
+				Val: out,
 			}
 		},
 	)
