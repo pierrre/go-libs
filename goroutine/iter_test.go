@@ -49,6 +49,32 @@ func ExampleIterOrdered() {
 	// 10
 }
 
+func ExampleSlice() {
+	ctx := context.Background()
+	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, v int) int {
+		return v * 2
+	})
+	fmt.Println(out)
+	// Output:
+	// [2 4 6 8 10]
+}
+
+func ExampleMap() {
+	ctx := context.Background()
+	out := Map(ctx, map[int]int{
+		1: 1,
+		2: 2,
+		3: 3,
+		4: 4,
+		5: 5,
+	}, 2, func(ctx context.Context, v int) int {
+		return v * 2
+	})
+	fmt.Println(out)
+	// Output:
+	// map[1:2 2:4 3:6 4:8 5:10]
+}
+
 func ExampleWithError() {
 	ctx := context.Background()
 	in := slices.Values([]int{1, 2, 3, 4, 5})
