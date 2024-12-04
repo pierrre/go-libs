@@ -13,6 +13,8 @@ import (
 	"github.com/pierrre/go-libs/panichandle"
 )
 
+var benchRes any
+
 func ExampleIter() {
 	ctx := context.Background()
 	in := slices.Values([]int{1, 2, 3, 4, 5})
@@ -337,6 +339,85 @@ func BenchmarkIterOrdered(b *testing.B) {
 			}
 		})
 	}
+}
+
+func TestSlice(t *testing.T) {
+	ctx := context.Background()
+	workers := 2
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	out := Slice(ctx, testIterInputInts, workers, f)
+	expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
+	assert.SliceEqual(t, out, expected)
+}
+
+func BenchmarkSlice(b *testing.B) {
+	ctx := context.Background()
+	in := make([]int, 100)
+	for i := range in {
+		in[i] = i
+	}
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	b.ResetTimer()
+	var res []int
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out := Slice(ctx, in, workers, f)
+				res = out
+			}
+		})
+	}
+	benchRes = res
+}
+
+func TestMap(t *testing.T) {
+	ctx := context.Background()
+	in := map[int]int{
+		1: 1,
+		2: 2,
+		3: 3,
+		4: 4,
+		5: 5,
+	}
+	workers := 2
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	out := Map(ctx, in, workers, f)
+	expected := map[int]int{
+		1: 2,
+		2: 4,
+		3: 6,
+		4: 8,
+		5: 10,
+	}
+	assert.MapEqual(t, out, expected)
+}
+
+func BenchmarkMap(b *testing.B) {
+	ctx := context.Background()
+	in := make(map[int]int)
+	for i := range 100 {
+		in[i] = i
+	}
+	f := func(ctx context.Context, v int) int {
+		return v * 2
+	}
+	b.ResetTimer()
+	var res map[int]int
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out := Map(ctx, in, workers, f)
+				res = out
+			}
+		})
+	}
+	benchRes = res
 }
 
 func TestWithError(t *testing.T) {

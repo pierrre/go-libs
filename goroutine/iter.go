@@ -3,8 +3,11 @@ package goroutine
 import (
 	"context"
 	"iter"
+	"maps"
 	"reflect"
+	"slices"
 
+	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/panichandle"
 	"github.com/pierrre/go-libs/syncutil"
 )
@@ -201,6 +204,42 @@ func getChannelPool[T any]() *syncutil.Pool[chan T] {
 		channelPools.Store(typ, pool)
 	}
 	return pool
+}
+
+// Slice is a [Iter] wrapper for slices.
+func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(context.Context, In) Out) SOut {
+	out := make(SOut, len(in))
+	res := Iter(ctx, iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
+		min(workers, len(in)),
+		func(ctx context.Context, i iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
+			return iterutil.KeyVal[int, Out]{
+				Key: i.Key,
+				Val: f(ctx, i.Val),
+			}
+		},
+	)
+	for v := range res {
+		out[v.Key] = v.Val
+	}
+	return out
+}
+
+// Map is a [Iter] wrapper for maps.
+func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(context.Context, In) Out) MOut {
+	out := make(MOut, len(in))
+	res := Iter(ctx, iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
+		min(workers, len(in)),
+		func(ctx context.Context, i iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
+			return iterutil.KeyVal[K, Out]{
+				Key: i.Key,
+				Val: f(ctx, i.Val),
+			}
+		},
+	)
+	for v := range res {
+		out[v.Key] = v.Val
+	}
+	return out
 }
 
 // ValErr is a value with an error.
