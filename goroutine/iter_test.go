@@ -444,3 +444,22 @@ func TestWithError(t *testing.T) {
 		assert.Equal(t, errCount, 1)
 	})
 }
+
+func TestCancelOnError(t *testing.T) {
+	ctx := context.Background()
+	ctx, cancel := context.WithCancel(ctx)
+	defer cancel()
+	f := func(ctx context.Context, v int) (int, error) {
+		if v == 3 {
+			return 0, errors.New("error")
+		}
+		return v * 2, nil
+	}
+	f = CancelOnError(cancel, f)
+	_, err := f(ctx, 0)
+	assert.NoError(t, err)
+	assert.NoError(t, ctx.Err())
+	_, err = f(ctx, 3)
+	assert.Error(t, err)
+	assert.ErrorIs(t, ctx.Err(), context.Canceled)
+}

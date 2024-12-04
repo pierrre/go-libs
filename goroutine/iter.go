@@ -258,3 +258,14 @@ func WithError[In, Out any](f func(context.Context, In) (Out, error)) func(conte
 		}
 	}
 }
+
+// CancelOnError cancels the context if the function returns an error.
+func CancelOnError[In, Out any](cancel context.CancelFunc, f func(context.Context, In) (Out, error)) func(context.Context, In) (Out, error) {
+	return func(ctx context.Context, inV In) (Out, error) {
+		outV, err := f(ctx, inV)
+		if err != nil {
+			cancel()
+		}
+		return outV, err
+	}
+}
