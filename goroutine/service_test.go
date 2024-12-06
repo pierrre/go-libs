@@ -11,17 +11,13 @@ import (
 
 func ExampleServices() {
 	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
 	fmt.Println("start")
 	err := Services(ctx, map[string]func(context.Context) error{
-		"a": func(_ context.Context) error { //nolint:unparam // It's a test.
+		"a": func(ctx context.Context) error {
 			fmt.Println("service A")
-			cancel()
 			return nil
 		},
-		"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
-			<-ctx.Done()
+		"b": func(ctx context.Context) error {
 			fmt.Println("service B")
 			return nil
 		},
@@ -30,7 +26,7 @@ func ExampleServices() {
 		panic(err)
 	}
 	fmt.Println("stop")
-	// Output:
+	// Unordered output:
 	// start
 	// service A
 	// service B

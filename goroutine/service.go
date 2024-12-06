@@ -4,8 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 
-	"github.com/pierrre/go-libs/panichandle"
+	"github.com/pierrre/go-libs/iterutil"
 )
 
 // Services runs multiple services in goroutines.
@@ -17,29 +19,13 @@ import (
 func Services(ctx context.Context, services map[string]func(context.Context) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	errCh := make(chan error)
-	wg := waitGroupPool.Get()
-	wg.Add(len(services))
-	for name, service := range services {
-		go func() {
-			defer panichandle.Recover(ctx)
-			defer wg.Done()
-			err := service(ctx)
-			if err != nil {
-				err = fmt.Errorf("%s: %w", name, err)
-				errCh <- err
-			}
-		}()
-	}
-	go func() {
-		wg.Wait()
-		waitGroupPool.Put(wg)
-		close(errCh)
-	}()
-	var errs []error //nolint:prealloc // We don't know the number of errors.
-	for err := range errCh {
-		cancel()
-		errs = append(errs, err)
-	}
-	return errors.Join(errs...)
+	res := Map(ctx, services, len(services), func(ctx context.Context, service iterutil.KeyVal[string, func(context.Context) error]) error {
+		err := service.Val(ctx)
+		if err != nil {
+			cancel()
+			return fmt.Errorf("%s: %w", service.Key, err)
+		}
+		return nil
+	})
+	return errors.Join(slices.Collect(maps.Values(res))...)
 }
