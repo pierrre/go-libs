@@ -19,7 +19,7 @@ import (
 func Services(ctx context.Context, services map[string]func(context.Context) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	res := Map(ctx, services, len(services), func(ctx context.Context, service iterutil.KeyVal[string, func(context.Context) error]) error {
+	errs := Iter(ctx, iterutil.Seq2ToSeq(maps.All(services), iterutil.NewKeyVal), len(services), func(ctx context.Context, service iterutil.KeyVal[string, func(context.Context) error]) error {
 		err := service.Val(ctx)
 		if err != nil {
 			cancel()
@@ -27,5 +27,5 @@ func Services(ctx context.Context, services map[string]func(context.Context) err
 		}
 		return nil
 	})
-	return errors.Join(slices.Collect(maps.Values(res))...)
+	return errors.Join(slices.Collect(errs)...)
 }
