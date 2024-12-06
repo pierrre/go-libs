@@ -211,14 +211,10 @@ func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, work
 	out := make(SOut, len(in))
 	res := Iter(ctx, iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
-		func(ctx context.Context, i iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
-			out := f(ctx, iterutil.KeyVal[int, In]{
-				Key: i.Key,
-				Val: i.Val,
-			})
+		func(ctx context.Context, kv iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
 			return iterutil.KeyVal[int, Out]{
-				Key: i.Key,
-				Val: out,
+				Key: kv.Key,
+				Val: f(ctx, kv),
 			}
 		},
 	)
@@ -233,14 +229,10 @@ func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.C
 	out := make(MOut, len(in))
 	res := Iter(ctx, iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
-		func(ctx context.Context, i iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
-			out := f(ctx, iterutil.KeyVal[K, In]{
-				Key: i.Key,
-				Val: i.Val,
-			})
+		func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
 			return iterutil.KeyVal[K, Out]{
-				Key: i.Key,
-				Val: out,
+				Key: kv.Key,
+				Val: f(ctx, kv),
 			}
 		},
 	)
