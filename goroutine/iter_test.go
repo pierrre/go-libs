@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/panichandle"
 )
 
@@ -52,12 +51,27 @@ func ExampleIterOrdered() {
 
 func ExampleSlice() {
 	ctx := context.Background()
-	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
+	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) int {
+		return v * 2
 	})
 	fmt.Println(out)
 	// Output:
 	// [2 4 6 8 10]
+}
+
+func ExampleSliceError() {
+	ctx := context.Background()
+	out, err := SliceError(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) (int, error) {
+		if v == 3 {
+			return 0, errors.New("error")
+		}
+		return v * 2, nil
+	})
+	fmt.Println(out)
+	fmt.Println(err)
+	// Output:
+	// [2 4 0 8 10]
+	// error
 }
 
 func ExampleMap() {
@@ -68,12 +82,33 @@ func ExampleMap() {
 		3: 3,
 		4: 4,
 		5: 5,
-	}, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
+	}, 2, func(ctx context.Context, k int, v int) int {
+		return v * 2
 	})
 	fmt.Println(out)
 	// Output:
 	// map[1:2 2:4 3:6 4:8 5:10]
+}
+
+func ExampleMapError() {
+	ctx := context.Background()
+	out, err := MapError(ctx, map[int]int{
+		1: 1,
+		2: 2,
+		3: 3,
+		4: 4,
+		5: 5,
+	}, 2, func(ctx context.Context, k int, v int) (int, error) {
+		if v == 3 {
+			return 0, errors.New("error")
+		}
+		return v * 2, nil
+	})
+	fmt.Println(out)
+	fmt.Println(err)
+	// Output:
+	// map[1:2 2:4 3:0 4:8 5:10]
+	// error
 }
 
 func ExampleWithError() {
@@ -369,14 +404,16 @@ func BenchmarkIterOrdered(b *testing.B) {
 }
 
 func TestSlice(t *testing.T) {
-	ctx := context.Background()
-	workers := 2
-	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
-	}
-	out := Slice(ctx, testIterInputInts, workers, f)
-	expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
-	assert.SliceEqual(t, out, expected)
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		workers := 2
+		f := func(ctx context.Context, i int, v int) int {
+			return v * 2
+		}
+		out := Slice(ctx, testIterInputInts, workers, f)
+		expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
+		assert.SliceEqual(t, out, expected)
+	})
 }
 
 func BenchmarkSlice(b *testing.B) {
@@ -385,8 +422,8 @@ func BenchmarkSlice(b *testing.B) {
 	for i := range in {
 		in[i] = i
 	}
-	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
+	f := func(ctx context.Context, i int, v int) int {
+		return v * 2
 	}
 	b.ResetTimer()
 	var res []int
@@ -401,28 +438,72 @@ func BenchmarkSlice(b *testing.B) {
 	benchRes = res
 }
 
-func TestMap(t *testing.T) {
+func TestSliceError(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		workers := 2
+		f := func(ctx context.Context, i int, v int) (int, error) {
+			if v == 3 {
+				return 0, errors.New("error")
+			}
+			return v * 2, nil
+		}
+		out, err := SliceError(ctx, testIterInputInts, workers, f)
+		expected := []int{2, 4, 0, 8, 10, 12, 14, 16, 18, 20}
+		assert.SliceEqual(t, out, expected)
+		assert.Error(t, err)
+	})
+}
+
+func BenchmarkSliceError(b *testing.B) {
 	ctx := context.Background()
-	in := map[int]int{
-		1: 1,
-		2: 2,
-		3: 3,
-		4: 4,
-		5: 5,
+	in := make([]int, 100)
+	for i := range in {
+		in[i] = i
 	}
-	workers := 2
-	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
+	f := func(ctx context.Context, i int, v int) (int, error) {
+		if i%10 == 0 {
+			return 0, errors.New("error")
+		}
+		return v * 2, nil
 	}
-	out := Map(ctx, in, workers, f)
-	expected := map[int]int{
-		1: 2,
-		2: 4,
-		3: 6,
-		4: 8,
-		5: 10,
+	b.ResetTimer()
+	var res []int
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out, _ := SliceError(ctx, in, workers, f)
+				res = out
+			}
+		})
 	}
-	assert.MapEqual(t, out, expected)
+	benchRes = res
+}
+
+func TestMap(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := map[int]int{
+			1: 1,
+			2: 2,
+			3: 3,
+			4: 4,
+			5: 5,
+		}
+		workers := 2
+		f := func(ctx context.Context, k int, v int) int {
+			return v * 2
+		}
+		out := Map(ctx, in, workers, f)
+		expected := map[int]int{
+			1: 2,
+			2: 4,
+			3: 6,
+			4: 8,
+			5: 10,
+		}
+		assert.MapEqual(t, out, expected)
+	})
 }
 
 func BenchmarkMap(b *testing.B) {
@@ -431,8 +512,8 @@ func BenchmarkMap(b *testing.B) {
 	for i := range 100 {
 		in[i] = i
 	}
-	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
-		return kv.Val * 2
+	f := func(ctx context.Context, k int, v int) int {
+		return v * 2
 	}
 	b.ResetTimer()
 	var res map[int]int
@@ -440,6 +521,61 @@ func BenchmarkMap(b *testing.B) {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
 			for range b.N {
 				out := Map(ctx, in, workers, f)
+				res = out
+			}
+		})
+	}
+	benchRes = res
+}
+
+func TestMapError(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := context.Background()
+		in := map[int]int{
+			1: 1,
+			2: 2,
+			3: 3,
+			4: 4,
+			5: 5,
+		}
+		workers := 2
+		f := func(ctx context.Context, k int, v int) (int, error) {
+			if v == 3 {
+				return 0, errors.New("error")
+			}
+			return v * 2, nil
+		}
+		out, err := MapError(ctx, in, workers, f)
+		expected := map[int]int{
+			1: 2,
+			2: 4,
+			3: 0,
+			4: 8,
+			5: 10,
+		}
+		assert.MapEqual(t, out, expected)
+		assert.Error(t, err)
+	})
+}
+
+func BenchmarkMapError(b *testing.B) {
+	ctx := context.Background()
+	in := make(map[int]int)
+	for i := range 100 {
+		in[i] = i
+	}
+	f := func(ctx context.Context, k int, v int) (int, error) {
+		if k%10 == 0 {
+			return 0, errors.New("error")
+		}
+		return v * 2, nil
+	}
+	b.ResetTimer()
+	var res map[int]int
+	for _, workers := range []int{1, 2, 5, 10} {
+		b.Run(strconv.Itoa(workers), func(b *testing.B) {
+			for range b.N {
+				out, _ := MapError(ctx, in, workers, f)
 				res = out
 			}
 		})
@@ -470,23 +606,4 @@ func TestWithError(t *testing.T) {
 		}
 		assert.Equal(t, errCount, 1)
 	})
-}
-
-func TestCancelOnError(t *testing.T) {
-	ctx := context.Background()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	f := func(ctx context.Context, v int) (int, error) {
-		if v == 3 {
-			return 0, errors.New("error")
-		}
-		return v * 2, nil
-	}
-	f = CancelOnError(cancel, f)
-	_, err := f(ctx, 0)
-	assert.NoError(t, err)
-	assert.NoError(t, ctx.Err())
-	_, err = f(ctx, 3)
-	assert.Error(t, err)
-	assert.ErrorIs(t, ctx.Err(), context.Canceled)
 }
