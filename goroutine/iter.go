@@ -2,6 +2,7 @@ package goroutine
 
 import (
 	"context"
+	"errors"
 	"iter"
 	"maps"
 	"reflect"
@@ -207,39 +208,99 @@ func getChannelPool[T any]() *syncutil.Pool[chan T] {
 }
 
 // Slice is a [Iter] wrapper for slices.
-func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(context.Context, iterutil.KeyVal[int, In]) Out) SOut {
-	out := make(SOut, len(in))
-	res := Iter(ctx, iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
+func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) Out) SOut {
+	res := Iter(
+		ctx,
+		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
 		func(ctx context.Context, kv iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
 			return iterutil.KeyVal[int, Out]{
 				Key: kv.Key,
-				Val: f(ctx, kv),
+				Val: f(ctx, kv.Key, kv.Val),
 			}
 		},
 	)
+	out := make(SOut, len(in))
 	for v := range res {
 		out[v.Key] = v.Val
 	}
 	return out
 }
 
+// SliceError is a [Slice] wrapper that returns an error.
+//
+//nolint:dupl // This is not exactly the same code.
+func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) (Out, error)) (SOut, error) {
+	res := Iter(
+		ctx,
+		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
+		min(workers, len(in)),
+		WithError(func(ctx context.Context, kv iterutil.KeyVal[int, In]) (iterutil.KeyVal[int, Out], error) {
+			v, err := f(ctx, kv.Key, kv.Val)
+			return iterutil.KeyVal[int, Out]{
+				Key: kv.Key,
+				Val: v,
+			}, err
+		}),
+	)
+	out := make(SOut, len(in))
+	var errs []error
+	for v := range res {
+		out[v.Val.Key] = v.Val.Val
+		if v.Err != nil {
+			errs = append(errs, v.Err)
+		}
+	}
+	err := errors.Join(errs...)
+	return out, err
+}
+
 // Map is a [Iter] wrapper for maps.
-func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) MOut {
-	out := make(MOut, len(in))
-	res := Iter(ctx, iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
+func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) Out) MOut {
+	res := Iter(
+		ctx,
+		iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
 		min(workers, len(in)),
 		func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
 			return iterutil.KeyVal[K, Out]{
 				Key: kv.Key,
-				Val: f(ctx, kv),
+				Val: f(ctx, kv.Key, kv.Val),
 			}
 		},
 	)
+	out := make(MOut, len(in))
 	for v := range res {
 		out[v.Key] = v.Val
 	}
 	return out
+}
+
+// MapError is a [Map] wrapper that returns an error.
+//
+//nolint:dupl // This is not exactly the same code.
+func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {
+	res := Iter(
+		ctx,
+		iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
+		min(workers, len(in)),
+		WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (iterutil.KeyVal[K, Out], error) {
+			v, err := f(ctx, kv.Key, kv.Val)
+			return iterutil.KeyVal[K, Out]{
+				Key: kv.Key,
+				Val: v,
+			}, err
+		}),
+	)
+	out := make(MOut, len(in))
+	var errs []error
+	for v := range res {
+		out[v.Val.Key] = v.Val.Val
+		if v.Err != nil {
+			errs = append(errs, v.Err)
+		}
+	}
+	err := errors.Join(errs...)
+	return out, err
 }
 
 // ValErr is a value with an error.
@@ -256,16 +317,5 @@ func WithError[In, Out any](f func(context.Context, In) (Out, error)) func(conte
 			Val: outV,
 			Err: err,
 		}
-	}
-}
-
-// CancelOnError cancels the context if the function returns an error.
-func CancelOnError[In, Out any](cancel context.CancelFunc, f func(context.Context, In) (Out, error)) func(context.Context, In) (Out, error) {
-	return func(ctx context.Context, inV In) (Out, error) {
-		outV, err := f(ctx, inV)
-		if err != nil {
-			cancel()
-		}
-		return outV, err
 	}
 }
