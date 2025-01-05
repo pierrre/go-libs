@@ -24,20 +24,20 @@ func TestWriteStringAllocs(t *testing.T) {
 }
 
 func BenchmarkWriteString(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = WriteString(io.Discard, "test")
 	}
 }
 
 func BenchmarkIOWriteString(b *testing.B) {
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = io.WriteString(io.Discard, "test")
 	}
 }
 
 func BenchmarkIOWriteStringConvert(b *testing.B) {
 	var w io.Writer = &testWriter{}
-	for i := 0; i < b.N; i++ {
+	for range b.N {
 		_, _ = io.WriteString(w, "test")
 	}
 }
