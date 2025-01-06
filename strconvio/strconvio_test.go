@@ -35,7 +35,7 @@ func TestWriteBool(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteBool(io.Discard, v)
 		}, 0)
@@ -69,7 +69,7 @@ func TestWriteFloat(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteFloat(io.Discard, v, 'f', -1, 64)
 		}, 0)
@@ -103,7 +103,7 @@ func TestWriteComplex(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteComplex(io.Discard, v, 'f', -1, 128)
 		}, 0)
@@ -141,7 +141,7 @@ func TestWriteInt(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteInt(io.Discard, v, 10)
 		}, 0)
@@ -171,7 +171,7 @@ func TestWriteUint(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteUint(io.Discard, v, 10)
 		}, 0)
@@ -201,7 +201,7 @@ func TestWriteQuote(t *testing.T) {
 		assert.NoError(t, err)
 		s := buf.String()
 		assertauto.Equal(t, s)
-		assert.Equal(t, len(s), n)
+		assert.StringLen(t, s, n)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteQuote(io.Discard, v)
 		}, 0)
