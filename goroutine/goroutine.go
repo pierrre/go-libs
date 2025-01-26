@@ -8,7 +8,6 @@ import (
 	"sync"
 
 	"github.com/pierrre/go-libs/panichandle"
-	"github.com/pierrre/go-libs/syncutil"
 )
 
 // Start executes a function in a new goroutine.
@@ -55,16 +54,9 @@ func WaitGroup(ctx context.Context, wg *sync.WaitGroup, f func(ctx context.Conte
 // N executes a function with multiple goroutines.
 // It blocks until all goroutines are terminated.
 func N(ctx context.Context, n int, f func(ctx context.Context)) {
-	wg := waitGroupPool.Get()
+	wg := new(sync.WaitGroup)
 	for range n {
 		WaitGroup(ctx, wg, f)
 	}
 	wg.Wait()
-	waitGroupPool.Put(wg)
-}
-
-var waitGroupPool = syncutil.Pool[*sync.WaitGroup]{
-	New: func() *sync.WaitGroup {
-		return new(sync.WaitGroup)
-	},
 }

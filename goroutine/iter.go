@@ -7,6 +7,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
+	"sync"
 
 	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/panichandle"
@@ -52,7 +53,7 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 
 // iterWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	wg := waitGroupPool.Get()
+	wg := new(sync.WaitGroup)
 	wg.Add(workers)
 	for range workers {
 		go func() {
@@ -62,7 +63,6 @@ func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.C
 	}
 	go func() {
 		wg.Wait()
-		waitGroupPool.Put(wg)
 		close(outCh) // Notify the consumer that all workers are done.
 	}()
 }
@@ -132,7 +132,7 @@ func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh
 
 // iterOrderedWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out], outCh chan<- chan Out) {
-	wg := waitGroupPool.Get()
+	wg := new(sync.WaitGroup)
 	wg.Add(workers)
 	for range workers {
 		go func() {
@@ -142,7 +142,6 @@ func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(co
 	}
 	go func() {
 		wg.Wait()
-		waitGroupPool.Put(wg)
 		close(outCh) // Notify the consumer that all workers are done.
 	}()
 }
