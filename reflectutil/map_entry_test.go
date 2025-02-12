@@ -43,7 +43,7 @@ func TestGetMapEntriesAllocs(t *testing.T) {
 }
 
 func BenchmarkGetMapEntries(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		es := GetMapEntries(testMapValue)
 		es.Release()
 	}
@@ -66,7 +66,7 @@ func TestGetMapEntriesUnexportedAllocs(t *testing.T) {
 }
 
 func BenchmarkGetMapEntriesUnexported(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		es := GetMapEntries(testMapUnexportedValue)
 		es.Release()
 	}

@@ -310,7 +310,7 @@ func TestComparePanicUnsupportedType(t *testing.T) {
 func BenchmarkCompare(b *testing.B) {
 	for _, tc := range compareTestCases {
 		b.Run(tc.name, func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				Compare(reflect.ValueOf(tc.a), reflect.ValueOf(tc.b))
 			}
 		})

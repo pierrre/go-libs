@@ -13,8 +13,6 @@ import (
 	"github.com/pierrre/go-libs/panichandle"
 )
 
-var benchRes any
-
 func ExampleIter() {
 	ctx := context.Background()
 	in := slices.Values([]int{1, 2, 3, 4, 5})
@@ -264,10 +262,9 @@ func BenchmarkIter(b *testing.B) {
 	f := func(ctx context.Context, v int) int {
 		return v * 2
 	}
-	b.ResetTimer()
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				out := Iter(ctx, in, workers, f)
 				for range out {
 				}
@@ -391,10 +388,9 @@ func BenchmarkIterOrdered(b *testing.B) {
 	f := func(ctx context.Context, v int) int {
 		return v * 2
 	}
-	b.ResetTimer()
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				out := IterOrdered(ctx, in, workers, f)
 				for range out {
 				}
@@ -425,17 +421,13 @@ func BenchmarkSlice(b *testing.B) {
 	f := func(ctx context.Context, i int, v int) int {
 		return v * 2
 	}
-	b.ResetTimer()
-	var res []int
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
-				out := Slice(ctx, in, workers, f)
-				res = out
+			for b.Loop() {
+				Slice(ctx, in, workers, f)
 			}
 		})
 	}
-	benchRes = res
 }
 
 func TestSliceError(t *testing.T) {
@@ -467,17 +459,13 @@ func BenchmarkSliceError(b *testing.B) {
 		}
 		return v * 2, nil
 	}
-	b.ResetTimer()
-	var res []int
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
-				out, _ := SliceError(ctx, in, workers, f)
-				res = out
+			for b.Loop() {
+				_, _ = SliceError(ctx, in, workers, f)
 			}
 		})
 	}
-	benchRes = res
 }
 
 func TestMap(t *testing.T) {
@@ -515,17 +503,13 @@ func BenchmarkMap(b *testing.B) {
 	f := func(ctx context.Context, k int, v int) int {
 		return v * 2
 	}
-	b.ResetTimer()
-	var res map[int]int
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
-				out := Map(ctx, in, workers, f)
-				res = out
+			for b.Loop() {
+				Map(ctx, in, workers, f)
 			}
 		})
 	}
-	benchRes = res
 }
 
 func TestMapError(t *testing.T) {
@@ -570,17 +554,13 @@ func BenchmarkMapError(b *testing.B) {
 		}
 		return v * 2, nil
 	}
-	b.ResetTimer()
-	var res map[int]int
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for range b.N {
-				out, _ := MapError(ctx, in, workers, f)
-				res = out
+			for b.Loop() {
+				_, _ = MapError(ctx, in, workers, f)
 			}
 		})
 	}
-	benchRes = res
 }
 
 func TestWithError(t *testing.T) {

@@ -17,7 +17,7 @@ const testBenchData = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, 
 
 func BenchmarkBufPool(b *testing.B) {
 	p := &Pool{}
-	for range b.N {
+	for b.Loop() {
 		buf := p.Get()
 		for range 10 {
 			buf.WriteString(testBenchData)
@@ -27,7 +27,7 @@ func BenchmarkBufPool(b *testing.B) {
 }
 
 func BenchmarkBufWithoutPool(b *testing.B) {
-	for range b.N {
+	for b.Loop() {
 		buf := new(bytes.Buffer)
 		for range 10 {
 			buf.WriteString(testBenchData)

@@ -41,8 +41,7 @@ func BenchmarkStart(b *testing.B) {
 	f := func(ctx context.Context) {
 		done <- struct{}{}
 	}
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		Start(ctx, f)
 		<-done
 	}
@@ -68,8 +67,7 @@ func TestWaitAllocs(t *testing.T) {
 
 func BenchmarkWait(b *testing.B) {
 	ctx := context.Background()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
 	}
@@ -98,8 +96,7 @@ func TestCancelWaitAllocs(t *testing.T) {
 
 func BenchmarkCancelWait(b *testing.B) {
 	ctx := context.Background()
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		cancelWait := CancelWait(ctx, func(ctx context.Context) {
 			<-ctx.Done()
 		})
@@ -130,8 +127,7 @@ func TestWaitGroupAllocs(t *testing.T) {
 func BenchmarkWaitGroup(b *testing.B) {
 	ctx := context.Background()
 	wg := new(sync.WaitGroup)
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		WaitGroup(ctx, wg, func(ctx context.Context) {})
 		wg.Wait()
 	}
@@ -158,8 +154,7 @@ func TestNAllocs(t *testing.T) {
 func BenchmarkN(b *testing.B) {
 	ctx := context.Background()
 	count := 10
-	b.ResetTimer()
-	for range b.N {
+	for b.Loop() {
 		N(ctx, count, func(ctx context.Context) {})
 	}
 }

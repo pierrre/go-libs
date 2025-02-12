@@ -30,8 +30,7 @@ func TestGetCallersAllocs(t *testing.T) {
 
 func BenchmarkGetCallers(b *testing.B) {
 	callWithDepth(10000, func() {
-		b.ResetTimer()
-		for range b.N {
+		for b.Loop() {
 			pc := GetCallers(0)
 			_ = pc
 		}

@@ -45,7 +45,7 @@ func TestWriteBool(t *testing.T) {
 func BenchmarkWriteBool(b *testing.B) {
 	for _, tc := range writeBoolTestCases {
 		b.Run(strconv.FormatBool(tc.b), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteBool(io.Discard, tc.b)
 			}
 		})
@@ -79,7 +79,7 @@ func TestWriteFloat(t *testing.T) {
 func BenchmarkWriteFloat(b *testing.B) {
 	for _, v := range testFloatValues {
 		b.Run(strconv.FormatFloat(v, 'f', -1, 64), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteFloat(io.Discard, v, 'f', -1, 64)
 			}
 		})
@@ -119,7 +119,7 @@ func TestWriteComplexPanicBitSize(t *testing.T) {
 func BenchmarkWriteComplex(b *testing.B) {
 	for _, v := range testWriteComplexValues {
 		b.Run(strconv.FormatComplex(v, 'f', -1, 128), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteComplex(io.Discard, v, 'f', -1, 128)
 			}
 		})
@@ -151,7 +151,7 @@ func TestWriteInt(t *testing.T) {
 func BenchmarkWriteInt(b *testing.B) {
 	for _, v := range testWriteIntValues {
 		b.Run(strconv.FormatInt(v, 10), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteInt(io.Discard, v, 10)
 			}
 		})
@@ -181,7 +181,7 @@ func TestWriteUint(t *testing.T) {
 func BenchmarkWriteUint(b *testing.B) {
 	for _, v := range testWriteUintValues {
 		b.Run(strconv.FormatUint(v, 10), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteUint(io.Discard, v, 10)
 			}
 		})
@@ -211,7 +211,7 @@ func TestWriteQuote(t *testing.T) {
 func BenchmarkWriteQuote(b *testing.B) {
 	for _, v := range testWriteQuoteValues {
 		b.Run(strconv.Quote(v), func(b *testing.B) {
-			for range b.N {
+			for b.Loop() {
 				_, _ = WriteQuote(io.Discard, v)
 			}
 		})

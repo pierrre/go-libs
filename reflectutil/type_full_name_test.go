@@ -9,8 +9,6 @@ import (
 	. "github.com/pierrre/go-libs/reflectutil"
 )
 
-var benchRes any
-
 type typeFullNameVariantTestCase struct {
 	name          string
 	newFunc       func(tc typeFullNameTestCase) func() string
@@ -117,21 +115,17 @@ func BenchmarkTypeFullName(b *testing.B) {
 		f := variantTC.newFunc(tc)
 		b.Run(getTypeFullNameTestName(tc.typ), func(b *testing.B) {
 			benchSeq := func(b *testing.B) { //nolint:thelper // This is not a test helper.
-				var res string
-				for range b.N {
-					res = f()
+				for b.Loop() {
+					f()
 				}
-				benchRes = res
 			}
 			if variantTC.benchParallel {
 				b.Run("Sequential", benchSeq)
 				b.Run("Parallel", func(b *testing.B) {
 					b.RunParallel(func(pb *testing.PB) {
-						var res string
 						for pb.Next() {
-							res = f()
+							f()
 						}
-						benchRes = res
 					})
 				})
 			} else {

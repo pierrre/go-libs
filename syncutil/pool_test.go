@@ -56,7 +56,7 @@ func BenchmarkValuePool(b *testing.B) {
 			return make([]byte, 10)
 		},
 	}
-	for range b.N {
+	for b.Loop() {
 		b := p.Get()
 		p.Put(b)
 	}
