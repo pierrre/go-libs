@@ -147,7 +147,7 @@ func runIterTest(t *testing.T, f func(t *testing.T)) {
 }
 
 func TestIter(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	in := slices.Values(testIterInputInts)
 	workers := 2
 	f := func(ctx context.Context, v int) int {
@@ -164,7 +164,7 @@ func TestIter(t *testing.T) {
 
 func TestIterStopOutputIterator(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
 		workers := 2
 		workerCallcount := int64(0)
@@ -187,7 +187,7 @@ func TestIterStopOutputIterator(t *testing.T) {
 
 func TestIterContextCancel(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
 		in := slices.Values(testIterInputInts)
 		workers := 2
@@ -210,7 +210,7 @@ func TestIterContextCancel(t *testing.T) {
 
 func TestIterPanicIterator(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
 		workers := 2
 		workerCallcount := int64(0)
@@ -230,7 +230,7 @@ func TestIterPanicIterator(t *testing.T) {
 
 func TestIterPanicFunction(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		panicCount := int64(0)
 		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
 			atomic.AddInt64(&panicCount, 1)
@@ -251,7 +251,7 @@ func TestIterPanicFunction(t *testing.T) {
 }
 
 func BenchmarkIter(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := func(yield func(int) bool) {
 		for i := range 100 {
 			if !yield(i) {
@@ -274,7 +274,7 @@ func BenchmarkIter(b *testing.B) {
 }
 
 func TestIterOrdered(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	in := slices.Values(testIterInputInts)
 	workers := 2
 	f := func(ctx context.Context, v int) int {
@@ -290,7 +290,7 @@ func TestIterOrdered(t *testing.T) {
 
 func TestIterOrderedStopOutputIterator(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
 		workers := 2
 		workerCallcount := int64(0)
@@ -313,7 +313,7 @@ func TestIterOrderedStopOutputIterator(t *testing.T) {
 
 func TestIterOrderedContextCancel(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx, cancel := context.WithCancel(context.Background())
+		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
 		in := slices.Values(testIterInputInts)
 		workers := 2
@@ -336,7 +336,7 @@ func TestIterOrderedContextCancel(t *testing.T) {
 
 func TestIterOrderedPanicIterator(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
 		workers := 2
 		workerCallcount := int64(0)
@@ -356,7 +356,7 @@ func TestIterOrderedPanicIterator(t *testing.T) {
 
 func TestIterOrderedPanicFunction(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		panicCount := int64(0)
 		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
 			atomic.AddInt64(&panicCount, 1)
@@ -377,7 +377,7 @@ func TestIterOrderedPanicFunction(t *testing.T) {
 }
 
 func BenchmarkIterOrdered(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := func(yield func(int) bool) {
 		for i := range 100 {
 			if !yield(i) {
@@ -401,7 +401,7 @@ func BenchmarkIterOrdered(b *testing.B) {
 
 func TestSlice(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		workers := 2
 		f := func(ctx context.Context, i int, v int) int {
 			return v * 2
@@ -413,7 +413,7 @@ func TestSlice(t *testing.T) {
 }
 
 func BenchmarkSlice(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := make([]int, 100)
 	for i := range in {
 		in[i] = i
@@ -432,7 +432,7 @@ func BenchmarkSlice(b *testing.B) {
 
 func TestSliceError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		workers := 2
 		f := func(ctx context.Context, i int, v int) (int, error) {
 			if v == 3 {
@@ -448,7 +448,7 @@ func TestSliceError(t *testing.T) {
 }
 
 func BenchmarkSliceError(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := make([]int, 100)
 	for i := range in {
 		in[i] = i
@@ -470,7 +470,7 @@ func BenchmarkSliceError(b *testing.B) {
 
 func TestMap(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := map[int]int{
 			1: 1,
 			2: 2,
@@ -495,7 +495,7 @@ func TestMap(t *testing.T) {
 }
 
 func BenchmarkMap(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := make(map[int]int)
 	for i := range 100 {
 		in[i] = i
@@ -514,7 +514,7 @@ func BenchmarkMap(b *testing.B) {
 
 func TestMapError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := map[int]int{
 			1: 1,
 			2: 2,
@@ -543,7 +543,7 @@ func TestMapError(t *testing.T) {
 }
 
 func BenchmarkMapError(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	in := make(map[int]int)
 	for i := range 100 {
 		in[i] = i
@@ -565,7 +565,7 @@ func BenchmarkMapError(b *testing.B) {
 
 func TestWithError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := context.Background()
+		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
 		workers := 2
 		f := WithError(func(ctx context.Context, v int) (int, error) {

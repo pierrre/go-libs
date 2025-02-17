@@ -19,7 +19,7 @@ func Example() {
 }
 
 func TestSetHandlerToContext(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := func(ctx context.Context, err error) {}
 	ctx = SetHandlerToContext(ctx, h)
 	h = GetHandlerFromContext(ctx)
@@ -27,13 +27,13 @@ func TestSetHandlerToContext(t *testing.T) {
 }
 
 func TestGetHandlerFromContextNotSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := GetHandlerFromContext(ctx)
 	assert.True(t, h == nil)
 }
 
 func TestGetHandlerContextSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := func(ctx context.Context, err error) {}
 	ctx = SetHandlerToContext(ctx, h)
 	h = GetHandler(ctx)
@@ -41,13 +41,13 @@ func TestGetHandlerContextSet(t *testing.T) {
 }
 
 func TestGetHandlerDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := GetHandler(ctx)
 	assert.True(t, h != nil)
 }
 
 func TestHandle(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	called := false
 	h := func(ctx context.Context, err error) {
 		called = true
@@ -58,7 +58,7 @@ func TestHandle(t *testing.T) {
 }
 
 func TestHandlers(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	called := make([]int, 2)
 	hs := Handlers{
 		func(ctx context.Context, err error) {
@@ -75,7 +75,7 @@ func TestHandlers(t *testing.T) {
 }
 
 func TestFilterHandlerTrue(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	called := false
 	fh := FilterHandler{
 		Handler: func(ctx context.Context, err error) {
@@ -90,7 +90,7 @@ func TestFilterHandlerTrue(t *testing.T) {
 }
 
 func TestFilterHandlerFalse(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	fh := FilterHandler{
 		Handler: func(ctx context.Context, err error) {
 			t.Fatal("should not be called")

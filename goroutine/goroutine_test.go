@@ -11,7 +11,7 @@ import (
 )
 
 func TestStart(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var called int64
 	done := make(chan struct{})
 	f := func(_ context.Context) {
@@ -24,7 +24,7 @@ func TestStart(t *testing.T) {
 }
 
 func TestStartAllocs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	done := make(chan struct{})
 	f := func(_ context.Context) {
 		done <- struct{}{}
@@ -36,7 +36,7 @@ func TestStartAllocs(t *testing.T) {
 }
 
 func BenchmarkStart(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	done := make(chan struct{})
 	f := func(ctx context.Context) {
 		done <- struct{}{}
@@ -48,7 +48,7 @@ func BenchmarkStart(b *testing.B) {
 }
 
 func TestWait(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var called int64
 	wait := Wait(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
@@ -58,7 +58,7 @@ func TestWait(t *testing.T) {
 }
 
 func TestWaitAllocs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assertauto.AllocsPerRun(t, 100, func() {
 		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
@@ -66,7 +66,7 @@ func TestWaitAllocs(t *testing.T) {
 }
 
 func BenchmarkWait(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	for b.Loop() {
 		wait := Wait(ctx, func(ctx context.Context) {})
 		wait()
@@ -74,7 +74,7 @@ func BenchmarkWait(b *testing.B) {
 }
 
 func TestCancelWait(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	var called int64
 	cancelWait := CancelWait(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
@@ -85,7 +85,7 @@ func TestCancelWait(t *testing.T) {
 }
 
 func TestCancelWaitAllocs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	assertauto.AllocsPerRun(t, 100, func() {
 		cancelWait := CancelWait(ctx, func(ctx context.Context) {
 			<-ctx.Done()
@@ -95,7 +95,7 @@ func TestCancelWaitAllocs(t *testing.T) {
 }
 
 func BenchmarkCancelWait(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	for b.Loop() {
 		cancelWait := CancelWait(ctx, func(ctx context.Context) {
 			<-ctx.Done()
@@ -105,7 +105,7 @@ func BenchmarkCancelWait(b *testing.B) {
 }
 
 func TestWaitGroup(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	wg := new(sync.WaitGroup)
 	var called int64
 	WaitGroup(ctx, wg, func(ctx context.Context) {
@@ -116,7 +116,7 @@ func TestWaitGroup(t *testing.T) {
 }
 
 func TestWaitGroupAllocs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	wg := new(sync.WaitGroup)
 	assertauto.AllocsPerRun(t, 100, func() {
 		WaitGroup(ctx, wg, func(ctx context.Context) {})
@@ -125,7 +125,7 @@ func TestWaitGroupAllocs(t *testing.T) {
 }
 
 func BenchmarkWaitGroup(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	wg := new(sync.WaitGroup)
 	for b.Loop() {
 		WaitGroup(ctx, wg, func(ctx context.Context) {})
@@ -134,7 +134,7 @@ func BenchmarkWaitGroup(b *testing.B) {
 }
 
 func TestN(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	count := 10
 	var called int64
 	N(ctx, count, func(ctx context.Context) {
@@ -144,7 +144,7 @@ func TestN(t *testing.T) {
 }
 
 func TestNAllocs(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	count := 10
 	assertauto.AllocsPerRun(t, 100, func() {
 		N(ctx, count, func(ctx context.Context) {})
@@ -152,7 +152,7 @@ func TestNAllocs(t *testing.T) {
 }
 
 func BenchmarkN(b *testing.B) {
-	ctx := context.Background()
+	ctx := b.Context()
 	count := 10
 	for b.Loop() {
 		N(ctx, count, func(ctx context.Context) {})

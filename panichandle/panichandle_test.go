@@ -20,12 +20,12 @@ func Example() {
 }
 
 func TestRecoverNoPanicWithoutHandler(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	Recover(ctx)
 }
 
 func TestRecoverNoPanicWitHandler(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	defer func() {
 		DefaultHandler = nil
 	}()
@@ -40,7 +40,7 @@ func TestRecoverNoPanicWitHandler(t *testing.T) {
 }
 
 func TestRecoverPanicWithoutHandler(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	defer func() {
 		r := recover()
 		assert.NotZero(t, r)
@@ -50,7 +50,7 @@ func TestRecoverPanicWithoutHandler(t *testing.T) {
 }
 
 func TestRecoverPanicWithHandler(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	defer func() {
 		DefaultHandler = nil
 	}()
@@ -67,7 +67,7 @@ func TestRecoverPanicWithHandler(t *testing.T) {
 }
 
 func TestSetHandlerToContext(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := func(ctx context.Context, r any) {}
 	ctx = SetHandlerToContext(ctx, h)
 	h = GetHandlerFromContext(ctx)
@@ -75,13 +75,13 @@ func TestSetHandlerToContext(t *testing.T) {
 }
 
 func TestGetHandlerFromContextNotSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := GetHandlerFromContext(ctx)
 	assert.True(t, h == nil)
 }
 
 func TestGetHandlerContextSet(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := func(ctx context.Context, r any) {}
 	ctx = SetHandlerToContext(ctx, h)
 	h = GetHandler(ctx)
@@ -89,13 +89,13 @@ func TestGetHandlerContextSet(t *testing.T) {
 }
 
 func TestGetHandlerDefault(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	h := GetHandler(ctx)
 	assert.True(t, h == nil)
 }
 
 func TestErrorHandlerString(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	called := false
 	h := ErrorHandler{
 		Handler: func(ctx context.Context, err error) {
@@ -111,7 +111,7 @@ func TestErrorHandlerString(t *testing.T) {
 }
 
 func TestErrorHandlerError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	called := false
 	h := ErrorHandler{
 		Handler: func(ctx context.Context, err error) {

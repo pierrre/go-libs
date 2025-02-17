@@ -34,7 +34,7 @@ func ExampleServices() {
 }
 
 func TestServices(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
 	err := Services(ctx, map[string]func(context.Context) error{
@@ -51,7 +51,7 @@ func TestServices(t *testing.T) {
 }
 
 func TestServicesError(t *testing.T) {
-	ctx := context.Background()
+	ctx := t.Context()
 	err := Services(ctx, map[string]func(context.Context) error{
 		"a": func(_ context.Context) error {
 			return errors.New("error")
