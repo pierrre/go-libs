@@ -1,0 +1,9 @@
+[string] (len=1) "0"
+	========== assertauto ==========
+[string] (len=1) "1"
+	========== assertauto ==========
+[string] (len=2) "-1"
+	========== assertauto ==========
+[string] (len=10) "1234567890"
+	========== assertauto ==========
+[string] (len=11) "-1234567890"

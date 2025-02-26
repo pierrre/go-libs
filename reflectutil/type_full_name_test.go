@@ -103,10 +103,10 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 func TestTypeFullName(t *testing.T) {
 	runTypeFullNameVariantTestCases(t, func(t *testing.T, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // This is not a test helper.
 		f := variantTC.newFunc(tc)
-		assertauto.Equal(t, f(), assertauto.Name("name"))
+		assertauto.Equal(t, f())
 		assertauto.AllocsPerRun(t, 100, func() {
 			_ = f()
-		}, assertauto.Name("allocs"))
+		})
 	})
 }
 

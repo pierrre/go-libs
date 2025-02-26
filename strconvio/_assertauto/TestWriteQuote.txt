@@ -1,0 +1,5 @@
+[string] (len=2) "\"\""
+	========== assertauto ==========
+[string] (len=6) "\"test\""
+	========== assertauto ==========
+[string] (len=4) "\"\\\"\""

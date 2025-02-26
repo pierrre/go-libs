@@ -1,0 +1,97 @@
+[string] (len=6) "(0+0i)"
+	========== assertauto ==========
+[string] (len=6) "(0+1i)"
+	========== assertauto ==========
+[string] (len=10) "(0+12.34i)"
+	========== assertauto ==========
+[string] (len=6) "(0-1i)"
+	========== assertauto ==========
+[string] (len=8) "(0+Infi)"
+	========== assertauto ==========
+[string] (len=8) "(0-Infi)"
+	========== assertauto ==========
+[string] (len=8) "(0+NaNi)"
+	========== assertauto ==========
+[string] (len=6) "(1+0i)"
+	========== assertauto ==========
+[string] (len=6) "(1+1i)"
+	========== assertauto ==========
+[string] (len=10) "(1+12.34i)"
+	========== assertauto ==========
+[string] (len=6) "(1-1i)"
+	========== assertauto ==========
+[string] (len=8) "(1+Infi)"
+	========== assertauto ==========
+[string] (len=8) "(1-Infi)"
+	========== assertauto ==========
+[string] (len=8) "(1+NaNi)"
+	========== assertauto ==========
+[string] (len=10) "(12.34+0i)"
+	========== assertauto ==========
+[string] (len=10) "(12.34+1i)"
+	========== assertauto ==========
+[string] (len=14) "(12.34+12.34i)"
+	========== assertauto ==========
+[string] (len=10) "(12.34-1i)"
+	========== assertauto ==========
+[string] (len=12) "(12.34+Infi)"
+	========== assertauto ==========
+[string] (len=12) "(12.34-Infi)"
+	========== assertauto ==========
+[string] (len=12) "(12.34+NaNi)"
+	========== assertauto ==========
+[string] (len=7) "(-1+0i)"
+	========== assertauto ==========
+[string] (len=7) "(-1+1i)"
+	========== assertauto ==========
+[string] (len=11) "(-1+12.34i)"
+	========== assertauto ==========
+[string] (len=7) "(-1-1i)"
+	========== assertauto ==========
+[string] (len=9) "(-1+Infi)"
+	========== assertauto ==========
+[string] (len=9) "(-1-Infi)"
+	========== assertauto ==========
+[string] (len=9) "(-1+NaNi)"
+	========== assertauto ==========
+[string] (len=9) "(+Inf+0i)"
+	========== assertauto ==========
+[string] (len=9) "(+Inf+1i)"
+	========== assertauto ==========
+[string] (len=13) "(+Inf+12.34i)"
+	========== assertauto ==========
+[string] (len=9) "(+Inf-1i)"
+	========== assertauto ==========
+[string] (len=11) "(+Inf+Infi)"
+	========== assertauto ==========
+[string] (len=11) "(+Inf-Infi)"
+	========== assertauto ==========
+[string] (len=11) "(+Inf+NaNi)"
+	========== assertauto ==========
+[string] (len=9) "(-Inf+0i)"
+	========== assertauto ==========
+[string] (len=9) "(-Inf+1i)"
+	========== assertauto ==========
+[string] (len=13) "(-Inf+12.34i)"
+	========== assertauto ==========
+[string] (len=9) "(-Inf-1i)"
+	========== assertauto ==========
+[string] (len=11) "(-Inf+Infi)"
+	========== assertauto ==========
+[string] (len=11) "(-Inf-Infi)"
+	========== assertauto ==========
+[string] (len=11) "(-Inf+NaNi)"
+	========== assertauto ==========
+[string] (len=8) "(NaN+0i)"
+	========== assertauto ==========
+[string] (len=8) "(NaN+1i)"
+	========== assertauto ==========
+[string] (len=12) "(NaN+12.34i)"
+	========== assertauto ==========
+[string] (len=8) "(NaN-1i)"
+	========== assertauto ==========
+[string] (len=10) "(NaN+Infi)"
+	========== assertauto ==========
+[string] (len=10) "(NaN-Infi)"
+	========== assertauto ==========
+[string] (len=10) "(NaN+NaNi)"

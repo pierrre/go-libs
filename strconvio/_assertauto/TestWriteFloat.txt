@@ -1,0 +1,13 @@
+[string] (len=1) "0"
+	========== assertauto ==========
+[string] (len=1) "1"
+	========== assertauto ==========
+[string] (len=5) "12.34"
+	========== assertauto ==========
+[string] (len=2) "-1"
+	========== assertauto ==========
+[string] (len=4) "+Inf"
+	========== assertauto ==========
+[string] (len=4) "-Inf"
+	========== assertauto ==========
+[string] (len=3) "NaN"

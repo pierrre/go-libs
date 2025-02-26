@@ -1,0 +1,3 @@
+[string] (len=5) "false"
+	========== assertauto ==========
+[string] (len=4) "true"
