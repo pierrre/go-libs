@@ -42,6 +42,7 @@ func typeFullName(typ reflect.Type) string {
 	return typ.String()
 }
 
+// TypeFullNameFor returns the full name of type parameter.
 func TypeFullNameFor[T any]() string {
 	s := reflect.TypeFor[typeContainer[T]]().String()
 	return s[typeContainerPrefixLen : len(s)-typeContainerSuffixLen]

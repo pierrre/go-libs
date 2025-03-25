@@ -8,5 +8,5 @@ import (
 
 // WriteString writes a string to a [io.Writer].
 func WriteString(w io.Writer, s string) (int, error) {
-	return w.Write(unsafe.Slice(unsafe.StringData(s), len(s))) //nolint:wrapcheck // The error is not wrapped.
+	return w.Write(unsafe.Slice(unsafe.StringData(s), len(s))) //nolint:gosec,wrapcheck // The error is not wrapped.
 }

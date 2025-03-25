@@ -62,6 +62,7 @@ type ErrorHandler struct {
 	Convert func(r any) error
 }
 
+// Handle handles the panic recovered value.
 func (h ErrorHandler) Handle(ctx context.Context, r any) {
 	err, ok := r.(error)
 	if !ok {

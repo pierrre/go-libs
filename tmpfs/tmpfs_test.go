@@ -11,7 +11,7 @@ func TestDir(t *testing.T) {
 	name, cl, err := Dir("", "")
 	assert.NoError(t, err)
 	defer cl()
-	f, err := os.Open(name)
+	f, err := os.Open(name) //nolint:gosec // We want to open a file.
 	assert.NoError(t, err)
 	fi, err := f.Stat()
 	assert.NoError(t, err)

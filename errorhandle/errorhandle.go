@@ -47,6 +47,7 @@ func Handle(ctx context.Context, err error) {
 // They are called in order.
 type Handlers []Handler
 
+// Handle handles the error using the list of [Handler].
 func (hs Handlers) Handle(ctx context.Context, err error) {
 	for _, h := range hs {
 		h(ctx, err)
@@ -61,6 +62,7 @@ type FilterHandler struct {
 	Filter func(ctx context.Context, err error) bool
 }
 
+// Handle handles the error using the Filter and Handler.
 func (f FilterHandler) Handle(ctx context.Context, err error) {
 	if f.Filter(ctx, err) {
 		f.Handler(ctx, err)
