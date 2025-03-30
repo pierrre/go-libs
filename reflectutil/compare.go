@@ -3,6 +3,7 @@ package reflectutil
 import (
 	"cmp"
 	"reflect"
+	"strings"
 )
 
 // Compare compares two values of the same type.
@@ -80,7 +81,7 @@ func compareComplex(a, b reflect.Value) int {
 }
 
 func compareString(a, b reflect.Value) int {
-	return cmp.Compare(a.String(), b.String())
+	return strings.Compare(a.String(), b.String())
 }
 
 func comparePointer(a, b reflect.Value) int {
