@@ -33,7 +33,7 @@ func Example() {
 	}
 	onError = NewOnErrorFuncWithDelay(onError, 1*time.Microsecond)
 
-	f := NewFuncWithError(ctx, ef, onError, true)
+	f := NewFuncWithError(ef, onError, true)
 
 	Run(ctx, f, WithImmediately(true), WithInterval(10*time.Microsecond), WithFixed(true))
 
@@ -129,7 +129,7 @@ func TestNewFuncWithError(t *testing.T) {
 	onError := func(ctx context.Context, err error) {
 		onErrorCalled++
 	}
-	f := NewFuncWithError(ctx, ef, onError, true)
+	f := NewFuncWithError(ef, onError, true)
 	f(ctx)
 	assert.Equal(t, onErrorCalled, 9)
 }
@@ -141,7 +141,7 @@ func TestNewFuncWithErrorNoRetry(t *testing.T) {
 		called++
 		return errors.New("error")
 	}
-	f := NewFuncWithError(ctx, ef, nil, false)
+	f := NewFuncWithError(ef, nil, false)
 	f(ctx)
 	assert.Equal(t, called, 1)
 }

@@ -90,7 +90,7 @@ type ErrorFunc func(ctx context.Context) error
 // If no error is returned, it will return.
 // If an error is returned, it will call the given [OnErrorFunc] if it is not nil.
 // If the retry parameter is true, it will retry the [ErrorFunc] until it returns no error or the context is done.
-func NewFuncWithError(ctx context.Context, ef ErrorFunc, onError OnErrorFunc, retry bool) Func {
+func NewFuncWithError(ef ErrorFunc, onError OnErrorFunc, retry bool) Func {
 	return func(ctx context.Context) {
 		for ctx.Err() == nil {
 			err := ef(ctx)
