@@ -64,9 +64,9 @@ func (m *Map[K, V]) Store(key K, value V) {
 	m.m.Store(key, value)
 }
 
-// Swap is a wrapper around [sync.Map.LoadOrStore].
+// Swap is a wrapper around [sync.Map.Swap].
 func (m *Map[K, V]) Swap(key K, value V) (previous V, loaded bool) {
-	vi, loaded := m.m.LoadOrStore(key, value)
+	vi, loaded := m.m.Swap(key, value)
 	previous, _ = vi.(V)
 	return previous, loaded
 }
