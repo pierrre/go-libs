@@ -1,4 +1,4 @@
-package weakutil
+package weakutil_test
 
 import (
 	"runtime"
@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/syncutil"
+	. "github.com/pierrre/go-libs/weakutil"
 )
 
 func TestMapLoad(t *testing.T) {
@@ -18,7 +18,7 @@ func TestMapLoad(t *testing.T) {
 	p2, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, p1, p2)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 }
 
@@ -28,7 +28,7 @@ func TestMapLoadNil(t *testing.T) {
 	p, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Zero(t, p)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 }
 
 func TestMapLoadRemoved(t *testing.T) {
@@ -39,7 +39,7 @@ func TestMapLoadRemoved(t *testing.T) {
 	p, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, p)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestMapStoreMultiple(t *testing.T) {
@@ -61,7 +61,7 @@ func TestMapStoreMultiple(t *testing.T) {
 		p2, ok := m.Load("test")
 		assert.True(t, ok)
 		assert.Equal(t, p1, p2)
-		assert.Equal(t, getMapLen(&m.m), 1)
+		assert.Equal(t, getMapLen(m), 1)
 		runtime.KeepAlive(p1)
 	}
 }
@@ -83,7 +83,7 @@ func TestMapStoreMultipleDifferent(t *testing.T) {
 		wg.Wait()
 		_, ok := m.Load("test")
 		assert.True(t, ok)
-		assert.LessOrEqual(t, getMapLen(&m.m), 1)
+		assert.LessOrEqual(t, getMapLen(m), 1)
 	}
 }
 
@@ -96,7 +96,7 @@ func TestMapDelete(t *testing.T) {
 	p2, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, p2)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(p1)
 }
 
@@ -109,7 +109,7 @@ func TestMapClear(t *testing.T) {
 	p2, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, p2)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(p1)
 }
 
@@ -208,7 +208,7 @@ func TestMapAutoCleanTryLockFail(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-	assert.Equal(t, getMapLen(&m.m), 100*100)
+	assert.Equal(t, getMapLen(m), 100*100)
 }
 
 func TestMapRange(t *testing.T) {
@@ -223,7 +223,7 @@ func TestMapRange(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 }
 
@@ -235,7 +235,7 @@ func TestMapRangeRemoved(t *testing.T) {
 	for range m.Range {
 		t.Fatal("should not range")
 	}
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestMapCompareAndDeleteTrue(t *testing.T) {
@@ -244,7 +244,7 @@ func TestMapCompareAndDeleteTrue(t *testing.T) {
 	m.Store("test", &v)
 	deleted := m.CompareAndDelete("test", &v)
 	assert.True(t, deleted)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestMapCompareAndDeleteFalse(t *testing.T) {
@@ -256,7 +256,7 @@ func TestMapCompareAndDeleteFalse(t *testing.T) {
 	p2 := &v2
 	deleted := m.CompareAndDelete("test", p2)
 	assert.False(t, deleted)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 	runtime.KeepAlive(p2)
 }
@@ -273,7 +273,7 @@ func TestMapCompareAndSwapTrue(t *testing.T) {
 	p3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, p3, p2)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 	runtime.KeepAlive(p2)
 }
@@ -290,7 +290,7 @@ func TestMapCompareAndSwapFalse(t *testing.T) {
 	p3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, p3, p1)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 	runtime.KeepAlive(p2)
 }
@@ -303,7 +303,7 @@ func TestMapLoadAndDeleteTrue(t *testing.T) {
 	p2, loaded := m.LoadAndDelete("test")
 	assert.True(t, loaded)
 	assert.Equal(t, p1, p2)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestMapLoadAndDeleteFalse(t *testing.T) {
@@ -311,7 +311,7 @@ func TestMapLoadAndDeleteFalse(t *testing.T) {
 	p, loaded := m.LoadAndDelete("test")
 	assert.False(t, loaded)
 	assert.Zero(t, p)
-	assert.Equal(t, getMapLen(&m.m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestMapLoadOrStoreTrue(t *testing.T) {
@@ -324,7 +324,7 @@ func TestMapLoadOrStoreTrue(t *testing.T) {
 	p3, loaded := m.LoadOrStore("test", p2)
 	assert.True(t, loaded)
 	assert.Equal(t, p3, p1)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 }
 
@@ -335,7 +335,7 @@ func TestMapLoadOrStoreFalse(t *testing.T) {
 	p2, loaded := m.LoadOrStore("test", p1)
 	assert.False(t, loaded)
 	assert.Equal(t, p2, p1)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 }
 
@@ -352,7 +352,7 @@ func TestMapSwapTrue(t *testing.T) {
 	p4, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, p4, p2)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 	runtime.KeepAlive(p2)
 }
@@ -367,7 +367,7 @@ func TestMapSwapFalse(t *testing.T) {
 	p3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, p3, p1)
-	assert.Equal(t, getMapLen(&m.m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(p1)
 }
 
@@ -448,7 +448,7 @@ func BenchmarkMapClean(b *testing.B) {
 	})
 }
 
-func getMapLen[K any, V any](m *syncutil.Map[K, V]) int {
+func getMapLen[K any, V any](m *Map[K, V]) int {
 	count := 0
 	for range m.Range {
 		count++
