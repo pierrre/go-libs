@@ -1,6 +1,7 @@
 package weakutil_test
 
 import (
+	"fmt"
 	"runtime"
 	"strconv"
 	"sync"
@@ -9,6 +10,24 @@ import (
 	"github.com/pierrre/assert"
 	. "github.com/pierrre/go-libs/weakutil"
 )
+
+func ExampleMap() {
+	m := new(Map[string, [64]byte])
+	m.OnGCDelete = func(key string) {
+		fmt.Println("GC delete:", key) // Shows that the key is deleted.
+	}
+	v := [64]byte{} // Must use a large value in order to trigger garbage collection reliably.
+	m.Store("test", &v)
+	runtime.GC()
+	fmt.Println(m.Load("test")) // The pointer is still valid, because there is a keepalive below.
+	runtime.KeepAlive(&v)
+	runtime.GC()
+	fmt.Println(m.Load("test")) // The pointer is not valid anymore.
+	// Output:
+	// &[0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0] true
+	// GC delete: test
+	// <nil> false
+}
 
 func TestMapLoad(t *testing.T) {
 	m := new(Map[string, [64]byte]) // Must use a large value in order to trigger garbage collection reliably.
