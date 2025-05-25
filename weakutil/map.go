@@ -1,6 +1,7 @@
 package weakutil
 
 import (
+	"iter"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -103,6 +104,11 @@ func (m *Map[K, V]) Range(f func(key K, value *V) bool) {
 		}
 		return f(key, value)
 	})
+}
+
+// All returns an iterator over all entries in the map.
+func (m *Map[K, V]) All() iter.Seq2[K, *V] {
+	return m.Range
 }
 
 // Store is a wrapper around [sync.Map.Store].

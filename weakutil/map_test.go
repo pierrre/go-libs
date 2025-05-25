@@ -394,30 +394,12 @@ var benchRes any
 
 func BenchmarkMapStoreSame(b *testing.B) {
 	m := new(Map[string, [64]byte])
-	for i := range 1000 {
-		m.Store(strconv.Itoa(i), nil)
-	}
+	m.AutoCleanInterval = -1
 	v := [64]byte{}
 	p := &v
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			m.Store("test", p)
-		}
-	})
-}
-
-func BenchmarkMapStoreDifferent(b *testing.B) {
-	m := new(Map[string, [64]byte])
-	for i := range 1000 {
-		m.Store(strconv.Itoa(i), nil)
-	}
-	v := [64]byte{}
-	p := &v
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			m.Store("test", nil)
 			m.Store("test", p)
 		}
 	})
@@ -425,9 +407,7 @@ func BenchmarkMapStoreDifferent(b *testing.B) {
 
 func BenchmarkMapStoreNil(b *testing.B) {
 	m := new(Map[string, [64]byte])
-	for i := range 1000 {
-		m.Store(strconv.Itoa(i), nil)
-	}
+	m.AutoCleanInterval = -1
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -436,8 +416,26 @@ func BenchmarkMapStoreNil(b *testing.B) {
 	})
 }
 
+func BenchmarkMapStoreDifferent(b *testing.B) {
+	m := new(Map[string, [64]byte])
+	m.AutoCleanInterval = -1
+	v := [64]byte{}
+	p := &v
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for i := 0; pb.Next(); i++ {
+			var pp *[64]byte
+			if i%2 == 0 {
+				pp = p
+			}
+			m.Store("test", pp)
+		}
+	})
+}
+
 func BenchmarkMapLoad(b *testing.B) {
 	m := new(Map[string, [64]byte])
+	m.AutoCleanInterval = -1
 	v := [64]byte{}
 	p1 := &v
 	m.Store("test", p1)
