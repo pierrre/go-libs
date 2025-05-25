@@ -87,10 +87,11 @@ var mapEntriesPools = syncutil.Map[reflect.Type, *syncutil.ValuePool[MapEntries]
 
 func getMapEntriesPool(typ reflect.Type) *syncutil.ValuePool[MapEntries] {
 	pool, ok := mapEntriesPools.Load(typ)
-	if !ok {
-		pool = &syncutil.ValuePool[MapEntries]{}
-		mapEntriesPools.Store(typ, pool)
+	if ok {
+		return pool
 	}
+	pool = &syncutil.ValuePool[MapEntries]{}
+	pool, _ = mapEntriesPools.LoadOrStore(typ, pool)
 	return pool
 }
 

@@ -106,15 +106,15 @@ func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 	workers = max(workers, 1)
 	inCh := make(chan iterOrderedValue[In, Out])
 	outCh := make(chan chan Out, workers*2) // The buffer helps to not block the workers, if one of the workers is slow, or if the code reading the output iterator is slow.
-	go iterOrderedProducer(ctx, in, inCh, outCh)
+	chPool := getChannelPool[Out]()
+	go iterOrderedProducer(ctx, in, inCh, outCh, chPool)
 	iterOrderedWorkers(ctx, workers, f, inCh, outCh)
-	iterOrderedConsumer(cancel, outCh, yield)
+	iterOrderedConsumer(cancel, outCh, yield, chPool)
 }
 
 // iterOrderedProducer reads values from the input iterator, sends them to the workers and the consumer.
-func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out) {
+func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out, chPool *syncutil.Pool[chan Out]) {
 	defer close(inCh) // Notify the workers that there are no more values to process.
-	chPool := getChannelPool[Out]()
 	for inV := range in {
 		ch := chPool.Get()
 		inCh <- iterOrderedValue[In, Out]{
@@ -165,9 +165,8 @@ func iterOrderedWorker[In, Out any](ctx context.Context, f func(context.Context,
 }
 
 // iterOrderedConsumer reads the output values from the output channel and yields them to the output iterator.
-func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan Out, yield func(Out) bool) {
+func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan Out, yield func(Out) bool, chPool *syncutil.Pool[chan Out]) {
 	stopped := false
-	chPool := getChannelPool[Out]()
 	for ch := range outCh {
 		outV, ok := <-ch
 		if !ok {
@@ -195,14 +194,17 @@ func getChannelPool[T any]() *syncutil.Pool[chan T] {
 	typ := reflect.TypeFor[T]()
 	poolItf, _ := channelPools.Load(typ)
 	pool, ok := poolItf.(*syncutil.Pool[chan T])
-	if !ok {
-		pool = &syncutil.Pool[chan T]{
-			New: func() chan T {
-				return make(chan T, 1) // The buffer helps to not block the workers if the consumer is not yet reading this value.
-			},
-		}
-		channelPools.Store(typ, pool)
+	if ok {
+		return pool
 	}
+	pool = &syncutil.Pool[chan T]{
+		New: func() chan T {
+			return make(chan T, 1) // The buffer helps to not block the workers if the consumer is not yet reading this value.
+		},
+	}
+	poolItf = pool
+	poolItf, _ = channelPools.LoadOrStore(typ, poolItf)
+	pool, _ = poolItf.(*syncutil.Pool[chan T])
 	return pool
 }
 
