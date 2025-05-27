@@ -85,10 +85,7 @@ var typeFullNameTestCases = []typeFullNameTestCase{
 	newTypeFullNameTestCase[<-chan map[string][][2]*testContainer[chan map[string][][2]*testType]](),
 }
 
-func runTypeFullNameTestCases[TB interface {
-	testing.TB
-	Run(name string, f func(TB)) bool
-}](tb TB, f func(tb TB, tc typeFullNameTestCase)) {
+func runTypeFullNameTestCases[TB testing.TB](tb TB, f func(tb TB, tc typeFullNameTestCase)) {
 	for _, tc := range typeFullNameTestCases {
 		f(tb, tc)
 	}
