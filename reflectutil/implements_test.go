@@ -40,20 +40,17 @@ func runImplementsCacheTestCases[TB testing.TB](tb TB, f func(tb TB, itf reflect
 
 func TestImplementsCache(t *testing.T) {
 	runImplementsCacheTestCases(t, func(t *testing.T, itf reflect.Type, typ reflect.Type, callImplements func() bool) { //nolint:thelper // This is not a test helper.
-		type result struct {
-			itf        string
-			typ        string
-			implements bool
-		}
-		implements := callImplements()
-		res := result{
-			itf:        TypeFullName(itf),
-			typ:        TypeFullName(typ),
-			implements: implements,
-		}
-		assertauto.Equal(t, res)
-		assertauto.AllocsPerRun(t, 100, func() {
-			_ = callImplements()
+		t.Run(TypeFullName(itf)+"-"+TypeFullName(typ), func(t *testing.T) {
+			implements := callImplements()
+			if typ != nil {
+				correct := typ.Implements(itf)
+				assert.Equal(t, correct, implements)
+			} else {
+				assert.False(t, implements)
+			}
+			assert.AllocsPerRun(t, 100, func() {
+				_ = callImplements()
+			}, 0)
 		})
 	})
 }

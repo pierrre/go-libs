@@ -11,9 +11,10 @@ import (
 //
 // It should be created with [NewImplementsCache].
 type ImplementsCache struct {
-	itf         reflect.Type
-	numExported int
-	m           syncutil.Map[reflect.Type, bool]
+	itf               reflect.Type
+	numMethod         int
+	numMethodExported int
+	m                 syncutil.Map[reflect.Type, bool]
 }
 
 // NewImplementsCache creates a new [ImplementsCache] for the given interface type.
@@ -21,17 +22,17 @@ func NewImplementsCache(itf reflect.Type) *ImplementsCache {
 	if itf.Kind() != reflect.Interface {
 		panic(fmt.Errorf("not interface: %s", itf.Kind()))
 	}
-	numExported := 0
-	for i := range itf.NumMethod() {
+	c := &ImplementsCache{
+		itf: itf,
+	}
+	c.numMethod = itf.NumMethod()
+	for i := range c.numMethod {
 		m := itf.Method(i)
 		if m.IsExported() {
-			numExported++
+			c.numMethodExported++
 		}
 	}
-	return &ImplementsCache{
-		itf:         itf,
-		numExported: numExported,
-	}
+	return c
 }
 
 // NewImplementsCacheFor creates a new [ImplementsCache] for the given type parameter.
@@ -39,15 +40,22 @@ func NewImplementsCacheFor[T any]() *ImplementsCache {
 	return NewImplementsCache(reflect.TypeFor[T]())
 }
 
-// ImplementedBy checks if the interface is implemented by the given type.
+// ImplementedBy checks if the interface is impleented by the given type.
 func (c *ImplementsCache) ImplementedBy(typ reflect.Type) bool {
 	if typ == nil {
 		return false
 	}
+	if c.numMethod == 0 {
+		return true
+	}
 	if typ == c.itf {
 		return true
 	}
-	if typ.NumMethod() < c.numExported {
+	numMethod := c.numMethod
+	if typ.Kind() != reflect.Interface {
+		numMethod = c.numMethodExported
+	}
+	if typ.NumMethod() < numMethod {
 		// It's faster than loading from the map.
 		return false
 	}
