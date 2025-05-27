@@ -1,0 +1,179 @@
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "<nil>",
+	base: [string] (len=5) "<nil>",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=4) "bool",
+	base: [string] (len=4) "bool",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=3) "int",
+	base: [string] (len=3) "int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=4) "int8",
+	base: [string] (len=4) "int8",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "int16",
+	base: [string] (len=5) "int16",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "int32",
+	base: [string] (len=5) "int32",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "int64",
+	base: [string] (len=5) "int64",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=4) "uint",
+	base: [string] (len=4) "uint",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "uint8",
+	base: [string] (len=5) "uint8",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=6) "uint16",
+	base: [string] (len=6) "uint16",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=6) "uint32",
+	base: [string] (len=6) "uint32",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=6) "uint64",
+	base: [string] (len=6) "uint64",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=7) "uintptr",
+	base: [string] (len=7) "uintptr",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=7) "float32",
+	base: [string] (len=7) "float32",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=7) "float64",
+	base: [string] (len=7) "float64",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=9) "complex64",
+	base: [string] (len=9) "complex64",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=10) "complex128",
+	base: [string] (len=10) "complex128",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=6) "[1]int",
+	base: [string] (len=6) "[1]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=8) "chan int",
+	base: [string] (len=8) "chan int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=13) "func(int) int",
+	base: [string] (len=13) "func(int) int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=14) "map[string]int",
+	base: [string] (len=14) "map[string]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=7) "*string",
+	base: [string] (len=7) "*string",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=5) "[]int",
+	base: [string] (len=5) "[]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=6) "string",
+	base: [string] (len=6) "string",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=14) "unsafe.Pointer",
+	base: [string] (len=14) "unsafe.Pointer",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=10) "testing.TB",
+	base: [string] (len=10) "testing.TB",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=24) "struct { String string }",
+	base: [string] (len=24) "struct { String string }",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=56) "github.com/pierrre/go-libs/reflectutil_test.CustomString",
+	base: [string] (len=6) "string",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=55) "github.com/pierrre/go-libs/reflectutil_test.CustomArray",
+	base: [string] (len=6) "[1]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=54) "github.com/pierrre/go-libs/reflectutil_test.CustomChan",
+	base: [string] (len=8) "chan int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=54) "github.com/pierrre/go-libs/reflectutil_test.CustomFunc",
+	base: [string] (len=13) "func(int) int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=53) "github.com/pierrre/go-libs/reflectutil_test.CustomMap",
+	base: [string] (len=14) "map[string]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=57) "github.com/pierrre/go-libs/reflectutil_test.CustomPointer",
+	base: [string] (len=7) "*string",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=55) "github.com/pierrre/go-libs/reflectutil_test.CustomSlice",
+	base: [string] (len=5) "[]int",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=56) "github.com/pierrre/go-libs/reflectutil_test.CustomString",
+	base: [string] (len=6) "string",
+}
+	========== assertauto ==========
+[github.com/pierrre/go-libs/reflectutil_test.result] {
+	typ: [string] (len=56) "github.com/pierrre/go-libs/reflectutil_test.CustomStruct",
+	base: [string] (len=56) "github.com/pierrre/go-libs/reflectutil_test.CustomStruct",
+}
