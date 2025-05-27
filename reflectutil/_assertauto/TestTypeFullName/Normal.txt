@@ -1,3 +1,10 @@
+[string] (len=5) "<nil>"
+	========== assertauto ==========
+[github.com/pierrre/assert/assertauto.allocsPerRun] {
+	Runs: [int] 100,
+	Allocs: [float64] 0,
+}
+	========== assertauto ==========
 [string] (len=6) "string"
 	========== assertauto ==========
 [github.com/pierrre/assert/assertauto.allocsPerRun] {

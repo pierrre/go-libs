@@ -23,6 +23,9 @@ func TypeFullName(typ reflect.Type) string {
 }
 
 func typeFullName(typ reflect.Type) string {
+	if typ == nil {
+		return "<nil>"
+	}
 	pkgPath := typ.PkgPath()
 	if pkgPath != "" {
 		return pkgPath + "." + typ.Name()
