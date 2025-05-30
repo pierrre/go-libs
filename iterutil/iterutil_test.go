@@ -61,6 +61,23 @@ func TestSeqToSeq2Stop(t *testing.T) {
 	}
 }
 
+func TestSeqToSeq2Index(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := SeqToSeq2Index(slices.Values(ss))
+	for k, v := range it {
+		assert.Equal(t, v, ss[k])
+	}
+}
+
+func TestSeqToSeq2IndexStop(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := SeqToSeq2Index(slices.Values(ss))
+	for k, v := range it {
+		assert.Equal(t, v, ss[k])
+		break
+	}
+}
+
 func TestSeq2ToSeq(t *testing.T) {
 	ss := []string{"zero", "one", "two"}
 	it := Seq2ToSeq(slices.All(ss), NewKeyVal)
@@ -76,4 +93,26 @@ func TestSeq2ToSeqStop(t *testing.T) {
 		assert.Equal(t, kv.Val, ss[kv.Key])
 		break
 	}
+}
+
+func TestSeq2ToSeqKey(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Seq2ToSeqKey(slices.All(ss))
+	expected := 0
+	for k := range it {
+		assert.Equal(t, k, expected)
+		expected++
+	}
+	assert.Equal(t, expected, len(ss))
+}
+
+func TestSeq2ToSeqValue(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Seq2ToSeqValue(slices.All(ss))
+	i := 0
+	for v := range it {
+		assert.Equal(t, v, ss[i])
+		i++
+	}
+	assert.Equal(t, i, len(ss))
 }
