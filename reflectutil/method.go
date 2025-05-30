@@ -1,3 +1,4 @@
+//nolint:dupl // Similar but not duplicated.
 package reflectutil
 
 import (
