@@ -3,6 +3,7 @@ package reflectutil
 import (
 	"reflect"
 	"strconv"
+	"unsafe" //nolint:depguard // Required for unsafe.Pointer.
 
 	"github.com/pierrre/go-libs/syncutil"
 )
@@ -13,6 +14,16 @@ var typeFullNameCache syncutil.Map[reflect.Type, string]
 //
 // It contains the full package path if the type is defined in a package.
 func TypeFullName(typ reflect.Type) string {
+	if typ == nil {
+		return "<nil>"
+	}
+	if typ.PkgPath() == "" {
+		// Fast path for known base types.
+		name := knownBaseTypeNames[typ.Kind()]
+		if name != "" {
+			return name
+		}
+	}
 	name, ok := typeFullNameCache.Load(typ)
 	if ok {
 		return name
@@ -22,10 +33,28 @@ func TypeFullName(typ reflect.Type) string {
 	return name
 }
 
+var knownBaseTypeNames = [...]string{
+	reflect.Bool:          reflect.TypeFor[bool]().Name(),
+	reflect.Int:           reflect.TypeFor[int]().Name(),
+	reflect.Int8:          reflect.TypeFor[int8]().Name(),
+	reflect.Int16:         reflect.TypeFor[int16]().Name(),
+	reflect.Int32:         reflect.TypeFor[int32]().Name(),
+	reflect.Int64:         reflect.TypeFor[int64]().Name(),
+	reflect.Uint:          reflect.TypeFor[uint]().Name(),
+	reflect.Uint8:         reflect.TypeFor[uint8]().Name(),
+	reflect.Uint16:        reflect.TypeFor[uint16]().Name(),
+	reflect.Uint32:        reflect.TypeFor[uint32]().Name(),
+	reflect.Uint64:        reflect.TypeFor[uint64]().Name(),
+	reflect.Uintptr:       reflect.TypeFor[uintptr]().Name(),
+	reflect.Float32:       reflect.TypeFor[float32]().Name(),
+	reflect.Float64:       reflect.TypeFor[float64]().Name(),
+	reflect.Complex64:     reflect.TypeFor[complex64]().Name(),
+	reflect.Complex128:    reflect.TypeFor[complex128]().Name(),
+	reflect.String:        reflect.TypeFor[string]().Name(),
+	reflect.UnsafePointer: reflect.TypeFor[unsafe.Pointer]().Name(),
+}
+
 func typeFullName(typ reflect.Type) string {
-	if typ == nil {
-		return "<nil>"
-	}
 	pkgPath := typ.PkgPath()
 	if pkgPath != "" {
 		return pkgPath + "." + typ.Name()
