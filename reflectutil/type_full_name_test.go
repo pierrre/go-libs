@@ -5,14 +5,14 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/pierrre/assert"
 	"github.com/pierrre/assert/assertauto"
 	. "github.com/pierrre/go-libs/reflectutil"
 )
 
 type typeFullNameVariantTestCase struct {
-	name          string
-	newFunc       func(tc typeFullNameTestCase) func() string
-	benchParallel bool
+	name    string
+	newFunc func(tc typeFullNameTestCase) func() string
 }
 
 var typeFullNameVariantTestCases = []typeFullNameVariantTestCase{
@@ -21,15 +21,6 @@ var typeFullNameVariantTestCases = []typeFullNameVariantTestCase{
 		newFunc: func(tc typeFullNameTestCase) func() string {
 			return func() string {
 				return TypeFullName(tc.typ)
-			}
-		},
-		benchParallel: true,
-	},
-	{
-		name: "Internal",
-		newFunc: func(tc typeFullNameTestCase) func() string {
-			return func() string {
-				return TypeFullNameInternal(tc.typ)
 			}
 		},
 	},
@@ -108,9 +99,9 @@ func TestTypeFullName(t *testing.T) {
 			return
 		}
 		assertauto.Equal(t, f())
-		assertauto.AllocsPerRun(t, 100, func() {
+		assert.AllocsPerRun(t, 100, func() {
 			_ = f()
-		})
+		}, 0)
 	})
 }
 
@@ -121,22 +112,8 @@ func BenchmarkTypeFullName(b *testing.B) {
 			return
 		}
 		b.Run(getTypeFullNameTestName(tc.typ), func(b *testing.B) {
-			benchSeq := func(b *testing.B) { //nolint:thelper // This is not a test helper.
-				for b.Loop() {
-					f()
-				}
-			}
-			if variantTC.benchParallel {
-				b.Run("Sequential", benchSeq)
-				b.Run("Parallel", func(b *testing.B) {
-					b.RunParallel(func(pb *testing.PB) {
-						for pb.Next() {
-							f()
-						}
-					})
-				})
-			} else {
-				benchSeq(b)
+			for b.Loop() {
+				f()
 			}
 		})
 	})
