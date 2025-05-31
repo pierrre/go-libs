@@ -39,9 +39,87 @@ type Map[K any, V any] struct {
 	autoCleanLastCount int64
 }
 
+func (m *Map[K, V]) resolveClean(key K, pointer weak.Pointer[V]) (value *V, ok bool) {
+	if pointer == (weak.Pointer[V]{}) {
+		// The value was set to nil.
+		return nil, true
+	}
+	value = pointer.Value()
+	if value != nil {
+		// The value is still alive.
+		return value, true
+	}
+	// The value has been garbage collected, delete it from the map.
+	m.m.CompareAndDelete(key, pointer)
+	if m.OnGCDelete != nil {
+		m.OnGCDelete(key)
+	}
+	return nil, false
+}
+
+// Store is a wrapper around [sync.Map.Store].
+func (m *Map[K, V]) Store(key K, value *V) {
+	m.autoClean()
+	newPointer := weak.Make(value)
+	oldPointer, ok := m.m.Load(key)
+	if ok && newPointer == oldPointer {
+		return
+	}
+	m.m.Store(key, newPointer)
+}
+
+// Load is a wrapper around [sync.Map.Load].
+func (m *Map[K, V]) Load(key K) (value *V, ok bool) {
+	pointer, ok := m.m.Load(key)
+	if !ok {
+		return nil, false
+	}
+	return m.resolveClean(key, pointer)
+}
+
+// Delete is a wrapper around [sync.Map.Delete].
+func (m *Map[K, V]) Delete(key K) {
+	m.autoClean()
+	m.m.Delete(key)
+}
+
 // Clear is a wrapper around [sync.Map.Clear].
 func (m *Map[K, V]) Clear() {
 	m.m.Clear()
+}
+
+// LoadAndDelete is a wrapper around [sync.Map.LoadAndDelete].
+func (m *Map[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
+	m.autoClean()
+	pointer, loaded := m.m.LoadAndDelete(key)
+	if !loaded {
+		return nil, false
+	}
+	return m.resolveClean(key, pointer)
+}
+
+// LoadOrStore is a wrapper around [sync.Map.LoadOrStore].
+func (m *Map[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
+	m.autoClean()
+	pointer := weak.Make(value)
+	for {
+		actualPointer, loaded := m.m.LoadOrStore(key, pointer)
+		actual, ok := m.resolveClean(key, actualPointer)
+		if ok {
+			return actual, loaded
+		}
+	}
+}
+
+// Swap is a wrapper around [sync.Map.Swap].
+func (m *Map[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
+	m.autoClean()
+	pointer := weak.Make(value)
+	pointer, loaded = m.m.Swap(key, pointer)
+	if !loaded {
+		return nil, false
+	}
+	return m.resolveClean(key, pointer)
 }
 
 // CompareAndDelete is a wrapper around [sync.Map.CompareAndDelete].
@@ -59,48 +137,10 @@ func (m *Map[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) 
 	return m.m.CompareAndSwap(key, oldPointer, newPointer)
 }
 
-// Delete is a wrapper around [sync.Map.Delete].
-func (m *Map[K, V]) Delete(key K) {
-	m.autoClean()
-	m.m.Delete(key)
-}
-
-// Load is a wrapper around [sync.Map.Load].
-func (m *Map[K, V]) Load(key K) (value *V, ok bool) {
-	pointer, ok := m.m.Load(key)
-	if !ok {
-		return nil, false
-	}
-	return m.resolve(key, pointer)
-}
-
-// LoadAndDelete is a wrapper around [sync.Map.LoadAndDelete].
-func (m *Map[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
-	m.autoClean()
-	pointer, loaded := m.m.LoadAndDelete(key)
-	if !loaded {
-		return nil, false
-	}
-	return m.resolve(key, pointer)
-}
-
-// LoadOrStore is a wrapper around [sync.Map.LoadOrStore].
-func (m *Map[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
-	m.autoClean()
-	pointer := weak.Make(value)
-	for {
-		actualPointer, loaded := m.m.LoadOrStore(key, pointer)
-		actual, ok := m.resolve(key, actualPointer)
-		if ok {
-			return actual, loaded
-		}
-	}
-}
-
 // Range is a wrapper around [sync.Map.Range].
 func (m *Map[K, V]) Range(f func(key K, value *V) bool) {
 	m.m.Range(func(key K, pointer weak.Pointer[V]) bool {
-		value, ok := m.resolve(key, pointer)
+		value, ok := m.resolveClean(key, pointer)
 		if !ok {
 			return true
 		}
@@ -113,26 +153,18 @@ func (m *Map[K, V]) All() iter.Seq2[K, *V] {
 	return m.Range
 }
 
-// Store is a wrapper around [sync.Map.Store].
-func (m *Map[K, V]) Store(key K, value *V) {
-	m.autoClean()
-	newPointer := weak.Make(value)
-	oldPointer, ok := m.m.Load(key)
-	if ok && newPointer == oldPointer {
-		return
-	}
-	m.m.Store(key, newPointer)
+// Clean removes all entries from the map that have been garbage collected.
+func (m *Map[K, V]) Clean() {
+	m.clean()
 }
 
-// Swap is a wrapper around [sync.Map.Swap].
-func (m *Map[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
-	m.autoClean()
-	pointer := weak.Make(value)
-	pointer, loaded = m.m.Swap(key, pointer)
-	if !loaded {
-		return nil, false
+func (m *Map[K, V]) clean() (count int64) {
+	for k, v := range m.Range {
+		runtime.KeepAlive(k)
+		runtime.KeepAlive(v)
+		count++
 	}
-	return m.resolve(key, pointer)
+	return count
 }
 
 func (m *Map[K, V]) autoClean() {
@@ -166,36 +198,4 @@ func (m *Map[K, V]) autoClean() {
 	} else {
 		f()
 	}
-}
-
-func (m *Map[K, V]) clean() (count int64) {
-	for k, v := range m.Range {
-		runtime.KeepAlive(k)
-		runtime.KeepAlive(v)
-		count++
-	}
-	return count
-}
-
-// Clean removes all entries from the map that have been garbage collected.
-func (m *Map[K, V]) Clean() {
-	m.clean()
-}
-
-func (m *Map[K, V]) resolve(key K, pointer weak.Pointer[V]) (value *V, ok bool) {
-	if pointer == (weak.Pointer[V]{}) {
-		// The value was set to nil.
-		return nil, true
-	}
-	value = pointer.Value()
-	if value != nil {
-		// The value is still alive.
-		return value, true
-	}
-	// The value has been garbage collected, delete it from the map.
-	m.m.CompareAndDelete(key, pointer)
-	if m.OnGCDelete != nil {
-		m.OnGCDelete(key)
-	}
-	return nil, false
 }
