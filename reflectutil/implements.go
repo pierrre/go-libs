@@ -48,11 +48,14 @@ func (c *ImplementsCache) ImplementedBy(typ reflect.Type) bool {
 	if c.numMethod == 0 {
 		return true
 	}
-	if typ == c.itf {
-		return true
-	}
-	numMethod := c.numMethod
-	if typ.Kind() != reflect.Interface {
+	kind := typ.Kind()
+	var numMethod int
+	if kind == reflect.Interface {
+		if typ == c.itf {
+			return true
+		}
+		numMethod = c.numMethod
+	} else {
 		numMethod = c.numMethodExported
 	}
 	if typ.NumMethod() < numMethod {
