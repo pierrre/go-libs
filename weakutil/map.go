@@ -183,14 +183,14 @@ func (m *Map[K, V]) Clean() {
 }
 
 func (m *Map[K, V]) resolve(key K, pointer weak.Pointer[V]) (value *V, ok bool) {
+	if pointer == (weak.Pointer[V]{}) {
+		// The value was set to nil.
+		return nil, true
+	}
 	value = pointer.Value()
 	if value != nil {
 		// The value is still alive.
 		return value, true
-	}
-	if pointer == (weak.Pointer[V]{}) {
-		// The value was set to nil.
-		return nil, true
 	}
 	// The value has been garbage collected, delete it from the map.
 	m.m.CompareAndDelete(key, pointer)
