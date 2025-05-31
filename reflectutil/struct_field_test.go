@@ -52,6 +52,9 @@ func TestGetStructFields(t *testing.T) {
 			assert.Equal(t, fs.Len(), len(expected))
 			for i, f := range fs.All() {
 				assert.DeepEqual(t, f, fs.Get(i))
+				fn, ok := fs.GetByName(f.Name)
+				assert.True(t, ok)
+				assert.DeepEqual(t, f, fn)
 				assert.DeepEqual(t, f, expected[i])
 				if i == fs.Len()-1 {
 					break

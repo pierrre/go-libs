@@ -10,7 +10,8 @@ import (
 
 // Methods represents a list of [reflect.Method]s of a type.
 type Methods struct {
-	ms []reflect.Method
+	ms     []reflect.Method
+	byName map[string]reflect.Method
 }
 
 // Len returns the number of [reflect.Method] in the [Methods].
@@ -21,6 +22,12 @@ func (ms Methods) Len() int {
 // Get returns the [reflect.Method] at the given index.
 func (ms Methods) Get(i int) reflect.Method {
 	return ms.ms[i]
+}
+
+// GetByName returns the [reflect.Method] with the given name.
+func (ms Methods) GetByName(name string) (reflect.Method, bool) {
+	m, ok := ms.byName[name]
+	return m, ok
 }
 
 // Range iterates over all [reflect.Method]s in the [Methods] and calls the given yield function.
@@ -54,8 +61,11 @@ func GetMethods(typ reflect.Type) Methods {
 		return ms
 	}
 	ms.ms = make([]reflect.Method, l)
+	ms.byName = make(map[string]reflect.Method, l)
 	for i := range l {
-		ms.ms[i] = typ.Method(i)
+		m := typ.Method(i)
+		ms.ms[i] = m
+		ms.byName[m.Name] = m
 	}
 	ms, _ = methodsCache.LoadOrStore(typ, ms)
 	return ms

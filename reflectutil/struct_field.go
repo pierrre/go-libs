@@ -10,7 +10,8 @@ import (
 
 // StructFields represents a list of [reflect.StructField]s of a struct type.
 type StructFields struct {
-	fs []reflect.StructField
+	fs     []reflect.StructField
+	byName map[string]reflect.StructField
 }
 
 // Len returns the number of [reflect.StructField]s in the [StructFields].
@@ -21,6 +22,12 @@ func (fs StructFields) Len() int {
 // Get returns the [reflect.StructField] at the given index.
 func (fs StructFields) Get(i int) reflect.StructField {
 	return fs.fs[i]
+}
+
+// GetByName returns the [reflect.StructField] with the given name.
+func (fs StructFields) GetByName(name string) (reflect.StructField, bool) {
+	f, ok := fs.byName[name]
+	return f, ok
 }
 
 // Range iterates over all [reflect.StructField]s in the [StructFields] and calls the given yield function.
@@ -54,8 +61,11 @@ func GetStructFields(typ reflect.Type) StructFields {
 		return fs
 	}
 	fs.fs = make([]reflect.StructField, l)
+	fs.byName = make(map[string]reflect.StructField, l)
 	for i := range l {
-		fs.fs[i] = typ.Field(i)
+		f := typ.Field(i)
+		fs.fs[i] = f
+		fs.byName[f.Name] = f
 	}
 	fs, _ = structFieldsCache.LoadOrStore(typ, fs)
 	return fs

@@ -50,6 +50,9 @@ func TestGetMethods(t *testing.T) {
 			assert.Equal(t, ms.Len(), len(expected))
 			for i, m := range ms.All() {
 				assert.DeepEqual(t, m, ms.Get(i))
+				mn, ok := ms.GetByName(m.Name)
+				assert.True(t, ok)
+				assert.DeepEqual(t, m, mn)
 				assert.DeepEqual(t, m, expected[i])
 				if i == ms.Len()-1 {
 					break
