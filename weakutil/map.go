@@ -88,11 +88,13 @@ func (m *Map[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 func (m *Map[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 	m.autoClean()
 	pointer := weak.Make(value)
-	pointer, loaded = m.m.LoadOrStore(key, pointer)
-	if !loaded {
-		return value, false
+	for {
+		actualPointer, loaded := m.m.LoadOrStore(key, pointer)
+		actual, ok := m.resolve(key, actualPointer)
+		if ok {
+			return actual, loaded
+		}
 	}
-	return m.resolve(key, pointer)
 }
 
 // Range is a wrapper around [sync.Map.Range].
