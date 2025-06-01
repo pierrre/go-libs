@@ -41,12 +41,10 @@ func iterSeq[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f f
 // iterProducer reads values from the input iterator and sends them to the workers.
 func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) {
 	defer close(inCh) // Notify the workers that there are no more values to process.
-	for inV := range in {
+	in(func(inV In) bool {
 		inCh <- inV
-		if ctx.Err() != nil {
-			return
-		}
-	}
+		return ctx.Err() == nil
+	})
 }
 
 // iterWorkers starts the worker goroutines, and closes the output channel when all workers are done.
@@ -113,17 +111,15 @@ func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 // iterOrderedProducer reads values from the input iterator, sends them to the workers and the consumer.
 func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out, chPool *syncutil.Pool[chan Out]) {
 	defer close(inCh) // Notify the workers that there are no more values to process.
-	for inV := range in {
+	in(func(inV In) bool {
 		ch := chPool.Get()
 		inCh <- iterOrderedValue[In, Out]{
 			value: inV,
 			ch:    ch,
 		}
 		outCh <- ch
-		if ctx.Err() != nil {
-			return
-		}
-	}
+		return ctx.Err() == nil
+	})
 }
 
 // iterOrderedWorkers starts the worker goroutines, and closes the output channel when all workers are done.
