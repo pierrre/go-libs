@@ -43,10 +43,8 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 	defer close(inCh) // Notify the workers that there are no more values to process.
 	for inV := range in {
 		inCh <- inV
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return
-		default:
 		}
 	}
 }
@@ -122,10 +120,8 @@ func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh
 			ch:    ch,
 		}
 		outCh <- ch
-		select {
-		case <-ctx.Done():
+		if ctx.Err() != nil {
 			return
-		default:
 		}
 	}
 }
