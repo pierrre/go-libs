@@ -19,7 +19,6 @@ var testImplementsCacheInterfaces = []reflect.Type{
 }
 
 var testImplementsCacheTypes = append([]reflect.Type{
-	nil,
 	reflect.TypeFor[string](),
 	reflect.TypeFor[*bytes.Buffer](),
 	reflect.TypeFor[*testing.T](),

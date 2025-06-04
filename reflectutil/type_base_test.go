@@ -11,7 +11,6 @@ import (
 )
 
 var testBaseTypes = []reflect.Type{
-	nil,
 	reflect.TypeFor[bool](),
 	reflect.TypeFor[int](),
 	reflect.TypeFor[int8](),

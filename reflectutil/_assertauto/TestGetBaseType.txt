@@ -1,9 +1,4 @@
 [github.com/pierrre/go-libs/reflectutil_test.result] {
-	typ: [string] (len=5) "<nil>",
-	base: [string] (len=5) "<nil>",
-}
-	========== assertauto ==========
-[github.com/pierrre/go-libs/reflectutil_test.result] {
 	typ: [string] (len=4) "bool",
 	base: [string] (len=4) "bool",
 }

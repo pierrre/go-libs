@@ -14,9 +14,6 @@ var typeFullNameCache syncutil.Map[reflect.Type, string]
 //
 // It contains the full package path if the type is defined in a package.
 func TypeFullName(typ reflect.Type) string {
-	if typ == nil {
-		return "<nil>"
-	}
 	if typ.PkgPath() == "" {
 		// Fast path for known base types.
 		name := knownBaseTypeNames[typ.Kind()]

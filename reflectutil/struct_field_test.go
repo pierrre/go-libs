@@ -14,10 +14,6 @@ var testStructFieldTypes = []struct {
 	typ  reflect.Type
 }{
 	{
-		name: "Nil",
-		typ:  nil,
-	},
-	{
 		name: "EmptyStruct",
 		typ:  reflect.TypeFor[struct{}](),
 	},

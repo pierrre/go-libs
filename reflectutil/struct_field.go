@@ -49,9 +49,6 @@ var structFieldsCache syncutil.Map[reflect.Type, StructFields]
 // GetStructFields returns a [StructFields] containing all [reflect.StructField]s of the given type.
 // If the type is nil or has no fields, it returns an empty [StructFields].
 func GetStructFields(typ reflect.Type) StructFields {
-	if typ == nil {
-		return StructFields{}
-	}
 	l := typ.NumField()
 	if l == 0 {
 		return StructFields{}

@@ -1,5 +1,3 @@
-[string] (len=5) "<nil>"
-	========== assertauto ==========
 [string] (len=6) "string"
 	========== assertauto ==========
 [string] (len=16) "**********string"

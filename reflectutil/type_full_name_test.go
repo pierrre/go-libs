@@ -58,10 +58,6 @@ func newTypeFullNameTestCase[T any]() typeFullNameTestCase {
 }
 
 var typeFullNameTestCases = []typeFullNameTestCase{
-	{
-		typ:     nil,
-		forFunc: nil,
-	},
 	newTypeFullNameTestCase[string](),
 	newTypeFullNameTestCase[**********string](),
 	newTypeFullNameTestCase[<-chan map[string][][2]*string](),
@@ -95,9 +91,6 @@ func getTypeFullNameTestName(typ reflect.Type) string {
 func TestTypeFullName(t *testing.T) {
 	runTypeFullNameVariantTestCases(t, func(t *testing.T, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // This is not a test helper.
 		f := variantTC.newFunc(tc)
-		if f == nil {
-			return
-		}
 		assertauto.Equal(t, f())
 		assert.AllocsPerRun(t, 100, func() {
 			_ = f()
@@ -108,9 +101,6 @@ func TestTypeFullName(t *testing.T) {
 func BenchmarkTypeFullName(b *testing.B) {
 	runTypeFullNameVariantTestCases(b, func(b *testing.B, variantTC typeFullNameVariantTestCase, tc typeFullNameTestCase) { //nolint:thelper // This is not a test helper.
 		f := variantTC.newFunc(tc)
-		if f == nil {
-			return
-		}
 		b.Run(getTypeFullNameTestName(tc.typ), func(b *testing.B) {
 			for b.Loop() {
 				f()

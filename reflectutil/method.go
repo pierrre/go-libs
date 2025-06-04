@@ -49,9 +49,6 @@ var methodsCache syncutil.Map[reflect.Type, Methods]
 // GetMethods returns a [Methods] containing all [reflect.Method]s of the given type.
 // If the type is nil or has no methods, it returns an empty [Methods].
 func GetMethods(typ reflect.Type) Methods {
-	if typ == nil {
-		return Methods{}
-	}
 	l := typ.NumMethod()
 	if l == 0 {
 		return Methods{}

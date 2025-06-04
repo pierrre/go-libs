@@ -16,10 +16,6 @@ var testMethodCases = []struct {
 	typ  reflect.Type
 }{
 	{
-		name: "Nil",
-		typ:  nil,
-	},
-	{
 		name: "String",
 		typ:  reflect.TypeFor[string](),
 	},

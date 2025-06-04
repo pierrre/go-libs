@@ -11,9 +11,6 @@ import (
 // E.g. for the type defined as `type MyType string`, it returns `string`.
 // It returns the type itself if it's already a base type, or if the kind is invalid, interface, or struct.
 func GetBaseType(typ reflect.Type) reflect.Type {
-	if typ == nil {
-		return nil
-	}
 	kind := typ.Kind()
 	baseType := knownKindBaseTypes[kind]
 	if baseType != nil {
