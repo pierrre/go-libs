@@ -7,7 +7,7 @@ import (
 	"maps"
 	"reflect"
 	"slices"
-	"sync"
+	"sync/atomic"
 
 	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/panichandle"
@@ -49,18 +49,18 @@ func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) 
 
 // iterWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	wg := new(sync.WaitGroup)
-	wg.Add(workers)
+	count := int64(workers)
 	for range workers {
 		go func() {
-			defer wg.Done()
+			defer func() {
+				c := atomic.AddInt64(&count, -1)
+				if c == 0 {
+					close(outCh) // Notify the consumer that all workers are done.
+				}
+			}()
 			iterWorker(ctx, f, inCh, outCh)
 		}()
 	}
-	go func() {
-		wg.Wait()
-		close(outCh) // Notify the consumer that all workers are done.
-	}()
 }
 
 // iterWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
@@ -124,18 +124,18 @@ func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh
 
 // iterOrderedWorkers starts the worker goroutines, and closes the output channel when all workers are done.
 func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out], outCh chan<- chan Out) {
-	wg := new(sync.WaitGroup)
-	wg.Add(workers)
+	count := int64(workers)
 	for range workers {
 		go func() {
-			defer wg.Done()
+			defer func() {
+				c := atomic.AddInt64(&count, -1)
+				if c == 0 {
+					close(outCh) // Notify the consumer that all workers are done.
+				}
+			}()
 			iterOrderedWorker(ctx, f, inCh)
 		}()
 	}
-	go func() {
-		wg.Wait()
-		close(outCh) // Notify the consumer that all workers are done.
-	}()
 }
 
 // iterOrderedWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
