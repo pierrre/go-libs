@@ -7,10 +7,10 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
-// GeUnderlyingType returns the underlying type of the given type.
+// GetUnderlyingType returns the underlying type of the given type.
 // E.g. for the type defined as `type MyType string`, it returns `string`.
 // It returns the type itself if it's its own underlying type, or if the kind is invalid/interface/struct.
-func GeUnderlyingType(typ reflect.Type) reflect.Type {
+func GetUnderlyingType(typ reflect.Type) reflect.Type {
 	kind := typ.Kind()
 	uTyp := knownKindUnderlyingTypes[kind]
 	if uTyp != nil {
@@ -29,11 +29,11 @@ func GeUnderlyingType(typ reflect.Type) reflect.Type {
 	return uTyp
 }
 
-// GetBaseType is an alias for [GeUnderlyingType].
+// GetBaseType is an alias for [GetUnderlyingType].
 //
-// Deprecated: use [GeUnderlyingType] instead.
+// Deprecated: use [GetUnderlyingType] instead.
 func GetBaseType(typ reflect.Type) reflect.Type {
-	return GeUnderlyingType(typ)
+	return GetUnderlyingType(typ)
 }
 
 var knownKindUnderlyingTypes = [...]reflect.Type{

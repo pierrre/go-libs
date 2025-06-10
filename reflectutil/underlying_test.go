@@ -10,7 +10,7 @@ import (
 	. "github.com/pierrre/go-libs/reflectutil"
 )
 
-var testBaseTypes = []reflect.Type{
+var testUnderlyingTypes = []reflect.Type{
 	reflect.TypeFor[bool](),
 	reflect.TypeFor[int](),
 	reflect.TypeFor[int8](),
@@ -77,29 +77,29 @@ var testBaseTypes = []reflect.Type{
 	}(),
 }
 
-func TestGetBaseType(t *testing.T) {
+func TestGetUnderlyingType(t *testing.T) {
 	type result struct {
-		typ  string
-		base string
+		typ        string
+		underlying string
 	}
-	for _, typ := range testBaseTypes {
-		base := GetBaseType(typ)
+	for _, typ := range testUnderlyingTypes {
+		uTyp := GetUnderlyingType(typ)
 		res := result{
-			typ:  TypeFullName(typ),
-			base: TypeFullName(base),
+			typ:        TypeFullName(typ),
+			underlying: TypeFullName(uTyp),
 		}
 		assertauto.Equal(t, res)
 		assert.AllocsPerRun(t, 100, func() {
-			_ = GetBaseType(typ)
+			_ = GetUnderlyingType(typ)
 		}, 0)
 	}
 }
 
-func BenchmarkGetBaseType(b *testing.B) {
-	for _, typ := range testBaseTypes {
+func BenchmarkGetUnderlyingType(b *testing.B) {
+	for _, typ := range testUnderlyingTypes {
 		b.Run(TypeFullName(typ), func(b *testing.B) {
 			for b.Loop() {
-				_ = GetBaseType(typ)
+				_ = GetUnderlyingType(typ)
 			}
 		})
 	}
