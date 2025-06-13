@@ -58,7 +58,7 @@ func init() {
 	kindCompareFuncs[reflect.Interface] = compareInterface
 	kindCompareFuncs[reflect.Map] = comparePointer
 	kindCompareFuncs[reflect.Pointer] = comparePointer
-	kindCompareFuncs[reflect.Slice] = compareUnsupported // TODO: Implement slice comparison (by pointer).
+	kindCompareFuncs[reflect.Slice] = comparePointer
 	kindCompareFuncs[reflect.String] = compareString
 	kindCompareFuncs[reflect.Struct] = compareStruct
 	kindCompareFuncs[reflect.UnsafePointer] = comparePointer
@@ -156,8 +156,4 @@ func compareNil(a, b reflect.Value) (int, bool) {
 		return 1, true
 	}
 	return 0, false
-}
-
-func compareUnsupported(a, b reflect.Value) int {
-	panic("unsupported type: " + a.Type().String())
 }

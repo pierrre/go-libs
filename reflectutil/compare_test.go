@@ -278,6 +278,24 @@ var compareTestCases = []struct {
 		expected: 0,
 	},
 	{
+		name:     "SliceLess",
+		a:        testSlices[0],
+		b:        testSlices[1],
+		expected: -1,
+	},
+	{
+		name:     "SliceGreater",
+		a:        testSlices[1],
+		b:        testSlices[0],
+		expected: 1,
+	},
+	{
+		name:     "SliceEqual",
+		a:        testSlices[0],
+		b:        testSlices[0],
+		expected: 0,
+	},
+	{
 		name:     "BytesLess",
 		a:        []byte("a"),
 		b:        []byte("b"),
@@ -348,12 +366,6 @@ func TestCompare(t *testing.T) {
 	}
 }
 
-func TestComparePanicUnsupportedType(t *testing.T) {
-	assert.Panics(t, func() {
-		Compare(reflect.ValueOf([]int{}), reflect.ValueOf([]int{}))
-	})
-}
-
 func BenchmarkCompare(b *testing.B) {
 	for _, tc := range compareTestCases {
 		ra := reflect.ValueOf(tc.a)
@@ -383,11 +395,12 @@ func BenchmarkComparison(b *testing.B) {
 }
 
 var (
-	testInts  = [2]int{}
-	testChans = makeTestChans()
-	testFuncs = makeTestFuncs()
-	testMaps  = makeTestMaps()
-	testPin   runtime.Pinner
+	testInts   = [2]int{}
+	testChans  = makeTestChans()
+	testFuncs  = makeTestFuncs()
+	testMaps   = makeTestMaps()
+	testSlices = makeTestSlices()
+	testPin    runtime.Pinner
 )
 
 func makeTestChans() []chan int {
@@ -413,12 +426,23 @@ func makeTestFuncs() []func() {
 }
 
 func makeTestMaps() []map[int]int {
-	cs := []map[int]int{{}, {}}
-	for i := range cs {
-		testPin.Pin(reflect.ValueOf(cs[i]).UnsafePointer())
+	ms := []map[int]int{{}, {}}
+	for i := range ms {
+		testPin.Pin(reflect.ValueOf(ms[i]).UnsafePointer())
 	}
-	slices.SortFunc(cs, func(a, b map[int]int) int {
+	slices.SortFunc(ms, func(a, b map[int]int) int {
 		return cmp.Compare(reflect.ValueOf(a).Pointer(), reflect.ValueOf(b).Pointer())
 	})
-	return cs
+	return ms
+}
+
+func makeTestSlices() [][]int {
+	ss := [][]int{{1}, {2}}
+	for i := range ss {
+		testPin.Pin(reflect.ValueOf(ss[i]).UnsafePointer())
+	}
+	slices.SortFunc(ss, func(a, b []int) int {
+		return cmp.Compare(reflect.ValueOf(a).Pointer(), reflect.ValueOf(b).Pointer())
+	})
+	return ss
 }
