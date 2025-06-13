@@ -2,7 +2,7 @@ package goroutine
 
 import (
 	"context"
-	"sync"
+	"runtime"
 	"sync/atomic"
 	"testing"
 
@@ -13,148 +13,189 @@ import (
 func TestStart(t *testing.T) {
 	ctx := t.Context()
 	var called int64
-	done := make(chan struct{})
-	f := func(_ context.Context) {
+	wait := Start(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
-		done <- struct{}{}
-	}
-	Start(ctx, f)
-	<-done
+	})
+	wait.Wait()
 	assert.Equal(t, called, 1)
 }
 
 func TestStartAllocs(t *testing.T) {
 	ctx := t.Context()
-	done := make(chan struct{})
-	f := func(_ context.Context) {
-		done <- struct{}{}
-	}
 	assertauto.AllocsPerRun(t, 100, func() {
-		Start(ctx, f)
-		<-done
+		wait := Start(ctx, func(ctx context.Context) {})
+		wait.Wait()
 	})
+}
+
+func TestStartPanic(t *testing.T) {
+	ctx := t.Context()
+	var called int64
+	wait := Start(ctx, func(ctx context.Context) {
+		atomic.AddInt64(&called, 1)
+		panic("panic")
+	})
+	assert.Panics(t, func() {
+		wait.Wait()
+	})
+}
+
+func TestStartGoexit(t *testing.T) {
+	ctx := t.Context()
+	normalReturn := false
+	recovered := false
+	done := make(chan struct{})
+	go func() {
+		defer func() {
+			r := recover()
+			if r != nil {
+				recovered = true
+			}
+			close(done)
+		}()
+		wait := Start(ctx, func(ctx context.Context) {
+			runtime.Goexit()
+		})
+		wait.Wait()
+		normalReturn = true
+	}()
+	<-done
+	assert.False(t, normalReturn)
+	assert.False(t, recovered)
 }
 
 func BenchmarkStart(b *testing.B) {
 	ctx := b.Context()
-	done := make(chan struct{})
-	f := func(ctx context.Context) {
-		done <- struct{}{}
-	}
 	for b.Loop() {
-		Start(ctx, f)
-		<-done
+		wait := Start(ctx, func(ctx context.Context) {})
+		wait.Wait()
 	}
 }
 
-func TestWait(t *testing.T) {
+func TestStartWithCancel(t *testing.T) {
 	ctx := t.Context()
 	var called int64
-	wait := Wait(ctx, func(ctx context.Context) {
-		atomic.AddInt64(&called, 1)
-	})
-	wait()
-	assert.Equal(t, called, 1)
-}
-
-func TestWaitAllocs(t *testing.T) {
-	ctx := t.Context()
-	assertauto.AllocsPerRun(t, 100, func() {
-		wait := Wait(ctx, func(ctx context.Context) {})
-		wait()
-	})
-}
-
-func BenchmarkWait(b *testing.B) {
-	ctx := b.Context()
-	for b.Loop() {
-		wait := Wait(ctx, func(ctx context.Context) {})
-		wait()
-	}
-}
-
-func TestCancelWait(t *testing.T) {
-	ctx := t.Context()
-	var called int64
-	cancelWait := CancelWait(ctx, func(ctx context.Context) {
+	cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 		<-ctx.Done()
 	})
-	cancelWait()
+	cancelWait.Wait()
 	assert.Equal(t, called, 1)
 }
 
-func TestCancelWaitAllocs(t *testing.T) {
+func TestStartWithCancelAllocs(t *testing.T) {
 	ctx := t.Context()
 	assertauto.AllocsPerRun(t, 100, func() {
-		cancelWait := CancelWait(ctx, func(ctx context.Context) {
+		cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
 			<-ctx.Done()
 		})
-		cancelWait()
+		cancelWait.Wait()
 	})
 }
 
-func BenchmarkCancelWait(b *testing.B) {
+func BenchmarkStartWithCancel(b *testing.B) {
 	ctx := b.Context()
 	for b.Loop() {
-		cancelWait := CancelWait(ctx, func(ctx context.Context) {
+		cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
 			<-ctx.Done()
 		})
-		cancelWait()
+		cancelWait.Wait()
 	}
 }
 
-func TestWaitGroup(t *testing.T) {
+func TestRunN(t *testing.T) {
 	ctx := t.Context()
-	wg := new(sync.WaitGroup)
 	var called int64
-	WaitGroup(ctx, wg, func(ctx context.Context) {
+	RunN(ctx, 10, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 	})
-	wg.Wait()
-	assert.Equal(t, called, 1)
+	assert.Equal(t, called, 10)
 }
 
-func TestWaitGroupAllocs(t *testing.T) {
+func TestRunNAllocs(t *testing.T) {
 	ctx := t.Context()
-	wg := new(sync.WaitGroup)
 	assertauto.AllocsPerRun(t, 100, func() {
-		WaitGroup(ctx, wg, func(ctx context.Context) {})
-		wg.Wait()
+		RunN(ctx, 10, func(ctx context.Context) {})
 	})
 }
 
-func BenchmarkWaitGroup(b *testing.B) {
-	ctx := b.Context()
-	wg := new(sync.WaitGroup)
-	for b.Loop() {
-		WaitGroup(ctx, wg, func(ctx context.Context) {})
-		wg.Wait()
-	}
+func TestRunNContextCancel(t *testing.T) {
+	ctx := t.Context()
+	ctx, cancel := context.WithCancel(ctx)
+	var count int64
+	RunN(ctx, 10, func(ctx context.Context) {
+		if atomic.AddInt64(&count, 1) == 5 {
+			cancel()
+		}
+		<-ctx.Done()
+	})
 }
 
-func TestN(t *testing.T) {
+func TestRunNZero(t *testing.T) {
 	ctx := t.Context()
-	count := 10
 	var called int64
-	N(ctx, count, func(ctx context.Context) {
+	RunN(ctx, 0, func(ctx context.Context) {
 		atomic.AddInt64(&called, 1)
 	})
-	assert.Equal(t, called, int64(count))
+	assert.Equal(t, called, 0)
 }
 
-func TestNAllocs(t *testing.T) {
+func TestRunNNegativePanic(t *testing.T) {
 	ctx := t.Context()
-	count := 10
-	assertauto.AllocsPerRun(t, 100, func() {
-		N(ctx, count, func(ctx context.Context) {})
+	assert.Panics(t, func() {
+		RunN(ctx, -10, func(ctx context.Context) {})
 	})
 }
 
-func BenchmarkN(b *testing.B) {
+func TestRunNPanic(t *testing.T) {
+	ctx := t.Context()
+	var counter int64
+	assert.Panics(t, func() {
+		RunN(ctx, 10, func(ctx context.Context) {
+			id := atomic.AddInt64(&counter, 1)
+			if id == 1 {
+				panic("panic")
+			}
+			<-ctx.Done()
+		})
+	})
+}
+
+func TestRunNPanicAll(t *testing.T) {
+	ctx := t.Context()
+	assert.Panics(t, func() {
+		RunN(ctx, 10, func(ctx context.Context) {
+			panic("panic")
+		})
+	})
+}
+
+func TestRunNGoexit(t *testing.T) {
+	ctx := t.Context()
+	normalReturn := false
+	recovered := false
+	done := make(chan struct{})
+	go func() {
+		defer func() {
+			r := recover()
+			if r != nil {
+				recovered = true
+			}
+			close(done)
+		}()
+		RunN(ctx, 10, func(ctx context.Context) {
+			runtime.Goexit()
+		})
+		normalReturn = true
+	}()
+	<-done
+	assert.False(t, normalReturn)
+	assert.False(t, recovered)
+}
+
+func BenchmarkRunN(b *testing.B) {
 	ctx := b.Context()
-	count := 10
 	for b.Loop() {
-		N(ctx, count, func(ctx context.Context) {})
+		RunN(ctx, 10, func(ctx context.Context) {})
 	}
 }

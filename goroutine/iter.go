@@ -2,15 +2,11 @@ package goroutine
 
 import (
 	"context"
-	"errors"
 	"iter"
-	"maps"
 	"reflect"
-	"slices"
+	"sync"
 	"sync/atomic"
 
-	"github.com/pierrre/go-libs/iterutil"
-	"github.com/pierrre/go-libs/panichandle"
 	"github.com/pierrre/go-libs/syncutil"
 )
 
@@ -20,280 +16,152 @@ import (
 //
 // If the context is canceled, it stops reading values from the input iterator.
 // If the caller stops iterating the output iterator, the context is canceled.
-func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
-	return func(yield func(Out) bool) {
-		iterSeq(ctx, in, workers, f, yield)
-	}
-}
-
-// iterSeq implements the [Iter] logic.
-func iterSeq[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func Iter[In, Out any](parentCtx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1)
-	inCh := make(chan In)
-	outCh := make(chan Out, workers) // The buffer helps to not block the workers if the code reading the output iterator is slow.
-	go iterProducer(ctx, in, inCh)
-	iterWorkers(ctx, workers, f, inCh, outCh)
-	iterConsumer(cancel, outCh, yield)
-}
-
-// iterProducer reads values from the input iterator and sends them to the workers.
-func iterProducer[In any](ctx context.Context, in iter.Seq[In], inCh chan<- In) {
-	defer close(inCh) // Notify the workers that there are no more values to process.
-	in(func(inV In) bool {
-		inCh <- inV
-		return ctx.Err() == nil
-	})
-}
-
-// iterWorkers starts the worker goroutines, and closes the output channel when all workers are done.
-func iterWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	count := int64(workers)
-	for range workers {
-		go func() {
+	return func(yield func(Out) bool) {
+		ctx, cancel := context.WithCancel(parentCtx)
+		defer cancel()
+		inCh := make(chan In)
+		outCh := make(chan Out, workers) // Prevent blocking the workers if the output iterator is slow.
+		defer Start(ctx, func(ctx context.Context) {
+			defer close(inCh)
+			in(func(inV In) bool {
+				inCh <- inV
+				return ctx.Err() == nil
+			})
+		}).Wait()
+		runningWorkers := int64(workers)
+		defer startN(ctx, workers, func(ctx context.Context) {
 			defer func() {
-				c := atomic.AddInt64(&count, -1)
-				if c == 0 {
-					close(outCh) // Notify the consumer that all workers are done.
+				if atomic.AddInt64(&runningWorkers, -1) == 0 {
+					close(outCh)
+					drainChannel(inCh, nil)
 				}
 			}()
-			iterWorker(ctx, f, inCh, outCh)
+			for inV := range inCh {
+				outCh <- f(ctx, inV)
+			}
+		}).Wait()
+		defer func() {
+			cancel()
+			drainChannel(outCh, nil)
 		}()
-	}
-}
-
-// iterWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
-func iterWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan In, outCh chan<- Out) {
-	for inV := range inCh {
-		func() {
-			defer panichandle.Recover(ctx)
-			outV := f(ctx, inV)
-			outCh <- outV
-		}()
-	}
-}
-
-// iterConsumer reads the output values from the output channel and yields them to the output iterator.
-func iterConsumer[Out any](cancel context.CancelFunc, outCh <-chan Out, yield func(Out) bool) {
-	stopped := false
-	for outV := range outCh {
-		if stopped {
-			continue // Drain the output channel if the output iterator was stopped.
-		}
-		if !yield(outV) {
-			cancel() // Notify the producer that the output iterator was stopped.
-			stopped = true
+		for outV := range outCh {
+			if !yield(outV) {
+				return
+			}
 		}
 	}
 }
 
 // IterOrdered is like [Iter] but it keeps the order of the output values.
-func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
-	return func(yield func(Out) bool) {
-		iterOrdered(ctx, in, workers, f, yield)
-	}
-}
-
-// iterOrdered implements the [IterOrdered] logic.
-func iterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out, yield func(Out) bool) {
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
+func IterOrdered[In, Out any](parentCtx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1)
-	inCh := make(chan iterOrderedValue[In, Out])
-	outCh := make(chan chan Out, workers*2) // The buffer helps to not block the workers, if one of the workers is slow, or if the code reading the output iterator is slow.
-	chPool := getChannelPool[Out]()
-	go iterOrderedProducer(ctx, in, inCh, outCh, chPool)
-	iterOrderedWorkers(ctx, workers, f, inCh, outCh)
-	iterOrderedConsumer(cancel, outCh, yield, chPool)
-}
-
-// iterOrderedProducer reads values from the input iterator, sends them to the workers and the consumer.
-func iterOrderedProducer[In, Out any](ctx context.Context, in iter.Seq[In], inCh chan<- iterOrderedValue[In, Out], outCh chan<- chan Out, chPool *syncutil.Pool[chan Out]) {
-	defer close(inCh) // Notify the workers that there are no more values to process.
-	in(func(inV In) bool {
-		ch := chPool.Get()
-		inCh <- iterOrderedValue[In, Out]{
-			value: inV,
-			ch:    ch,
-		}
-		outCh <- ch
-		return ctx.Err() == nil
-	})
-}
-
-// iterOrderedWorkers starts the worker goroutines, and closes the output channel when all workers are done.
-func iterOrderedWorkers[In, Out any](ctx context.Context, workers int, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out], outCh chan<- chan Out) {
-	count := int64(workers)
-	for range workers {
-		go func() {
+	pool := getIterOrderedValuePool[In, Out]()
+	return func(yield func(Out) bool) {
+		ctx, cancel := context.WithCancel(parentCtx)
+		defer cancel()
+		inCh := make(chan *iterOrderedValue[In, Out])
+		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // Prevent blocking the workers if one of the workers or the output iterator is slow.
+		defer Start(ctx, func(ctx context.Context) {
 			defer func() {
-				c := atomic.AddInt64(&count, -1)
-				if c == 0 {
-					close(outCh) // Notify the consumer that all workers are done.
+				close(inCh)
+				close(outCh)
+			}()
+			in(func(inV In) bool {
+				v := pool.Get()
+				v.wg.Add(1)
+				v.in = inV
+				inCh <- v
+				outCh <- v
+				return ctx.Err() == nil
+			})
+		}).Wait()
+		runningWorkers := int64(workers)
+		defer startN(ctx, workers, func(ctx context.Context) {
+			defer func() {
+				cancel()
+				if atomic.AddInt64(&runningWorkers, -1) == 0 {
+					drainChannel(inCh, func(v *iterOrderedValue[In, Out]) {
+						v.wg.Done()
+					})
 				}
 			}()
-			iterOrderedWorker(ctx, f, inCh)
+			for v := range inCh {
+				func() {
+					defer v.wg.Done()
+					v.out = f(ctx, v.in)
+					v.ok = true
+				}()
+			}
+		}).Wait()
+		defer func() {
+			cancel()
+			drainChannel(outCh, func(v *iterOrderedValue[In, Out]) {
+				v.wg.Wait()
+				v.release(pool)
+			})
 		}()
-	}
-}
-
-// iterOrderedWorker reads the input value from the input channel, runs the function, and sends the output value to the output channel.
-func iterOrderedWorker[In, Out any](ctx context.Context, f func(context.Context, In) Out, inCh <-chan iterOrderedValue[In, Out]) {
-	for inV := range inCh {
-		func() {
-			defer panichandle.Recover(ctx)
-			ok := false
-			defer func() {
-				if !ok {
-					close(inV.ch) // Close the channel if the worker didn't send a value (panic).
-				}
-			}()
-			outV := f(ctx, inV.value)
-			inV.ch <- outV
-			ok = true
-		}()
-	}
-}
-
-// iterOrderedConsumer reads the output values from the output channel and yields them to the output iterator.
-func iterOrderedConsumer[Out any](cancel context.CancelFunc, outCh <-chan chan Out, yield func(Out) bool, chPool *syncutil.Pool[chan Out]) {
-	stopped := false
-	for ch := range outCh {
-		outV, ok := <-ch
-		if !ok {
-			continue // Skip the value if the worker didn't send a value.
-		}
-		chPool.Put(ch)
-		if stopped {
-			continue // Drain the output channel if the output iterator was stopped.
-		}
-		if !yield(outV) {
-			cancel() // Notify the producer that the output iterator was stopped.
-			stopped = true
+		for v := range outCh {
+			v.wg.Wait()
+			outV, ok := v.out, v.ok
+			v.release(pool)
+			if !ok {
+				continue
+			}
+			if !yield(outV) {
+				return
+			}
 		}
 	}
 }
 
 type iterOrderedValue[In, Out any] struct {
-	value In
-	ch    chan<- Out
+	wg  sync.WaitGroup
+	in  In
+	out Out
+	ok  bool
 }
 
-var channelPools syncutil.Map[reflect.Type, any]
+func (v *iterOrderedValue[In, Out]) release(pool *syncutil.Pool[*iterOrderedValue[In, Out]]) {
+	*v = iterOrderedValue[In, Out]{}
+	pool.Put(v)
+}
 
-func getChannelPool[T any]() *syncutil.Pool[chan T] {
-	typ := reflect.TypeFor[T]()
-	poolItf, _ := channelPools.Load(typ)
-	pool, ok := poolItf.(*syncutil.Pool[chan T])
+type iterOrderedValuePoolsKey struct {
+	in  reflect.Type
+	out reflect.Type
+}
+
+var iterOrderedValuePools syncutil.Map[iterOrderedValuePoolsKey, any]
+
+func getIterOrderedValuePool[In, Out any]() *syncutil.Pool[*iterOrderedValue[In, Out]] {
+	key := iterOrderedValuePoolsKey{
+		in:  reflect.TypeFor[In](),
+		out: reflect.TypeFor[Out](),
+	}
+	poolItf, _ := iterOrderedValuePools.Load(key)
+	pool, ok := poolItf.(*syncutil.Pool[*iterOrderedValue[In, Out]])
 	if ok {
 		return pool
 	}
-	pool = &syncutil.Pool[chan T]{
-		New: func() chan T {
-			return make(chan T, 1) // The buffer helps to not block the workers if the consumer is not yet reading this value.
+	pool = &syncutil.Pool[*iterOrderedValue[In, Out]]{
+		New: func() *iterOrderedValue[In, Out] {
+			return new(iterOrderedValue[In, Out])
 		},
 	}
 	poolItf = pool
-	poolItf, _ = channelPools.LoadOrStore(typ, poolItf)
-	pool, _ = poolItf.(*syncutil.Pool[chan T])
+	poolItf, _ = iterOrderedValuePools.LoadOrStore(key, poolItf)
+	pool, _ = poolItf.(*syncutil.Pool[*iterOrderedValue[In, Out]])
 	return pool
 }
 
-// Slice is a [Iter] wrapper for slices.
-func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) Out) SOut {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		func(ctx context.Context, kv iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
-			return iterutil.KeyVal[int, Out]{
-				Key: kv.Key,
-				Val: f(ctx, kv.Key, kv.Val),
-			}
-		},
-	)
-	out := make(SOut, len(in))
-	for v := range res {
-		out[v.Key] = v.Val
-	}
-	return out
-}
-
-// SliceError is a [Slice] wrapper that returns an error.
-//
-//nolint:dupl // This is not exactly the same code.
-func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) (Out, error)) (SOut, error) {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		WithError(func(ctx context.Context, kv iterutil.KeyVal[int, In]) (iterutil.KeyVal[int, Out], error) {
-			v, err := f(ctx, kv.Key, kv.Val)
-			return iterutil.KeyVal[int, Out]{
-				Key: kv.Key,
-				Val: v,
-			}, err
-		}),
-	)
-	out := make(SOut, len(in))
-	var errs []error
-	for v := range res {
-		out[v.Val.Key] = v.Val.Val
-		if v.Err != nil {
-			errs = append(errs, v.Err)
+func drainChannel[T any](ch <-chan T, f func(v T)) {
+	for v := range ch {
+		if f != nil {
+			f(v)
 		}
 	}
-	err := errors.Join(errs...)
-	return out, err
-}
-
-// Map is a [Iter] wrapper for maps.
-func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) Out) MOut {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
-			return iterutil.KeyVal[K, Out]{
-				Key: kv.Key,
-				Val: f(ctx, kv.Key, kv.Val),
-			}
-		},
-	)
-	out := make(MOut, len(in))
-	for v := range res {
-		out[v.Key] = v.Val
-	}
-	return out
-}
-
-// MapError is a [Map] wrapper that returns an error.
-//
-//nolint:dupl // This is not exactly the same code.
-func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(maps.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (iterutil.KeyVal[K, Out], error) {
-			v, err := f(ctx, kv.Key, kv.Val)
-			return iterutil.KeyVal[K, Out]{
-				Key: kv.Key,
-				Val: v,
-			}, err
-		}),
-	)
-	out := make(MOut, len(in))
-	var errs []error
-	for v := range res {
-		out[v.Val.Key] = v.Val.Val
-		if v.Err != nil {
-			errs = append(errs, v.Err)
-		}
-	}
-	err := errors.Join(errs...)
-	return out, err
 }
 
 // ValErr is a value with an error.
