@@ -10,7 +10,6 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
-	"github.com/pierrre/go-libs/panichandle"
 )
 
 func ExampleIter() {
@@ -45,68 +44,6 @@ func ExampleIterOrdered() {
 	// 6
 	// 8
 	// 10
-}
-
-func ExampleSlice() {
-	ctx := context.Background()
-	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) int {
-		return v * 2
-	})
-	fmt.Println(out)
-	// Output:
-	// [2 4 6 8 10]
-}
-
-func ExampleSliceError() {
-	ctx := context.Background()
-	out, err := SliceError(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) (int, error) {
-		if v == 3 {
-			return 0, errors.New("error")
-		}
-		return v * 2, nil
-	})
-	fmt.Println(out)
-	fmt.Println(err)
-	// Output:
-	// [2 4 0 8 10]
-	// error
-}
-
-func ExampleMap() {
-	ctx := context.Background()
-	out := Map(ctx, map[int]int{
-		1: 1,
-		2: 2,
-		3: 3,
-		4: 4,
-		5: 5,
-	}, 2, func(ctx context.Context, k int, v int) int {
-		return v * 2
-	})
-	fmt.Println(out)
-	// Output:
-	// map[1:2 2:4 3:6 4:8 5:10]
-}
-
-func ExampleMapError() {
-	ctx := context.Background()
-	out, err := MapError(ctx, map[int]int{
-		1: 1,
-		2: 2,
-		3: 3,
-		4: 4,
-		5: 5,
-	}, 2, func(ctx context.Context, k int, v int) (int, error) {
-		if v == 3 {
-			return 0, errors.New("error")
-		}
-		return v * 2, nil
-	})
-	fmt.Println(out)
-	fmt.Println(err)
-	// Output:
-	// map[1:2 2:4 3:0 4:8 5:10]
-	// error
 }
 
 func ExampleWithError() {
@@ -162,7 +99,7 @@ func TestIter(t *testing.T) {
 	})
 }
 
-func TestIterStopOutputIterator(t *testing.T) {
+func TestIterStop(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -208,7 +145,48 @@ func TestIterContextCancel(t *testing.T) {
 	})
 }
 
-func TestIterPanicIterator(t *testing.T) {
+func TestIterPanicInput(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := t.Context()
+		in := func(func(int) bool) {
+			panic("panic")
+		}
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			t.Fatal("should not be called")
+			return 0
+		}
+		out := Iter(ctx, in, workers, f)
+		iterCount := 0
+		assert.Panics(t, func() {
+			for range out {
+				iterCount++
+			}
+		})
+		assert.Equal(t, iterCount, 0)
+	})
+}
+
+func TestIterPanicFunction(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := t.Context()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			panic("panic")
+		}
+		out := Iter(ctx, in, workers, f)
+		iterCount := 0
+		assert.Panics(t, func() {
+			for range out {
+				iterCount++
+			}
+		})
+		assert.Equal(t, iterCount, 0)
+	})
+}
+
+func TestIterPanicOutput(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -228,28 +206,6 @@ func TestIterPanicIterator(t *testing.T) {
 	})
 }
 
-func TestIterPanicFunction(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		panicCount := int64(0)
-		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
-			atomic.AddInt64(&panicCount, 1)
-		})
-		in := slices.Values(testIterInputInts)
-		workers := 2
-		f := func(ctx context.Context, v int) int {
-			panic("panic")
-		}
-		out := Iter(ctx, in, workers, f)
-		iterCount := 0
-		for range out {
-			iterCount++
-		}
-		assert.Equal(t, panicCount, int64(len(testIterInputInts)))
-		assert.Equal(t, iterCount, 0)
-	})
-}
-
 func BenchmarkIter(b *testing.B) {
 	ctx := b.Context()
 	in := func(yield func(int) bool) {
@@ -266,8 +222,9 @@ func BenchmarkIter(b *testing.B) {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
 			for b.Loop() {
 				out := Iter(ctx, in, workers, f)
-				for range out {
-				}
+				out(func(int) bool {
+					return true
+				})
 			}
 		})
 	}
@@ -288,7 +245,7 @@ func TestIterOrdered(t *testing.T) {
 	})
 }
 
-func TestIterOrderedStopOutputIterator(t *testing.T) {
+func TestIterOrderedStop(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -334,7 +291,48 @@ func TestIterOrderedContextCancel(t *testing.T) {
 	})
 }
 
-func TestIterOrderedPanicIterator(t *testing.T) {
+func TestIterOrderedPanicinput(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := t.Context()
+		in := func(func(int) bool) {
+			panic("panic")
+		}
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			t.Fatal("should not be called")
+			return 0
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		iterCount := 0
+		assert.Panics(t, func() {
+			for range out {
+				iterCount++
+			}
+		})
+		assert.Equal(t, iterCount, 0)
+	})
+}
+
+func TestIterOrderedPanicFunction(t *testing.T) {
+	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+		ctx := t.Context()
+		in := slices.Values(testIterInputInts)
+		workers := 2
+		f := func(ctx context.Context, v int) int {
+			panic("panic")
+		}
+		out := IterOrdered(ctx, in, workers, f)
+		iterCount := 0
+		assert.Panics(t, func() {
+			for range out {
+				iterCount++
+			}
+		})
+		assert.Equal(t, iterCount, 0)
+	})
+}
+
+func TestIterOrderedPanicOutput(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -354,28 +352,6 @@ func TestIterOrderedPanicIterator(t *testing.T) {
 	})
 }
 
-func TestIterOrderedPanicFunction(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		panicCount := int64(0)
-		ctx = panichandle.SetHandlerToContext(ctx, func(ctx context.Context, r any) {
-			atomic.AddInt64(&panicCount, 1)
-		})
-		in := slices.Values(testIterInputInts)
-		workers := 2
-		f := func(ctx context.Context, v int) int {
-			panic("panic")
-		}
-		out := IterOrdered(ctx, in, workers, f)
-		iterCount := 0
-		for range out {
-			iterCount++
-		}
-		assert.Equal(t, panicCount, int64(len(testIterInputInts)))
-		assert.Equal(t, iterCount, 0)
-	})
-}
-
 func BenchmarkIterOrdered(b *testing.B) {
 	ctx := b.Context()
 	in := func(yield func(int) bool) {
@@ -392,172 +368,9 @@ func BenchmarkIterOrdered(b *testing.B) {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
 			for b.Loop() {
 				out := IterOrdered(ctx, in, workers, f)
-				for range out {
-				}
-			}
-		})
-	}
-}
-
-func TestSlice(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		workers := 2
-		f := func(ctx context.Context, i int, v int) int {
-			return v * 2
-		}
-		out := Slice(ctx, testIterInputInts, workers, f)
-		expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
-		assert.SliceEqual(t, out, expected)
-	})
-}
-
-func BenchmarkSlice(b *testing.B) {
-	ctx := b.Context()
-	in := make([]int, 100)
-	for i := range in {
-		in[i] = i
-	}
-	f := func(ctx context.Context, i int, v int) int {
-		return v * 2
-	}
-	for _, workers := range []int{1, 2, 5, 10} {
-		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for b.Loop() {
-				Slice(ctx, in, workers, f)
-			}
-		})
-	}
-}
-
-func TestSliceError(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		workers := 2
-		f := func(ctx context.Context, i int, v int) (int, error) {
-			if v == 3 {
-				return 0, errors.New("error")
-			}
-			return v * 2, nil
-		}
-		out, err := SliceError(ctx, testIterInputInts, workers, f)
-		expected := []int{2, 4, 0, 8, 10, 12, 14, 16, 18, 20}
-		assert.SliceEqual(t, out, expected)
-		assert.Error(t, err)
-	})
-}
-
-func BenchmarkSliceError(b *testing.B) {
-	ctx := b.Context()
-	in := make([]int, 100)
-	for i := range in {
-		in[i] = i
-	}
-	f := func(ctx context.Context, i int, v int) (int, error) {
-		if i%10 == 0 {
-			return 0, errors.New("error")
-		}
-		return v * 2, nil
-	}
-	for _, workers := range []int{1, 2, 5, 10} {
-		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for b.Loop() {
-				_, _ = SliceError(ctx, in, workers, f)
-			}
-		})
-	}
-}
-
-func TestMap(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		in := map[int]int{
-			1: 1,
-			2: 2,
-			3: 3,
-			4: 4,
-			5: 5,
-		}
-		workers := 2
-		f := func(ctx context.Context, k int, v int) int {
-			return v * 2
-		}
-		out := Map(ctx, in, workers, f)
-		expected := map[int]int{
-			1: 2,
-			2: 4,
-			3: 6,
-			4: 8,
-			5: 10,
-		}
-		assert.MapEqual(t, out, expected)
-	})
-}
-
-func BenchmarkMap(b *testing.B) {
-	ctx := b.Context()
-	in := make(map[int]int)
-	for i := range 100 {
-		in[i] = i
-	}
-	f := func(ctx context.Context, k int, v int) int {
-		return v * 2
-	}
-	for _, workers := range []int{1, 2, 5, 10} {
-		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for b.Loop() {
-				Map(ctx, in, workers, f)
-			}
-		})
-	}
-}
-
-func TestMapError(t *testing.T) {
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		in := map[int]int{
-			1: 1,
-			2: 2,
-			3: 3,
-			4: 4,
-			5: 5,
-		}
-		workers := 2
-		f := func(ctx context.Context, k int, v int) (int, error) {
-			if v == 3 {
-				return 0, errors.New("error")
-			}
-			return v * 2, nil
-		}
-		out, err := MapError(ctx, in, workers, f)
-		expected := map[int]int{
-			1: 2,
-			2: 4,
-			3: 0,
-			4: 8,
-			5: 10,
-		}
-		assert.MapEqual(t, out, expected)
-		assert.Error(t, err)
-	})
-}
-
-func BenchmarkMapError(b *testing.B) {
-	ctx := b.Context()
-	in := make(map[int]int)
-	for i := range 100 {
-		in[i] = i
-	}
-	f := func(ctx context.Context, k int, v int) (int, error) {
-		if k%10 == 0 {
-			return 0, errors.New("error")
-		}
-		return v * 2, nil
-	}
-	for _, workers := range []int{1, 2, 5, 10} {
-		b.Run(strconv.Itoa(workers), func(b *testing.B) {
-			for b.Loop() {
-				_, _ = MapError(ctx, in, workers, f)
+				out(func(int) bool {
+					return true
+				})
 			}
 		})
 	}
