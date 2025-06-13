@@ -158,39 +158,39 @@ var compareTestCases = []struct {
 		expected: 0,
 	},
 	{
-		name:     "ChanNilLess",
-		a:        chan int(nil),
-		b:        make(chan int),
-		expected: -1,
-	},
-	{
-		name:     "ChanNilGreater",
-		a:        make(chan int),
-		b:        chan int(nil),
-		expected: 1,
-	},
-	{
-		name:     "ChanNilEqual",
-		a:        chan int(nil),
-		b:        chan int(nil),
-		expected: 0,
-	},
-	{
-		name:     "ChanPointerLess",
+		name:     "ChanLess",
 		a:        chans[0],
 		b:        chans[1],
 		expected: -1,
 	},
 	{
-		name:     "ChanPointerGreater",
+		name:     "ChanGreater",
 		a:        chans[1],
 		b:        chans[0],
 		expected: 1,
 	},
 	{
-		name:     "ChanPointerEqual",
+		name:     "ChanEqual",
 		a:        chans[0],
 		b:        chans[0],
+		expected: 0,
+	},
+	{
+		name:     "FuncLess",
+		a:        funcs[0],
+		b:        funcs[1],
+		expected: -1,
+	},
+	{
+		name:     "FuncGreater",
+		a:        funcs[1],
+		b:        funcs[0],
+		expected: 1,
+	},
+	{
+		name:     "FuncEqual",
+		a:        funcs[0],
+		b:        funcs[0],
 		expected: 0,
 	},
 	{
@@ -332,7 +332,7 @@ func TestCompare(t *testing.T) {
 
 func TestComparePanicUnsupportedType(t *testing.T) {
 	assert.Panics(t, func() {
-		Compare(reflect.ValueOf(func() {}), reflect.ValueOf(func() {}))
+		Compare(reflect.ValueOf(map[any]any{}), reflect.ValueOf(map[any]any{}))
 	})
 }
 
@@ -367,6 +367,7 @@ func BenchmarkComparison(b *testing.B) {
 var (
 	ints  = [2]int{}
 	chans = makeChans()
+	funcs = makeFuncs()
 	pin   runtime.Pinner
 )
 
@@ -379,4 +380,15 @@ func makeChans() []chan int {
 		return cmp.Compare(reflect.ValueOf(a).Pointer(), reflect.ValueOf(b).Pointer())
 	})
 	return cs
+}
+
+func makeFuncs() []func() {
+	fs := []func(){func() {}, func() {}}
+	for i := range fs {
+		pin.Pin(reflect.ValueOf(fs[i]).UnsafePointer())
+	}
+	slices.SortFunc(fs, func(a, b func()) int {
+		return cmp.Compare(reflect.ValueOf(a).Pointer(), reflect.ValueOf(b).Pointer())
+	})
+	return fs
 }

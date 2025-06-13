@@ -53,8 +53,8 @@ func init() {
 	kindCompareFuncs[reflect.Complex64] = compareComplex
 	kindCompareFuncs[reflect.Complex128] = compareComplex
 	kindCompareFuncs[reflect.Array] = compareArray
-	kindCompareFuncs[reflect.Chan] = compareChan
-	kindCompareFuncs[reflect.Func] = compareUnsupported // TODO: Implement function comparison (by pointer).
+	kindCompareFuncs[reflect.Chan] = comparePointer
+	kindCompareFuncs[reflect.Func] = comparePointer
 	kindCompareFuncs[reflect.Interface] = compareInterface
 	kindCompareFuncs[reflect.Map] = compareUnsupported // TODO: Implement map comparison (by pointer).
 	kindCompareFuncs[reflect.Pointer] = comparePointer
@@ -106,10 +106,6 @@ func compareArray(a, b reflect.Value) int {
 		}
 	}
 	return 0
-}
-
-func compareChan(a, b reflect.Value) int {
-	return comparePointer(a, b)
 }
 
 func compareInterface(a, b reflect.Value) int {
