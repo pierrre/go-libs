@@ -17,9 +17,18 @@ var compareTestCases = []struct {
 	expected int
 }{
 	{
-		name:     "DifferentTypes",
+		name:     "DifferentKinds",
 		a:        1,
 		b:        "a",
+		expected: -1,
+	},
+	{
+		name: "DifferentTypes",
+		a:    1,
+		b: func() any {
+			type customInt int
+			return customInt(1)
+		}(),
 		expected: -1,
 	},
 	{
@@ -131,39 +140,21 @@ var compareTestCases = []struct {
 		expected: 0,
 	},
 	{
-		name:     "StringLess",
-		a:        "a",
-		b:        "b",
+		name:     "ArrayLess",
+		a:        [2]int{1, 1},
+		b:        [2]int{1, 2},
 		expected: -1,
 	},
 	{
-		name:     "StringGreater",
-		a:        "b",
-		b:        "a",
+		name:     "ArrayGreater",
+		a:        [2]int{1, 2},
+		b:        [2]int{1, 1},
 		expected: 1,
 	},
 	{
-		name:     "StringEqual",
-		a:        "a",
-		b:        "a",
-		expected: 0,
-	},
-	{
-		name:     "PointerLess",
-		a:        &ints[0],
-		b:        &ints[1],
-		expected: -1,
-	},
-	{
-		name:     "PointerGreater",
-		a:        &ints[1],
-		b:        &ints[0],
-		expected: 1,
-	},
-	{
-		name:     "PointerEqual",
-		a:        &ints[0],
-		b:        &ints[0],
+		name:     "ArrayEqual",
+		a:        [2]int{1, 1},
+		b:        [2]int{1, 1},
 		expected: 0,
 	},
 	{
@@ -200,42 +191,6 @@ var compareTestCases = []struct {
 		name:     "ChanPointerEqual",
 		a:        chans[0],
 		b:        chans[0],
-		expected: 0,
-	},
-	{
-		name:     "ArrayLess",
-		a:        [2]int{1, 1},
-		b:        [2]int{1, 2},
-		expected: -1,
-	},
-	{
-		name:     "ArrayGreater",
-		a:        [2]int{1, 2},
-		b:        [2]int{1, 1},
-		expected: 1,
-	},
-	{
-		name:     "ArrayEqual",
-		a:        [2]int{1, 1},
-		b:        [2]int{1, 1},
-		expected: 0,
-	},
-	{
-		name:     "StructLess",
-		a:        struct{ A, B int }{1, 1},
-		b:        struct{ A, B int }{1, 2},
-		expected: -1,
-	},
-	{
-		name:     "StructGreater",
-		a:        struct{ A, B int }{1, 2},
-		b:        struct{ A, B int }{1, 1},
-		expected: 1,
-	},
-	{
-		name:     "StructEqual",
-		a:        struct{ A, B int }{1, 1},
-		b:        struct{ A, B int }{1, 1},
 		expected: 0,
 	},
 	{
@@ -286,13 +241,67 @@ var compareTestCases = []struct {
 		b:        [1]any{1},
 		expected: 0,
 	},
+	{
+		name:     "PointerLess",
+		a:        &ints[0],
+		b:        &ints[1],
+		expected: -1,
+	},
+	{
+		name:     "PointerGreater",
+		a:        &ints[1],
+		b:        &ints[0],
+		expected: 1,
+	},
+	{
+		name:     "PointerEqual",
+		a:        &ints[0],
+		b:        &ints[0],
+		expected: 0,
+	},
+	{
+		name:     "StringLess",
+		a:        "a",
+		b:        "b",
+		expected: -1,
+	},
+	{
+		name:     "StringGreater",
+		a:        "b",
+		b:        "a",
+		expected: 1,
+	},
+	{
+		name:     "StringEqual",
+		a:        "a",
+		b:        "a",
+		expected: 0,
+	},
+	{
+		name:     "StructLess",
+		a:        struct{ A, B int }{1, 1},
+		b:        struct{ A, B int }{1, 2},
+		expected: -1,
+	},
+	{
+		name:     "StructGreater",
+		a:        struct{ A, B int }{1, 2},
+		b:        struct{ A, B int }{1, 1},
+		expected: 1,
+	},
+	{
+		name:     "StructEqual",
+		a:        struct{ A, B int }{1, 1},
+		b:        struct{ A, B int }{1, 1},
+		expected: 0,
+	},
 }
 
 func TestCompare(t *testing.T) {
 	for _, tc := range compareTestCases {
+		ra := reflect.ValueOf(tc.a)
+		rb := reflect.ValueOf(tc.b)
 		t.Run(tc.name, func(t *testing.T) {
-			ra := reflect.ValueOf(tc.a)
-			rb := reflect.ValueOf(tc.b)
 			c := Compare(ra, rb)
 			assert.Equal(t, c, tc.expected)
 			allocs := testing.AllocsPerRun(100, func() {
@@ -311,11 +320,27 @@ func TestComparePanicUnsupportedType(t *testing.T) {
 
 func BenchmarkCompare(b *testing.B) {
 	for _, tc := range compareTestCases {
+		ra := reflect.ValueOf(tc.a)
+		rb := reflect.ValueOf(tc.b)
 		b.Run(tc.name, func(b *testing.B) {
-			ra := reflect.ValueOf(tc.a)
-			rb := reflect.ValueOf(tc.b)
 			for b.Loop() {
 				Compare(ra, rb)
+			}
+		})
+	}
+}
+
+func BenchmarkComparison(b *testing.B) {
+	for _, tc := range compareTestCases {
+		ra := reflect.ValueOf(tc.a)
+		rb := reflect.ValueOf(tc.b)
+		if ra.Type() != rb.Type() {
+			continue
+		}
+		f := GetCompareFunc(ra.Type())
+		b.Run(tc.name, func(b *testing.B) {
+			for b.Loop() {
+				f(ra, rb)
 			}
 		})
 	}
@@ -329,7 +354,6 @@ var (
 
 func makeChans() []chan int {
 	cs := []chan int{make(chan int), make(chan int)}
-
 	for i := range cs {
 		pin.Pin(reflect.ValueOf(cs[i]).UnsafePointer())
 	}

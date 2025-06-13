@@ -6,45 +6,58 @@ import (
 	"strings"
 )
 
-// Compare compares two values of the same type.
+// Compare compares two values of the same [reflect.Type].
 func Compare(a, b reflect.Value) int {
-	if a.Type() != b.Type() {
-		return -1
+	kind := a.Kind()
+	if kind == b.Kind() {
+		typ := a.Type()
+		if typ == b.Type() {
+			return getCompareFunc(kind)(a, b)
+		}
 	}
-	return GetCompareFunc(a.Type())(a, b)
+	return -1
 }
 
-// GetCompareFunc returns a function that compares two values of the given type.
+// GetCompareFunc returns a function that compares two values of the given [reflect.Type].
 //
-// It panics if the type is not supported.
-//
-//nolint:gocyclo // We need to handle all types.
+// The returned function panics if the [reflect.Type] is not supported.
 func GetCompareFunc(typ reflect.Type) func(a, b reflect.Value) int {
-	switch typ.Kind() { //nolint:exhaustive // Optimized for common kinds, the default case is less optimized.
-	case reflect.Bool:
-		return compareBool
-	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
-		return compareInt
-	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64, reflect.Uintptr:
-		return compareUint
-	case reflect.Float32, reflect.Float64:
-		return compareFloat
-	case reflect.Complex64, reflect.Complex128:
-		return compareComplex
-	case reflect.String:
-		return compareString
-	case reflect.Pointer, reflect.UnsafePointer:
-		return comparePointer
-	case reflect.Chan:
-		return compareChan
-	case reflect.Array:
-		return compareArray
-	case reflect.Struct:
-		return compareStruct
-	case reflect.Interface:
-		return compareInterface
-	}
-	panic("unsupported type: " + typ.String())
+	return getCompareFunc(typ.Kind())
+}
+
+func getCompareFunc(kind reflect.Kind) func(a, b reflect.Value) int {
+	return kindCompareFuncs[kind]
+}
+
+var kindCompareFuncs [reflect.UnsafePointer + 1]func(a, b reflect.Value) int
+
+func init() {
+	kindCompareFuncs[reflect.Bool] = compareBool
+	kindCompareFuncs[reflect.Int] = compareInt
+	kindCompareFuncs[reflect.Int8] = compareInt
+	kindCompareFuncs[reflect.Int16] = compareInt
+	kindCompareFuncs[reflect.Int32] = compareInt
+	kindCompareFuncs[reflect.Int64] = compareInt
+	kindCompareFuncs[reflect.Uint] = compareUint
+	kindCompareFuncs[reflect.Uint8] = compareUint
+	kindCompareFuncs[reflect.Uint16] = compareUint
+	kindCompareFuncs[reflect.Uint32] = compareUint
+	kindCompareFuncs[reflect.Uint64] = compareUint
+	kindCompareFuncs[reflect.Uintptr] = compareUint
+	kindCompareFuncs[reflect.Float32] = compareFloat
+	kindCompareFuncs[reflect.Float64] = compareFloat
+	kindCompareFuncs[reflect.Complex64] = compareComplex
+	kindCompareFuncs[reflect.Complex128] = compareComplex
+	kindCompareFuncs[reflect.Array] = compareArray
+	kindCompareFuncs[reflect.Chan] = compareChan
+	kindCompareFuncs[reflect.Func] = compareUnsupported // TODO: Implement function comparison (by pointer).
+	kindCompareFuncs[reflect.Interface] = compareInterface
+	kindCompareFuncs[reflect.Map] = compareUnsupported // TODO: Implement map comparison (by pointer).
+	kindCompareFuncs[reflect.Pointer] = comparePointer
+	kindCompareFuncs[reflect.Slice] = compareUnsupported // TODO: Implement slice comparison (by pointer).
+	kindCompareFuncs[reflect.String] = compareString
+	kindCompareFuncs[reflect.Struct] = compareStruct
+	kindCompareFuncs[reflect.UnsafePointer] = comparePointer
 }
 
 func compareBool(a, b reflect.Value) int {
@@ -80,22 +93,6 @@ func compareComplex(a, b reflect.Value) int {
 	)
 }
 
-func compareString(a, b reflect.Value) int {
-	return strings.Compare(a.String(), b.String())
-}
-
-func comparePointer(a, b reflect.Value) int {
-	return cmp.Compare(a.Pointer(), b.Pointer())
-}
-
-func compareChan(a, b reflect.Value) int {
-	c, ok := compareNil(a, b)
-	if ok {
-		return c
-	}
-	return cmp.Compare(a.Pointer(), b.Pointer())
-}
-
 func compareArray(a, b reflect.Value) int {
 	elemCmp := GetCompareFunc(a.Type().Elem())
 	for i := range a.Len() {
@@ -107,14 +104,12 @@ func compareArray(a, b reflect.Value) int {
 	return 0
 }
 
-func compareStruct(a, b reflect.Value) int {
-	for i := range a.NumField() {
-		c := Compare(a.Field(i), b.Field(i))
-		if c != 0 {
-			return c
-		}
+func compareChan(a, b reflect.Value) int {
+	c, ok := compareNil(a, b)
+	if ok {
+		return c
 	}
-	return 0
+	return comparePointer(a, b)
 }
 
 func compareInterface(a, b reflect.Value) int {
@@ -129,6 +124,25 @@ func compareInterface(a, b reflect.Value) int {
 	return Compare(a.Elem(), b.Elem())
 }
 
+func comparePointer(a, b reflect.Value) int {
+	return cmp.Compare(uintptr(a.UnsafePointer()), uintptr(b.UnsafePointer()))
+}
+
+func compareString(a, b reflect.Value) int {
+	return strings.Compare(a.String(), b.String())
+}
+
+func compareStruct(a, b reflect.Value) int {
+	for i := range a.NumField() {
+		af, bf := a.Field(i), b.Field(i)
+		c := getCompareFunc(af.Kind())(af, bf)
+		if c != 0 {
+			return c
+		}
+	}
+	return 0
+}
+
 func compareNil(a, b reflect.Value) (int, bool) {
 	if a.IsNil() {
 		if b.IsNil() {
@@ -140,4 +154,8 @@ func compareNil(a, b reflect.Value) (int, bool) {
 		return 1, true
 	}
 	return 0, false
+}
+
+func compareUnsupported(a, b reflect.Value) int {
+	panic("unsupported type: " + a.Type().String())
 }
