@@ -56,7 +56,7 @@ func init() {
 	kindCompareFuncs[reflect.Chan] = comparePointer
 	kindCompareFuncs[reflect.Func] = comparePointer
 	kindCompareFuncs[reflect.Interface] = compareInterface
-	kindCompareFuncs[reflect.Map] = compareUnsupported // TODO: Implement map comparison (by pointer).
+	kindCompareFuncs[reflect.Map] = comparePointer
 	kindCompareFuncs[reflect.Pointer] = comparePointer
 	kindCompareFuncs[reflect.Slice] = compareUnsupported // TODO: Implement slice comparison (by pointer).
 	kindCompareFuncs[reflect.String] = compareString
