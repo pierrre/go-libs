@@ -291,10 +291,12 @@ var compareTestCases = []struct {
 func TestCompare(t *testing.T) {
 	for _, tc := range compareTestCases {
 		t.Run(tc.name, func(t *testing.T) {
-			c := Compare(reflect.ValueOf(tc.a), reflect.ValueOf(tc.b))
+			ra := reflect.ValueOf(tc.a)
+			rb := reflect.ValueOf(tc.b)
+			c := Compare(ra, rb)
 			assert.Equal(t, c, tc.expected)
 			allocs := testing.AllocsPerRun(100, func() {
-				Compare(reflect.ValueOf(tc.a), reflect.ValueOf(tc.b))
+				Compare(ra, rb)
 			})
 			assert.Equal(t, allocs, 0)
 		})
@@ -310,8 +312,10 @@ func TestComparePanicUnsupportedType(t *testing.T) {
 func BenchmarkCompare(b *testing.B) {
 	for _, tc := range compareTestCases {
 		b.Run(tc.name, func(b *testing.B) {
+			ra := reflect.ValueOf(tc.a)
+			rb := reflect.ValueOf(tc.b)
 			for b.Loop() {
-				Compare(reflect.ValueOf(tc.a), reflect.ValueOf(tc.b))
+				Compare(ra, rb)
 			}
 		})
 	}
