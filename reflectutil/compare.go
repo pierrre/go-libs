@@ -109,10 +109,6 @@ func compareArray(a, b reflect.Value) int {
 }
 
 func compareChan(a, b reflect.Value) int {
-	c, ok := compareNil(a, b)
-	if ok {
-		return c
-	}
 	return comparePointer(a, b)
 }
 
