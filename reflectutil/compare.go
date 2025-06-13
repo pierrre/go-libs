@@ -1,6 +1,7 @@
 package reflectutil
 
 import (
+	"bytes"
 	"cmp"
 	"reflect"
 	"strings"
@@ -12,7 +13,7 @@ func Compare(a, b reflect.Value) int {
 	if kind == b.Kind() {
 		typ := a.Type()
 		if typ == b.Type() {
-			return getCompareFunc(kind)(a, b)
+			return getCompareFunc(typ, kind)(a, b)
 		}
 	}
 	return -1
@@ -22,10 +23,13 @@ func Compare(a, b reflect.Value) int {
 //
 // The returned function panics if the [reflect.Type] is not supported.
 func GetCompareFunc(typ reflect.Type) func(a, b reflect.Value) int {
-	return getCompareFunc(typ.Kind())
+	return getCompareFunc(typ, typ.Kind())
 }
 
-func getCompareFunc(kind reflect.Kind) func(a, b reflect.Value) int {
+func getCompareFunc(typ reflect.Type, kind reflect.Kind) func(a, b reflect.Value) int {
+	if typ == bytesType {
+		return compareBytes
+	}
 	return kindCompareFuncs[kind]
 }
 
@@ -128,6 +132,12 @@ func comparePointer(a, b reflect.Value) int {
 	return cmp.Compare(uintptr(a.UnsafePointer()), uintptr(b.UnsafePointer()))
 }
 
+var bytesType = reflect.TypeFor[[]byte]()
+
+func compareBytes(a, b reflect.Value) int {
+	return bytes.Compare(a.Bytes(), b.Bytes())
+}
+
 func compareString(a, b reflect.Value) int {
 	return strings.Compare(a.String(), b.String())
 }
@@ -135,7 +145,7 @@ func compareString(a, b reflect.Value) int {
 func compareStruct(a, b reflect.Value) int {
 	for i := range a.NumField() {
 		af, bf := a.Field(i), b.Field(i)
-		c := getCompareFunc(af.Kind())(af, bf)
+		c := getCompareFunc(af.Type(), af.Kind())(af, bf)
 		if c != 0 {
 			return c
 		}

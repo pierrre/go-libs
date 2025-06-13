@@ -260,6 +260,24 @@ var compareTestCases = []struct {
 		expected: 0,
 	},
 	{
+		name:     "BytesLess",
+		a:        []byte("a"),
+		b:        []byte("b"),
+		expected: -1,
+	},
+	{
+		name:     "BytesGreater",
+		a:        []byte("b"),
+		b:        []byte("a"),
+		expected: 1,
+	},
+	{
+		name:     "BytesEqual",
+		a:        []byte("a"),
+		b:        []byte("a"),
+		expected: 0,
+	},
+	{
 		name:     "StringLess",
 		a:        "a",
 		b:        "b",
