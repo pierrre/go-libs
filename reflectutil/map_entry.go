@@ -83,7 +83,7 @@ func (es MapEntries) Release() {
 	putMapEntriesToPool(typ, es)
 }
 
-var mapEntriesPools = syncutil.Map[reflect.Type, *syncutil.ValuePool[MapEntries]]{}
+var mapEntriesPools syncutil.Map[reflect.Type, *syncutil.ValuePool[MapEntries]]
 
 func getMapEntriesPool(typ reflect.Type) *syncutil.ValuePool[MapEntries] {
 	pool, ok := mapEntriesPools.Load(typ)

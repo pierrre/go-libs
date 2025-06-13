@@ -180,7 +180,7 @@ type iterOrderedValue[In, Out any] struct {
 	ch    chan<- Out
 }
 
-var channelPools = syncutil.Map[reflect.Type, any]{}
+var channelPools syncutil.Map[reflect.Type, any]
 
 func getChannelPool[T any]() *syncutil.Pool[chan T] {
 	typ := reflect.TypeFor[T]()
