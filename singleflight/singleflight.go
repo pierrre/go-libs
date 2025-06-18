@@ -4,15 +4,12 @@
 package singleflight
 
 import (
-	"bytes"
 	"context"
-	"errors"
-	"fmt"
 	"runtime"
-	"runtime/debug"
 	"sync"
 	"sync/atomic"
 
+	"github.com/pierrre/go-libs/funcutil"
 	"github.com/pierrre/go-libs/syncutil"
 )
 
@@ -88,46 +85,34 @@ func (g *Group[K, A, V]) waitCall(ctx context.Context, key K, c *call[V]) (v V, 
 			return v, ctx.Err() //nolint:wrapcheck // Not needed.
 		}
 	}
-	checkErrorPanic(c.err)
-	checkErrorGoexit(c.err)
+	c.checkGoexit()
+	c.checkPanic()
 	return c.v, c.err
 }
 
 func (g *Group[K, A, V]) doCall(ctx context.Context, key K, arg A, c *call[V], f Func[A, V]) (v V, err error, shared bool) {
-	normalReturn := false
-	recovered := false
-	defer func() {
-		if !normalReturn && !recovered {
-			c.err = errGoexit
-		}
-		g.mu.Lock()
-		if g.m[key] == c {
-			delete(g.m, key)
-		}
-		if !c.doneInitialized {
-			c.doneInitialized = true
-		}
-		g.mu.Unlock()
-		if c.done != nil {
-			close(c.done)
-		}
-		checkErrorPanic(c.err)
-	}()
-	func() {
-		defer func() {
-			if !normalReturn {
-				r := recover()
-				if r != nil {
-					c.err = newPanicError(r)
-				}
+	funcutil.Call(
+		func() {
+			c.v, c.err = f(ctx, arg)
+		},
+		func(goexit bool, panicErr error) {
+			c.goexit = goexit
+			c.panicErr = panicErr
+			g.mu.Lock()
+			if g.m[key] == c {
+				delete(g.m, key)
 			}
-		}()
-		c.v, c.err = f(ctx, arg)
-		normalReturn = true
-	}()
-	if !normalReturn {
-		recovered = true
-	}
+			if !c.doneInitialized {
+				c.doneInitialized = true
+			}
+			g.mu.Unlock()
+			if c.done != nil {
+				close(c.done)
+			}
+
+			c.checkPanic()
+		},
+	)
 	return c.v, c.err, c.shared
 }
 
@@ -146,6 +131,8 @@ type call[V any] struct {
 	v               V
 	err             error
 	shared          bool
+	goexit          bool
+	panicErr        error
 	usages          int32
 }
 
@@ -157,42 +144,14 @@ func (c *call[V]) releaseUsage() int32 {
 	return atomic.AddInt32(&c.usages, -1)
 }
 
-func checkErrorPanic(err error) {
-	p, ok := err.(*panicError) //nolint:errorlint // No need to check the error chain.
-	if ok {
-		panic(p)
-	}
-}
-
-func checkErrorGoexit(err error) {
-	if err == errGoexit { //nolint:errorlint // No need to check the error chain.
+func (c *call[V]) checkGoexit() {
+	if c.goexit {
 		runtime.Goexit()
 	}
 }
 
-type panicError struct {
-	r     any
-	stack []byte
-}
-
-func newPanicError(r any) error {
-	stack := debug.Stack()
-	// The first line of the stack trace is of the form "goroutine N [status]:"
-	// but by the time the panic reaches Do the goroutine may no longer exist
-	// and its status will have changed. Trim out the misleading line.
-	if line := bytes.IndexByte(stack, '\n'); line >= 0 {
-		stack = stack[line+1:]
+func (c *call[V]) checkPanic() {
+	if c.panicErr != nil {
+		panic(c.panicErr)
 	}
-	return &panicError{r: r, stack: stack}
 }
-
-func (p *panicError) Error() string {
-	return fmt.Sprintf("%v\n\n%s", p.r, p.stack)
-}
-
-func (p *panicError) Unwrap() error {
-	err, _ := p.r.(error)
-	return err
-}
-
-var errGoexit = errors.New("runtime.Goexit was called")
