@@ -95,14 +95,10 @@ func (g *Group[K, A, V]) waitCall(ctx context.Context, key K, c *call[V]) (v V, 
 
 func (g *Group[K, A, V]) doCall(ctx context.Context, key K, arg A, c *call[V], f Func[A, V]) (v V, err error, shared bool) {
 	normalReturn := false
+	recovered := false
 	defer func() {
-		if !normalReturn {
-			r := recover()
-			if r != nil {
-				c.err = newPanicError(r)
-			} else {
-				c.err = errGoexit
-			}
+		if !normalReturn && !recovered {
+			c.err = errGoexit
 		}
 		g.mu.Lock()
 		if g.m[key] == c {
@@ -117,8 +113,21 @@ func (g *Group[K, A, V]) doCall(ctx context.Context, key K, arg A, c *call[V], f
 		}
 		checkErrorPanic(c.err)
 	}()
-	c.v, c.err = f(ctx, arg)
-	normalReturn = true
+	func() {
+		defer func() {
+			if !normalReturn {
+				r := recover()
+				if r != nil {
+					c.err = newPanicError(r)
+				}
+			}
+		}()
+		c.v, c.err = f(ctx, arg)
+		normalReturn = true
+	}()
+	if !normalReturn {
+		recovered = true
+	}
 	return c.v, c.err, c.shared
 }
 
