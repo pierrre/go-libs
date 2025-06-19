@@ -173,7 +173,7 @@ func (m *Map[K, V]) autoClean() {
 		return
 	}
 	if interval == 0 {
-		interval = m.autoCleanLastCount
+		interval = atomic.LoadInt64(&m.autoCleanLastCount)
 	}
 	if interval <= 0 {
 		interval = 1
@@ -191,7 +191,7 @@ func (m *Map[K, V]) autoClean() {
 		if m.OnAutoClean != nil {
 			m.OnAutoClean()
 		}
-		m.autoCleanLastCount = m.clean()
+		atomic.StoreInt64(&m.autoCleanLastCount, m.clean())
 	}
 	if m.AutoCleanAsync {
 		go f()
