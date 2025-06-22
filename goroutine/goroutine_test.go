@@ -2,6 +2,7 @@ package goroutine
 
 import (
 	"context"
+	"fmt"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -9,6 +10,39 @@ import (
 	"github.com/pierrre/assert"
 	"github.com/pierrre/assert/assertauto"
 )
+
+func ExampleStart() {
+	ctx := context.Background()
+	wait := Start(ctx, func(ctx context.Context) {
+		fmt.Println("a")
+	})
+	wait.Wait()
+	// Output:
+	// a
+}
+
+func ExampleStartWithCancel() {
+	ctx := context.Background()
+	cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
+		fmt.Println("a")
+		<-ctx.Done()
+	})
+	cancelWait.Wait()
+	// Output:
+	// a
+}
+
+func ExampleRunN() {
+	ctx := context.Background()
+	var i atomic.Int64
+	RunN(ctx, 3, func(ctx context.Context) {
+		fmt.Println(i.Add(1))
+	})
+	// Output:
+	// 1
+	// 2
+	// 3
+}
 
 func TestStart(t *testing.T) {
 	ctx := t.Context()
