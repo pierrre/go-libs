@@ -38,7 +38,7 @@ func ExampleRunN() {
 	RunN(ctx, 3, func(ctx context.Context) {
 		fmt.Println(i.Add(1))
 	})
-	// Output:
+	// Unordered output:
 	// 1
 	// 2
 	// 3
