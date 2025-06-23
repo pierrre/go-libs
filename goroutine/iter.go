@@ -16,10 +16,10 @@ import (
 //
 // If the [context.Context] is canceled, it stops reading values from the input.
 // If the caller stops iterating the output, the [context.Context] is canceled.
-func Iter[In, Out any](parentCtx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
+func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1) // We need at least 1 worker.
 	return func(yield func(Out) bool) {
-		ctx, cancel := context.WithCancel(parentCtx)
+		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadowing is expected here.
 		defer cancel()
 		inCh := make(chan In)
 		outCh := make(chan Out, workers)             // The buffer prevents blocking the workers if the output iterator is slow.
@@ -55,11 +55,11 @@ func Iter[In, Out any](parentCtx context.Context, in iter.Seq[In], workers int, 
 }
 
 // IterOrdered is like [Iter] but it preserves the order of values.
-func IterOrdered[In, Out any](parentCtx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
+func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1)                  // We need at least 1 worker.
 	pool := getIterOrderedValuePool[In, Out]() // Recycle values to avoid allocations.
 	return func(yield func(Out) bool) {
-		ctx, cancel := context.WithCancel(parentCtx)
+		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadowing is expected here.
 		defer cancel()
 		inCh := make(chan *iterOrderedValue[In, Out])
 		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the workers if one of the workers or the output iterator is slow.
