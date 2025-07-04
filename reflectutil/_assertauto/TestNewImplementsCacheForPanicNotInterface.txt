@@ -1,1 +1,3 @@
-[*errors.errorString] => .Error() => "not interface: string"
+[*errors.errorString] {
+	Error(): "not interface: string",
+}
