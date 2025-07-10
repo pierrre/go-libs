@@ -12,7 +12,8 @@ import (
 
 func ExampleSlice() {
 	ctx := context.Background()
-	out := Slice(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) int {
+	s := []int{1, 2, 3, 4, 5}
+	out := Slice(ctx, s, 2, func(ctx context.Context, i int, v int) int {
 		return v * 2
 	})
 	fmt.Println(out)
@@ -22,7 +23,8 @@ func ExampleSlice() {
 
 func ExampleSliceError() {
 	ctx := context.Background()
-	out, err := SliceError(ctx, []int{1, 2, 3, 4, 5}, 2, func(ctx context.Context, i int, v int) (int, error) {
+	s := []int{1, 2, 3, 4, 5}
+	out, err := SliceError(ctx, s, 2, func(ctx context.Context, i int, v int) (int, error) {
 		if v == 3 {
 			return 0, errors.New("error")
 		}

@@ -12,13 +12,14 @@ import (
 
 func ExampleMap() {
 	ctx := context.Background()
-	out := Map(ctx, map[int]int{
+	m := map[int]int{
 		1: 1,
 		2: 2,
 		3: 3,
 		4: 4,
 		5: 5,
-	}, 2, func(ctx context.Context, k int, v int) int {
+	}
+	out := Map(ctx, m, 2, func(ctx context.Context, k int, v int) int {
 		return v * 2
 	})
 	fmt.Println(out)
@@ -28,13 +29,14 @@ func ExampleMap() {
 
 func ExampleMapError() {
 	ctx := context.Background()
-	out, err := MapError(ctx, map[int]int{
+	m := map[int]int{
 		1: 1,
 		2: 2,
 		3: 3,
 		4: 4,
 		5: 5,
-	}, 2, func(ctx context.Context, k int, v int) (int, error) {
+	}
+	out, err := MapError(ctx, m, 2, func(ctx context.Context, k int, v int) (int, error) {
 		if v == 3 {
 			return 0, errors.New("error")
 		}
