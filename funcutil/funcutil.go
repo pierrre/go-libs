@@ -2,9 +2,7 @@
 package funcutil
 
 import (
-	"bytes"
-	"fmt"
-	"runtime/debug"
+	"github.com/pierrre/go-libs/panicutil"
 )
 
 // Call calls the function f, then calls after with the result.
@@ -26,7 +24,7 @@ func Call(f func(), after func(goexit bool, panicErr error)) {
 			if !normalReturn {
 				r := recover()
 				if r != nil {
-					panicErr = newPanicError(r)
+					panicErr = panicutil.NewError(r)
 				}
 			}
 		}()
@@ -35,29 +33,4 @@ func Call(f func(), after func(goexit bool, panicErr error)) {
 	if !normalReturn {
 		recovered = true
 	}
-}
-
-type panicError struct {
-	r     any
-	stack []byte
-}
-
-func newPanicError(r any) error {
-	stack := debug.Stack()
-	// The first line of the stack trace is of the form "goroutine N [status]:"
-	// but by the time the panic reaches Do the goroutine may no longer exist
-	// and its status will have changed. Trim out the misleading line.
-	if line := bytes.IndexByte(stack, '\n'); line >= 0 {
-		stack = stack[line+1:]
-	}
-	return &panicError{r: r, stack: stack}
-}
-
-func (p *panicError) Error() string {
-	return fmt.Sprintf("%v\n\n%s", p.r, p.stack)
-}
-
-func (p *panicError) Unwrap() error {
-	err, _ := p.r.(error)
-	return err
 }
