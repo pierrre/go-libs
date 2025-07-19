@@ -22,12 +22,10 @@ func GetUnderlyingType(typ reflect.Type) reflect.Type {
 	}
 	uTypCtn, ok := underlyingTypeCache.Load(typ)
 	if ok {
-		return uTypCtn.typ
+		return uTypCtn[0]
 	}
 	uTyp = computeUnderlyingType(typ)
-	uTypCtn = &underlyingTypeContainer{
-		typ: uTyp,
-	}
+	uTypCtn = [1]reflect.Type{uTyp}
 	underlyingTypeCache.Store(typ, uTypCtn)
 	return uTyp
 }
@@ -60,11 +58,7 @@ var knownKindUnderlyingTypes = [...]reflect.Type{
 	reflect.UnsafePointer: reflect.TypeFor[unsafe.Pointer](),
 }
 
-var underlyingTypeCache syncutil.Map[reflect.Type, *underlyingTypeContainer]
-
-type underlyingTypeContainer struct {
-	typ reflect.Type
-}
+var underlyingTypeCache syncutil.Map[reflect.Type, [1]reflect.Type] // Storing an array instead of an interface is more efficient.
 
 func computeUnderlyingType(typ reflect.Type) reflect.Type {
 	uTyp := typ
