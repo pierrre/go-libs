@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"slices"
 	"sync/atomic"
 	"testing"
 
@@ -34,14 +35,13 @@ func ExampleStartWithCancel() {
 
 func ExampleRunN() {
 	ctx := context.Background()
-	var i atomic.Int64
-	RunN(ctx, 3, func(ctx context.Context) {
-		fmt.Println(i.Add(1))
+	RunN(ctx, 3, func(ctx context.Context, i int) {
+		fmt.Println(i)
 	})
 	// Unordered output:
+	// 0
 	// 1
 	// 2
-	// 3
 }
 
 func TestStart(t *testing.T) {
@@ -139,17 +139,18 @@ func BenchmarkStartWithCancel(b *testing.B) {
 
 func TestRunN(t *testing.T) {
 	ctx := t.Context()
-	var called int64
-	RunN(ctx, 10, func(ctx context.Context) {
-		atomic.AddInt64(&called, 1)
+	called := make([]int64, 10)
+	RunN(ctx, 10, func(ctx context.Context, i int) {
+		atomic.AddInt64(&called[i], 1)
 	})
-	assert.Equal(t, called, 10)
+	expected := slices.Repeat([]int64{1}, 10)
+	assert.SliceEqual(t, called, expected)
 }
 
 func TestRunNAllocs(t *testing.T) {
 	ctx := t.Context()
 	assertauto.AllocsPerRun(t, 100, func() {
-		RunN(ctx, 10, func(ctx context.Context) {})
+		RunN(ctx, 10, func(ctx context.Context, _ int) {})
 	})
 }
 
@@ -157,7 +158,7 @@ func TestRunNContextCancel(t *testing.T) {
 	ctx := t.Context()
 	ctx, cancel := context.WithCancel(ctx)
 	var count int64
-	RunN(ctx, 10, func(ctx context.Context) {
+	RunN(ctx, 10, func(ctx context.Context, _ int) {
 		if atomic.AddInt64(&count, 1) == 5 {
 			cancel()
 		}
@@ -168,7 +169,7 @@ func TestRunNContextCancel(t *testing.T) {
 func TestRunNZero(t *testing.T) {
 	ctx := t.Context()
 	var called int64
-	RunN(ctx, 0, func(ctx context.Context) {
+	RunN(ctx, 0, func(ctx context.Context, _ int) {
 		atomic.AddInt64(&called, 1)
 	})
 	assert.Equal(t, called, 0)
@@ -177,7 +178,7 @@ func TestRunNZero(t *testing.T) {
 func TestRunNNegativePanic(t *testing.T) {
 	ctx := t.Context()
 	assert.Panics(t, func() {
-		RunN(ctx, -10, func(ctx context.Context) {})
+		RunN(ctx, -10, func(ctx context.Context, _ int) {})
 	})
 }
 
@@ -185,7 +186,7 @@ func TestRunNPanic(t *testing.T) {
 	ctx := t.Context()
 	var counter int64
 	assert.Panics(t, func() {
-		RunN(ctx, 10, func(ctx context.Context) {
+		RunN(ctx, 10, func(ctx context.Context, _ int) {
 			id := atomic.AddInt64(&counter, 1)
 			if id == 1 {
 				panic("panic")
@@ -198,7 +199,7 @@ func TestRunNPanic(t *testing.T) {
 func TestRunNPanicAll(t *testing.T) {
 	ctx := t.Context()
 	assert.Panics(t, func() {
-		RunN(ctx, 10, func(ctx context.Context) {
+		RunN(ctx, 10, func(ctx context.Context, _ int) {
 			panic("panic")
 		})
 	})
@@ -217,7 +218,7 @@ func TestRunNGoexit(t *testing.T) {
 			}
 			close(done)
 		}()
-		RunN(ctx, 10, func(ctx context.Context) {
+		RunN(ctx, 10, func(ctx context.Context, _ int) {
 			runtime.Goexit()
 		})
 		normalReturn = true
@@ -230,6 +231,6 @@ func TestRunNGoexit(t *testing.T) {
 func BenchmarkRunN(b *testing.B) {
 	ctx := b.Context()
 	for b.Loop() {
-		RunN(ctx, 10, func(ctx context.Context) {})
+		RunN(ctx, 10, func(ctx context.Context, _ int) {})
 	}
 }
