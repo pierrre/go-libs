@@ -2,6 +2,7 @@ package weakutil_test
 
 import (
 	"fmt"
+	"math/rand/v2"
 	"runtime"
 	"testing"
 
@@ -68,6 +69,16 @@ func BenchmarkMapStoreDifferent(b *testing.B) {
 		for i := 0; pb.Next(); i++ {
 			v := &vs[i%2]
 			m.Store("test", v)
+		}
+	})
+}
+
+func BenchmarkMapStoreNewRandomKey(b *testing.B) {
+	m := new(Map[int64, [64]byte])
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m.Store(rand.Int64(), &[64]byte{}) //nolint:gosec // This rand package is OK, it's a test.
 		}
 	})
 }
