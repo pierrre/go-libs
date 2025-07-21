@@ -14,7 +14,8 @@ type Pool[T any] struct {
 func (p *Pool[T]) Get() T {
 	vi := p.p.Get()
 	if vi != nil {
-		return vi.(T) //nolint:forcetypeassert // The pool is typed.
+		v, _ := vi.(T)
+		return v
 	}
 	if p.New != nil {
 		return p.New()

@@ -53,8 +53,8 @@ func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 // Range is a wrapper around [sync.Map.Range].
 func (m *Map[K, V]) Range(f func(key K, value V) bool) {
 	m.m.Range(func(ki, vi any) bool {
-		key := ki.(K)   //nolint:forcetypeassert // The map is typed.
-		value := vi.(V) //nolint:forcetypeassert // The map is typed.
+		key, _ := ki.(K)
+		value, _ := vi.(V)
 		return f(key, value)
 	})
 }
