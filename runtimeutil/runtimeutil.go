@@ -2,10 +2,13 @@
 package runtimeutil
 
 import (
+	"io"
 	"iter"
 	"runtime"
 
+	"github.com/pierrre/go-libs/strconvio"
 	"github.com/pierrre/go-libs/syncutil"
+	"github.com/pierrre/go-libs/unsafeio"
 )
 
 // GetCallers returns the callers.
@@ -42,4 +45,45 @@ func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
 			}
 		}
 	}
+}
+
+// WriteFrames writes an [iter.Seq] of [runtime.Frame] to a [io.Writer].
+func WriteFrames(w io.Writer, frames iter.Seq[runtime.Frame]) (total int64, err error) {
+	for f := range frames {
+		var n int64
+		n, err = WriteFrame(w, f)
+		total += n
+		if err != nil {
+			break
+		}
+	}
+	return total, err
+}
+
+// WriteFrame writes a [runtime.Frame] to a [io.Writer].
+func WriteFrame(w io.Writer, f runtime.Frame) (int64, error) { //nolint:gocritic // runtime.Frame is large.
+	var total int64
+	n, err := unsafeio.WriteString(w, f.Function)
+	total += int64(n)
+	if err == nil {
+		n, err = unsafeio.WriteString(w, "\n\t")
+		total += int64(n)
+	}
+	if err == nil {
+		n, err = unsafeio.WriteString(w, f.File)
+		total += int64(n)
+	}
+	if err == nil {
+		n, err = unsafeio.WriteString(w, ":")
+		total += int64(n)
+	}
+	if err == nil {
+		n, err = strconvio.WriteInt(w, int64(f.Line), 10)
+		total += int64(n)
+	}
+	if err == nil {
+		n, err = unsafeio.WriteString(w, "\n")
+		total += int64(n)
+	}
+	return total, err //nolint:wrapcheck // No need to wrap.
 }
