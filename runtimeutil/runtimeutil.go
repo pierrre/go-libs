@@ -2,6 +2,7 @@
 package runtimeutil
 
 import (
+	"iter"
 	"runtime"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -28,4 +29,17 @@ var callersPool = syncutil.ValuePool[[]uintptr]{
 	New: func() []uintptr {
 		return make([]uintptr, 1024)
 	},
+}
+
+// GetCallersFrames returns and [iter.Seq] of [runtime.Frame] for the given callers.
+func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
+	return func(yield func(runtime.Frame) bool) {
+		frames := runtime.CallersFrames(callers)
+		for {
+			frame, more := frames.Next()
+			if !yield(frame) || !more {
+				return
+			}
+		}
+	}
 }

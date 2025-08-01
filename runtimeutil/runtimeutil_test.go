@@ -44,3 +44,15 @@ func callWithDepth(depth int, f func()) {
 		f()
 	}
 }
+
+func TestGetCallersFrames(t *testing.T) {
+	depth := 10
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		count := 0
+		for range GetCallersFrames(pc) {
+			count++
+		}
+		assert.GreaterOrEqual(t, count, depth)
+	})
+}
