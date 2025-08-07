@@ -16,4 +16,14 @@ func TestNewError(t *testing.T) {
 	assert.NotZero(t, s)
 	t.Log(s)
 	assert.Error(t, errors.Unwrap(err))
+	esf, _ := assert.Type[interface{ StackFrames() []uintptr }](t, err)
+	assert.SliceNotEmpty(t, esf.StackFrames())
+}
+
+func BenchmarkError(b *testing.B) {
+	r := errors.New("error")
+	err := NewError(r)
+	for b.Loop() {
+		_ = err.Error()
+	}
 }
