@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/pierrre/assert"
@@ -71,18 +72,26 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithInterval(t *testing.T) {
-	ctx := t.Context()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	called := 0
-	f := func(ctx context.Context) {
-		called++
-		if called == 10 {
-			cancel()
+	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+		ctx := t.Context()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		called := 0
+		var previous time.Time
+		f := func(ctx context.Context) {
+			called++
+			if called == 10 {
+				cancel()
+			}
+			now := time.Now()
+			if called > 1 {
+				assert.Equal(t, now.Sub(previous), 1*time.Second)
+			}
+			previous = now
 		}
-	}
-	Run(ctx, f, WithInterval(1*time.Microsecond))
-	assert.Equal(t, called, 10)
+		Run(ctx, f, WithInterval(1*time.Second))
+		assert.Equal(t, called, 10)
+	})
 }
 
 func TestRunWithImmediatelyFalse(t *testing.T) {
@@ -101,18 +110,24 @@ func TestRunWithImmediatelyFalse(t *testing.T) {
 }
 
 func TestRunWithFixed(t *testing.T) {
-	ctx := t.Context()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	called := 0
-	f := func(ctx context.Context) {
-		called++
-		if called == 10 {
-			cancel()
+	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+		ctx := t.Context()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		called := 0
+		f := func(ctx context.Context) {
+			called++
+			if called == 10 {
+				cancel()
+			}
+			if called > 1 {
+				assert.Equal(t, time.Now().Nanosecond(), 0)
+			}
 		}
-	}
-	Run(ctx, f, WithInterval(1*time.Microsecond), WithFixed(true))
-	assert.Equal(t, called, 10)
+		time.Sleep(500 * time.Millisecond)
+		Run(ctx, f, WithInterval(1*time.Second), WithFixed(true))
+		assert.Equal(t, called, 10)
+	})
 }
 
 func TestNewFuncWithError(t *testing.T) {
@@ -147,12 +162,16 @@ func TestNewFuncWithErrorNoRetry(t *testing.T) {
 }
 
 func TestNewOnErrorFuncWithDelay(t *testing.T) {
-	ctx := t.Context()
-	called := 0
-	onError := func(ctx context.Context, err error) {
-		called++
-	}
-	onError = NewOnErrorFuncWithDelay(onError, 1*time.Microsecond)
-	onError(ctx, errors.New("error"))
-	assert.Equal(t, called, 1)
+	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+		ctx := t.Context()
+		called := 0
+		onError := func(ctx context.Context, err error) {
+			called++
+		}
+		start := time.Now()
+		onError = NewOnErrorFuncWithDelay(onError, 1*time.Second)
+		onError(ctx, errors.New("error"))
+		assert.Equal(t, called, 1)
+		assert.Equal(t, time.Since(start), 1*time.Second)
+	})
 }
