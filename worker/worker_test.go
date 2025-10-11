@@ -72,7 +72,7 @@ func TestRun(t *testing.T) {
 }
 
 func TestRunWithInterval(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -110,7 +110,7 @@ func TestRunWithImmediatelyFalse(t *testing.T) {
 }
 
 func TestRunWithFixed(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
@@ -162,7 +162,7 @@ func TestNewFuncWithErrorNoRetry(t *testing.T) {
 }
 
 func TestNewOnErrorFuncWithDelay(t *testing.T) {
-	synctest.Test(t, func(t *testing.T) { //nolint:thelper // We use synctest.
+	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
 		called := 0
 		onError := func(ctx context.Context, err error) {
