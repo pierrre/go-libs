@@ -116,3 +116,95 @@ func TestSeq2ToSeqValue(t *testing.T) {
 	}
 	assert.Equal(t, i, len(ss))
 }
+
+func ExampleRepeat() {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat(slices.Values(ss), 2)
+	for v := range it {
+		fmt.Println(v)
+	}
+	// Output:
+	// zero
+	// one
+	// two
+	// zero
+	// one
+	// two
+}
+
+func TestRepeat(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat(slices.Values(ss), 2)
+	res := slices.Collect(it)
+	expected := slices.Repeat(ss, 2)
+	assert.SliceEqual(t, res, expected)
+}
+
+func TestRepeatInfinite(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat(slices.Values(ss), -1)
+	i := 0
+	for range it {
+		i++
+		if i >= 10 {
+			break
+		}
+	}
+	assert.Equal(t, i, 10)
+}
+
+func TestRepeatEmpty(t *testing.T) {
+	ss := []string{}
+	it := Repeat(slices.Values(ss), 2)
+	i := 0
+	for range it {
+		i++
+	}
+	assert.Equal(t, i, 0)
+}
+
+func ExampleRepeat2() {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat2(slices.All(ss), 2)
+	for k, v := range it {
+		fmt.Println(k, v)
+	}
+	// Output:
+	// 0 zero
+	// 1 one
+	// 2 two
+	// 0 zero
+	// 1 one
+	// 2 two
+}
+
+func TestRepeat2(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat2(slices.All(ss), 2)
+	res := slices.Collect(Seq2ToSeq(it, NewKeyVal))
+	expected := slices.Repeat(slices.Collect(Seq2ToSeq(slices.All(ss), NewKeyVal)), 2)
+	assert.SliceEqual(t, res, expected)
+}
+
+func TestRepeat2Infinite(t *testing.T) {
+	ss := []string{"zero", "one", "two"}
+	it := Repeat2(slices.All(ss), -1)
+	i := 0
+	for range it {
+		i++
+		if i >= 10 {
+			break
+		}
+	}
+	assert.Equal(t, i, 10)
+}
+
+func TestRepeat2Empty(t *testing.T) {
+	ss := []string{}
+	it := Repeat2(slices.All(ss), 2)
+	i := 0
+	for range it {
+		i++
+	}
+	assert.Equal(t, i, 0)
+}

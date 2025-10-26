@@ -74,3 +74,47 @@ func NewKeyVal[K, V any](key K, val V) KeyVal[K, V] {
 func (kv KeyVal[K, V]) Values() (key K, val V) {
 	return kv.Key, kv.Val
 }
+
+// Repeat returns a new [iter.Seq] that repeats the input sequence n times.
+// If n is negative, the sequence is repeated indefinitely.
+func Repeat[V any](seq iter.Seq[V], n int) iter.Seq[V] {
+	return func(yield func(V) bool) {
+		for n := n; n != 0; {
+			i := 0
+			for v := range seq {
+				i++
+				if !yield(v) {
+					return
+				}
+			}
+			if i == 0 {
+				return
+			}
+			if n > 0 {
+				n--
+			}
+		}
+	}
+}
+
+// Repeat2 returns a new [iter.Seq2] that repeats the input sequence n times.
+// If n is negative, the sequence is repeated indefinitely.
+func Repeat2[K, V any](seq iter.Seq2[K, V], n int) iter.Seq2[K, V] {
+	return func(yield func(K, V) bool) {
+		for n := n; n != 0; {
+			i := 0
+			for k, v := range seq {
+				i++
+				if !yield(k, v) {
+					return
+				}
+			}
+			if i == 0 {
+				return
+			}
+			if n > 0 {
+				n--
+			}
+		}
+	}
+}
