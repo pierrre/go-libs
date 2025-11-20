@@ -19,7 +19,9 @@ import (
 // Waiter is an interface for waiting for goroutines to finish.
 type Waiter interface {
 	// Wait blocks until all goroutines are finished.
+	//
 	// It propagates panics or calls to [runtime.Goexit] from the goroutines to the caller.
+	// The propagation behavior can be configured with [WithTerminationPropagation] (enabled by default).
 	Wait()
 }
 
@@ -32,19 +34,25 @@ func (f waiterFunc) Wait() {
 // Start executes a function in a new goroutine.
 // The caller must call the returned [Waiter].
 func Start(ctx context.Context, f func(ctx context.Context)) Waiter {
+	propagateTermination := isTerminationPropagationEnabled(ctx)
 	res := new(startResult)
 	res.wg.Add(1)
 	go func() {
-		funcutil.Call(
-			func() {
-				f(ctx)
-			},
-			func(goexit bool, panicErr error) {
-				res.goexit = goexit
-				res.panicErr = panicErr
-				res.wg.Done()
-			},
-		)
+		if propagateTermination {
+			funcutil.Call(
+				func() {
+					f(ctx)
+				},
+				func(goexit bool, panicErr error) {
+					res.goexit = goexit
+					res.panicErr = panicErr
+					res.wg.Done()
+				},
+			)
+		} else {
+			defer res.wg.Done()
+			f(ctx)
+		}
 	}()
 	return res
 }
@@ -77,6 +85,7 @@ func StartWithCancel(ctx context.Context, f func(ctx context.Context)) Waiter {
 }
 
 func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
+	propagateTermination := isTerminationPropagationEnabled(ctx)
 	ctx, cancel := context.WithCancel(ctx)
 	res := &startNResult{
 		cancel: cancel,
@@ -84,24 +93,29 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 	res.wg.Add(n)
 	for i := range n {
 		go func() {
-			funcutil.Call(
-				func() {
-					f(ctx, i)
-				},
-				func(goexit bool, panicErr error) {
-					res.mu.Lock()
-					if goexit {
-						cancel()
-						res.goexit = true
-					}
-					if panicErr != nil {
-						cancel()
-						res.panicErrs = append(res.panicErrs, panicErr)
-					}
-					res.mu.Unlock()
-					res.wg.Done()
-				},
-			)
+			if propagateTermination {
+				funcutil.Call(
+					func() {
+						f(ctx, i)
+					},
+					func(goexit bool, panicErr error) {
+						res.mu.Lock()
+						if goexit {
+							cancel()
+							res.goexit = true
+						}
+						if panicErr != nil {
+							cancel()
+							res.panicErrs = append(res.panicErrs, panicErr)
+						}
+						res.mu.Unlock()
+						res.wg.Done()
+					},
+				)
+			} else {
+				defer res.wg.Done()
+				f(ctx, i)
+			}
 		}()
 	}
 	return res
@@ -135,4 +149,17 @@ func (res *startNResult) Wait() {
 func RunN(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	res := startN(ctx, n, f)
 	res.Wait()
+}
+
+type terminationPropagationContextKey struct{}
+
+// WithTerminationPropagation configures whether termination propagation is enabled in the [context.Context].
+// It determines if abnormal termination ([panic] or [runtime.Goexit]) in goroutines should be propagated to the caller.
+func WithTerminationPropagation(ctx context.Context, enabled bool) context.Context {
+	return context.WithValue(ctx, terminationPropagationContextKey{}, enabled)
+}
+
+func isTerminationPropagationEnabled(ctx context.Context) bool {
+	v, ok := ctx.Value(terminationPropagationContextKey{}).(bool)
+	return !ok || v
 }

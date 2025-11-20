@@ -98,6 +98,15 @@ func TestStartGoexit(t *testing.T) {
 	assert.False(t, recovered)
 }
 
+func TestStartNoTerminationPropagation(t *testing.T) {
+	ctx := t.Context()
+	ctx = WithTerminationPropagation(ctx, false)
+	wait := Start(ctx, func(ctx context.Context) {
+		runtime.Goexit()
+	})
+	wait.Wait()
+}
+
 func BenchmarkStart(b *testing.B) {
 	ctx := b.Context()
 	for b.Loop() {
@@ -226,6 +235,14 @@ func TestRunNGoexit(t *testing.T) {
 	<-done
 	assert.False(t, normalReturn)
 	assert.False(t, recovered)
+}
+
+func TestRunNNoTerminationPropagation(t *testing.T) {
+	ctx := t.Context()
+	ctx = WithTerminationPropagation(ctx, false)
+	RunN(ctx, 10, func(ctx context.Context, _ int) {
+		runtime.Goexit()
+	})
 }
 
 func BenchmarkRunN(b *testing.B) {
