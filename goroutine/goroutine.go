@@ -12,6 +12,7 @@ import (
 	"errors"
 	"runtime"
 	"sync"
+	"sync/atomic"
 
 	"github.com/pierrre/go-libs/funcutil"
 )
@@ -21,7 +22,7 @@ type Waiter interface {
 	// Wait blocks until all goroutines are finished.
 	//
 	// It propagates panics or calls to [runtime.Goexit] from the goroutines to the caller.
-	// The propagation behavior can be configured with [WithTerminationPropagation] (enabled by default).
+	// The propagation behavior can be configured with [TerminationPropagationEnabled] or [WithTerminationPropagation].
 	Wait()
 }
 
@@ -151,15 +152,26 @@ func RunN(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	res.Wait()
 }
 
+// TerminationPropagationEnabled indicates whether termination propagation is enabled (true by default).
+// It determines if abnormal termination ([panic] or [runtime.Goexit]) in goroutines should be propagated to the caller.
+// It can be overridden per goroutine with [WithTerminationPropagation].
+var TerminationPropagationEnabled atomic.Bool
+
+func init() {
+	TerminationPropagationEnabled.Store(true)
+}
+
 type terminationPropagationContextKey struct{}
 
-// WithTerminationPropagation configures whether termination propagation is enabled in the [context.Context].
-// It determines if abnormal termination ([panic] or [runtime.Goexit]) in goroutines should be propagated to the caller.
+// WithTerminationPropagation configures termination propagation for goroutines started with the given [context.Context].
 func WithTerminationPropagation(ctx context.Context, enabled bool) context.Context {
 	return context.WithValue(ctx, terminationPropagationContextKey{}, enabled)
 }
 
 func isTerminationPropagationEnabled(ctx context.Context) bool {
 	v, ok := ctx.Value(terminationPropagationContextKey{}).(bool)
-	return !ok || v
+	if ok {
+		return v
+	}
+	return TerminationPropagationEnabled.Load()
 }
