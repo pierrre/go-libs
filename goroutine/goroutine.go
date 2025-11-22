@@ -39,19 +39,16 @@ func Start(ctx context.Context, f func(ctx context.Context)) Waiter {
 	res := new(startResult)
 	res.wg.Add(1)
 	go func() {
+		defer res.wg.Done()
 		if propagateTermination {
 			funcutil.Call(
-				func() {
-					f(ctx)
-				},
+				func() { f(ctx) },
 				func(goexit bool, panicErr error) {
 					res.goexit = goexit
 					res.panicErr = panicErr
-					res.wg.Done()
 				},
 			)
 		} else {
-			defer res.wg.Done()
 			f(ctx)
 		}
 	}()
@@ -94,11 +91,10 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 	res.wg.Add(n)
 	for i := range n {
 		go func() {
+			defer res.wg.Done()
 			if propagateTermination {
 				funcutil.Call(
-					func() {
-						f(ctx, i)
-					},
+					func() { f(ctx, i) },
 					func(goexit bool, panicErr error) {
 						res.mu.Lock()
 						if goexit {
@@ -110,11 +106,9 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 							res.panicErrs = append(res.panicErrs, panicErr)
 						}
 						res.mu.Unlock()
-						res.wg.Done()
 					},
 				)
 			} else {
-				defer res.wg.Done()
 				f(ctx, i)
 			}
 		}()
