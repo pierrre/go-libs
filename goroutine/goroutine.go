@@ -28,29 +28,27 @@ type Waiter interface {
 
 type waiterFunc func()
 
-func (f waiterFunc) Wait() {
-	f()
-}
+func (f waiterFunc) Wait() { f() }
 
 // Start executes a function in a new goroutine.
 // The caller must call the returned [Waiter].
 func Start(ctx context.Context, f func(ctx context.Context)) Waiter {
-	propagateTermination := isTerminationPropagationEnabled(ctx)
+	if !isTerminationPropagationEnabled(ctx) {
+		wg := new(sync.WaitGroup)
+		wg.Go(func() { f(ctx) })
+		return wg
+	}
 	res := new(startResult)
 	res.wg.Add(1)
 	go func() {
-		defer res.wg.Done()
-		if propagateTermination {
-			funcutil.Call(
-				func() { f(ctx) },
-				func(goexit bool, panicErr error) {
-					res.goexit = goexit
-					res.panicErr = panicErr
-				},
-			)
-		} else {
-			f(ctx)
-		}
+		funcutil.Call(
+			func() { f(ctx) },
+			func(goexit bool, panicErr error) {
+				res.goexit = goexit
+				res.panicErr = panicErr
+				res.wg.Done()
+			},
+		)
 	}()
 	return res
 }
@@ -83,7 +81,13 @@ func StartWithCancel(ctx context.Context, f func(ctx context.Context)) Waiter {
 }
 
 func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
-	propagateTermination := isTerminationPropagationEnabled(ctx)
+	if !isTerminationPropagationEnabled(ctx) {
+		wg := new(sync.WaitGroup)
+		for i := range n {
+			wg.Go(func() { f(ctx, i) })
+		}
+		return wg
+	}
 	ctx, cancel := context.WithCancel(ctx)
 	res := &startNResult{
 		cancel: cancel,
@@ -92,25 +96,21 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 	for i := range n {
 		go func() {
 			defer res.wg.Done()
-			if propagateTermination {
-				funcutil.Call(
-					func() { f(ctx, i) },
-					func(goexit bool, panicErr error) {
-						res.mu.Lock()
-						if goexit {
-							cancel()
-							res.goexit = true
-						}
-						if panicErr != nil {
-							cancel()
-							res.panicErrs = append(res.panicErrs, panicErr)
-						}
-						res.mu.Unlock()
-					},
-				)
-			} else {
-				f(ctx, i)
-			}
+			funcutil.Call(
+				func() { f(ctx, i) },
+				func(goexit bool, panicErr error) {
+					res.mu.Lock()
+					if goexit {
+						cancel()
+						res.goexit = true
+					}
+					if panicErr != nil {
+						cancel()
+						res.panicErrs = append(res.panicErrs, panicErr)
+					}
+					res.mu.Unlock()
+				},
+			)
 		}()
 	}
 	return res
