@@ -30,11 +30,29 @@ func BenchmarkMapStore(b *testing.B) {
 	}
 }
 
+func BenchmarkMapStoreParallel(b *testing.B) {
+	var m Map[string, int]
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			m.Store("key", 1)
+		}
+	})
+}
+
 func BenchmarkSyncMapStore(b *testing.B) {
 	var m sync.Map
 	for b.Loop() {
 		m.Store("key", 1)
 	}
+}
+
+func BenchmarkSyncMapStoreParallel(b *testing.B) {
+	var m sync.Map
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			m.Store("key", 1)
+		}
+	})
 }
 
 func BenchmarkMapLoad(b *testing.B) {
@@ -45,10 +63,30 @@ func BenchmarkMapLoad(b *testing.B) {
 	}
 }
 
+func BenchmarkMapLoadParallel(b *testing.B) {
+	var m Map[string, int]
+	m.Store("key", 1)
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			m.Load("key")
+		}
+	})
+}
+
 func BenchmarkSyncMapLoad(b *testing.B) {
 	var m sync.Map
 	m.Store("key", 1)
 	for b.Loop() {
 		m.Load("key")
 	}
+}
+
+func BenchmarkSyncMapLoadParallel(b *testing.B) {
+	var m sync.Map
+	m.Store("key", 1)
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			m.Load("key")
+		}
+	})
 }
