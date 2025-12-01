@@ -21,3 +21,18 @@ func TestMap(t *testing.T) {
 	m.Store("key", 1)
 	m.Swap("key", 1)
 }
+
+func BenchmarkMapStore(b *testing.B) {
+	var m Map[string, int]
+	for b.Loop() {
+		m.Store("key", 1)
+	}
+}
+
+func BenchmarkMapLoad(b *testing.B) {
+	var m Map[string, int]
+	m.Store("key", 1)
+	for b.Loop() {
+		m.Load("key")
+	}
+}
