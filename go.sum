@@ -1,3 +1,5 @@
+github.com/go4org/hashtriemap v0.0.0-20251130024219-545ba229f689 h1:0psnKZ+N2IP43/SZC8SKx6OpFJwLmQb9m9QyV9BC2f8=
+github.com/go4org/hashtriemap v0.0.0-20251130024219-545ba229f689/go.mod h1:OGmRfY/9QEK2P5zCRtmqfbCF283xPkU2dvVA4MvbvpI=
 github.com/pierrre/assert v0.11.1 h1:q+WrIHGg/xFhxTR+ZajBbt3fbdOou0uHxSsLAlsc1EQ=
 github.com/pierrre/assert v0.11.1/go.mod h1:BwvCD4ib43bCo93uUJmUlbh59YwLusWtIm4niRgZPQc=
 github.com/pierrre/compare v1.4.14 h1:snH4S/2nClsCCgYAvseyQYX6RHX8WvCdd23deiL1ovc=
