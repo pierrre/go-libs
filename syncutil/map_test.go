@@ -1,6 +1,7 @@
 package syncutil_test
 
 import (
+	"sync"
 	"testing"
 
 	. "github.com/pierrre/go-libs/syncutil"
@@ -29,8 +30,23 @@ func BenchmarkMapStore(b *testing.B) {
 	}
 }
 
+func BenchmarkSyncMapStore(b *testing.B) {
+	var m sync.Map
+	for b.Loop() {
+		m.Store("key", 1)
+	}
+}
+
 func BenchmarkMapLoad(b *testing.B) {
 	var m Map[string, int]
+	m.Store("key", 1)
+	for b.Loop() {
+		m.Load("key")
+	}
+}
+
+func BenchmarkSyncMapLoad(b *testing.B) {
+	var m sync.Map
 	m.Store("key", 1)
 	for b.Loop() {
 		m.Load("key")
