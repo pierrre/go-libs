@@ -7,6 +7,7 @@ import (
 	"sync"
 	"sync/atomic"
 
+	"github.com/pierrre/go-libs/iterutil"
 	"github.com/pierrre/go-libs/syncutil"
 )
 
@@ -179,4 +180,33 @@ func WithError[In, Out any](f func(context.Context, In) (Out, error)) func(conte
 			Err: err,
 		}
 	}
+}
+
+func iterCollection[K comparable, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(ctx context.Context, k K, v In) Out) iter.Seq[iterutil.KeyVal[K, Out]] {
+	return Iter(
+		ctx,
+		iterutil.Seq2ToSeq(in, iterutil.NewKeyVal),
+		workers,
+		func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
+			return iterutil.KeyVal[K, Out]{
+				Key: kv.Key,
+				Val: f(ctx, kv.Key, kv.Val),
+			}
+		},
+	)
+}
+
+func iterCollectionError[K comparable, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(ctx context.Context, k K, v In) (Out, error)) iter.Seq[ValErr[iterutil.KeyVal[K, Out]]] {
+	return Iter(
+		ctx,
+		iterutil.Seq2ToSeq(in, iterutil.NewKeyVal),
+		workers,
+		WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (iterutil.KeyVal[K, Out], error) {
+			v, err := f(ctx, kv.Key, kv.Val)
+			return iterutil.KeyVal[K, Out]{
+				Key: kv.Key,
+				Val: v,
+			}, err
+		}),
+	)
 }

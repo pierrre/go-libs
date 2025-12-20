@@ -5,23 +5,11 @@ import (
 	"context"
 	"errors"
 	"slices"
-
-	"github.com/pierrre/go-libs/iterutil"
 )
 
 // Slice processes a slice with [Iter].
 func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) Out) SOut {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		func(ctx context.Context, kv iterutil.KeyVal[int, In]) iterutil.KeyVal[int, Out] {
-			return iterutil.KeyVal[int, Out]{
-				Key: kv.Key,
-				Val: f(ctx, kv.Key, kv.Val),
-			}
-		},
-	)
+	res := iterCollection(ctx, slices.All(in), min(workers, len(in)), f)
 	out := make(SOut, len(in))
 	for v := range res {
 		out[v.Key] = v.Val
@@ -31,18 +19,7 @@ func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, work
 
 // SliceError is a [Slice] wrapper that returns an error.
 func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) (Out, error)) (SOut, error) {
-	res := Iter(
-		ctx,
-		iterutil.Seq2ToSeq(slices.All(in), iterutil.NewKeyVal),
-		min(workers, len(in)),
-		WithError(func(ctx context.Context, kv iterutil.KeyVal[int, In]) (iterutil.KeyVal[int, Out], error) {
-			v, err := f(ctx, kv.Key, kv.Val)
-			return iterutil.KeyVal[int, Out]{
-				Key: kv.Key,
-				Val: v,
-			}, err
-		}),
-	)
+	res := iterCollectionError(ctx, slices.All(in), min(workers, len(in)), f)
 	out := make(SOut, len(in))
 	var errs []error
 	for v := range res {
