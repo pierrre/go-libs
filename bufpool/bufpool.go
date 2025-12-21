@@ -21,6 +21,10 @@ type Pool struct {
 	// 0 (default) means 64 KiB.
 	// A negative value means no limit.
 	MaxCap int
+
+	// Clear indicates whether to clear the buffer before putting it back to the pool.
+	// It prevents leaking sensitive data, but has a small performance cost.
+	Clear bool
 }
 
 // Get returns a [bytes.Buffer] from the Pool.
@@ -41,6 +45,9 @@ func (p *Pool) Put(buf *bytes.Buffer) {
 	}
 	if maxCap < 0 || buf.Cap() <= maxCap {
 		buf.Reset()
+		if p.Clear {
+			clear(buf.AvailableBuffer())
+		}
 		p.pool.Put(buf)
 	}
 }

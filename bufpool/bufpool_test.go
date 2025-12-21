@@ -20,7 +20,21 @@ func Test(t *testing.T) {
 	}
 }
 
-func BenchmarkBufPool(b *testing.B) {
+func TestClear(t *testing.T) {
+	p := &Pool{
+		Clear: true,
+	}
+	for range 10 {
+		buf := p.Get()
+		for _, b := range buf.AvailableBuffer() {
+			assert.Equal(t, b, 0)
+		}
+		buf.WriteString(testData)
+		p.Put(buf)
+	}
+}
+
+func Benchmark(b *testing.B) {
 	p := &Pool{}
 	for b.Loop() {
 		buf := p.Get()
@@ -31,7 +45,20 @@ func BenchmarkBufPool(b *testing.B) {
 	}
 }
 
-func BenchmarkBufWithoutPool(b *testing.B) {
+func BenchmarkClear(b *testing.B) {
+	p := &Pool{
+		Clear: true,
+	}
+	for b.Loop() {
+		buf := p.Get()
+		for range 10 {
+			buf.WriteString(testData)
+		}
+		p.Put(buf)
+	}
+}
+
+func BenchmarkWithoutPool(b *testing.B) {
 	for b.Loop() {
 		buf := new(bytes.Buffer)
 		for range 10 {
