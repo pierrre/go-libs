@@ -289,9 +289,7 @@ func TestConcurrency(t *testing.T) {
 	wg := new(sync.WaitGroup)
 	for range 10 {
 		for range 10 {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				for i := range 1000 {
 					key := i % 10
 					v, err, _ := g.Do(ctx, key, key, func(ctx context.Context, arg int) (int, error) {
@@ -302,7 +300,7 @@ func TestConcurrency(t *testing.T) {
 					assert.NoError(t, err, assert.Report(testing.TB.Error))
 					assert.Equal(t, v, key, assert.Report(testing.TB.Error))
 				}
-			}()
+			})
 		}
 		wg.Wait()
 	}

@@ -100,10 +100,10 @@ var benchRes any
 
 func BenchmarkWriteFrames(b *testing.B) {
 	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
-	b.ResetTimer()
+
 	var n int64
 	var err error
-	for range b.N {
+	for b.Loop() {
 		n, err = WriteFrames(io.Discard, fs)
 	}
 	benchRes = n
