@@ -56,7 +56,7 @@ func typeFullName(typ reflect.Type) string {
 	if pkgPath != "" {
 		return pkgPath + "." + typ.Name()
 	}
-	switch typ.Kind() {
+	switch typ.Kind() { //nolint:exhaustive // We only need to handle composite types.
 	case reflect.Pointer:
 		return "*" + typeFullName(typ.Elem())
 	case reflect.Slice:

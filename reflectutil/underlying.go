@@ -16,7 +16,7 @@ func GetUnderlyingType(typ reflect.Type) reflect.Type {
 	if uTyp != nil {
 		return uTyp
 	}
-	switch kind {
+	switch kind { //nolint:exhaustive // We only need these kinds.
 	case reflect.Invalid, reflect.Interface, reflect.Struct:
 		return typ
 	}
@@ -62,7 +62,7 @@ var underlyingTypeCache syncutil.Map[reflect.Type, [1]reflect.Type] // Storing a
 
 func computeUnderlyingType(typ reflect.Type) reflect.Type {
 	uTyp := typ
-	switch typ.Kind() {
+	switch typ.Kind() { //nolint:exhaustive // We only need these kinds.
 	case reflect.Array:
 		uTyp = reflect.ArrayOf(typ.Len(), typ.Elem())
 	case reflect.Chan:
