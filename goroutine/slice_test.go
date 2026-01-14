@@ -8,13 +8,14 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/iterutil"
 )
 
 func ExampleSlice() {
 	ctx := context.Background()
 	s := []int{1, 2, 3, 4, 5}
-	out := Slice(ctx, s, 2, func(ctx context.Context, i int, v int) int {
-		return v * 2
+	out := Slice(ctx, s, 2, func(ctx context.Context, iv iterutil.KeyVal[int, int]) int {
+		return iv.Val * 2
 	})
 	fmt.Println(out)
 	// Output:
@@ -24,11 +25,11 @@ func ExampleSlice() {
 func ExampleSliceError() {
 	ctx := context.Background()
 	s := []int{1, 2, 3, 4, 5}
-	out, err := SliceError(ctx, s, 2, func(ctx context.Context, i int, v int) (int, error) {
-		if v == 3 {
+	out, err := SliceError(ctx, s, 2, func(ctx context.Context, iv iterutil.KeyVal[int, int]) (int, error) {
+		if iv.Val == 3 {
 			return 0, errors.New("error")
 		}
-		return v * 2, nil
+		return iv.Val * 2, nil
 	})
 	fmt.Println(out)
 	fmt.Println(err)
@@ -41,8 +42,8 @@ func TestSlice(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		workers := 2
-		f := func(ctx context.Context, i int, v int) int {
-			return v * 2
+		f := func(ctx context.Context, iv iterutil.KeyVal[int, int]) int {
+			return iv.Val * 2
 		}
 		out := Slice(ctx, testIterInputInts, workers, f)
 		expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
@@ -56,8 +57,8 @@ func BenchmarkSlice(b *testing.B) {
 	for i := range in {
 		in[i] = i
 	}
-	f := func(ctx context.Context, i int, v int) int {
-		return v * 2
+	f := func(ctx context.Context, iv iterutil.KeyVal[int, int]) int {
+		return iv.Val * 2
 	}
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
@@ -72,11 +73,11 @@ func TestSliceError(t *testing.T) {
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		workers := 2
-		f := func(ctx context.Context, i int, v int) (int, error) {
-			if v == 3 {
+		f := func(ctx context.Context, iv iterutil.KeyVal[int, int]) (int, error) {
+			if iv.Val == 3 {
 				return 0, errors.New("error")
 			}
-			return v * 2, nil
+			return iv.Val * 2, nil
 		}
 		out, err := SliceError(ctx, testIterInputInts, workers, f)
 		expected := []int{2, 4, 0, 8, 10, 12, 14, 16, 18, 20}
@@ -91,11 +92,11 @@ func BenchmarkSliceError(b *testing.B) {
 	for i := range in {
 		in[i] = i
 	}
-	f := func(ctx context.Context, i int, v int) (int, error) {
-		if i%10 == 0 {
+	f := func(ctx context.Context, iv iterutil.KeyVal[int, int]) (int, error) {
+		if iv.Key%10 == 0 {
 			return 0, errors.New("error")
 		}
-		return v * 2, nil
+		return iv.Val * 2, nil
 	}
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {

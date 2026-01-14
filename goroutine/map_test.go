@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/iterutil"
 )
 
 func ExampleMap() {
@@ -19,8 +20,8 @@ func ExampleMap() {
 		4: 4,
 		5: 5,
 	}
-	out := Map(ctx, m, 2, func(ctx context.Context, k int, v int) int {
-		return v * 2
+	out := Map(ctx, m, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	})
 	fmt.Println(out)
 	// Output:
@@ -36,11 +37,11 @@ func ExampleMapError() {
 		4: 4,
 		5: 5,
 	}
-	out, err := MapError(ctx, m, 2, func(ctx context.Context, k int, v int) (int, error) {
-		if v == 3 {
+	out, err := MapError(ctx, m, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) (int, error) {
+		if kv.Val == 3 {
 			return 0, errors.New("error")
 		}
-		return v * 2, nil
+		return kv.Val * 2, nil
 	})
 	fmt.Println(out)
 	fmt.Println(err)
@@ -60,8 +61,8 @@ func TestMap(t *testing.T) {
 			5: 5,
 		}
 		workers := 2
-		f := func(ctx context.Context, k int, v int) int {
-			return v * 2
+		f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+			return kv.Val * 2
 		}
 		out := Map(ctx, in, workers, f)
 		expected := map[int]int{
@@ -81,8 +82,8 @@ func BenchmarkMap(b *testing.B) {
 	for i := range 100 {
 		in[i] = i
 	}
-	f := func(ctx context.Context, k int, v int) int {
-		return v * 2
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
 	}
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {
@@ -104,11 +105,11 @@ func TestMapError(t *testing.T) {
 			5: 5,
 		}
 		workers := 2
-		f := func(ctx context.Context, k int, v int) (int, error) {
-			if v == 3 {
+		f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) (int, error) {
+			if kv.Val == 3 {
 				return 0, errors.New("error")
 			}
-			return v * 2, nil
+			return kv.Val * 2, nil
 		}
 		out, err := MapError(ctx, in, workers, f)
 		expected := map[int]int{
@@ -129,11 +130,11 @@ func BenchmarkMapError(b *testing.B) {
 	for i := range 100 {
 		in[i] = i
 	}
-	f := func(ctx context.Context, k int, v int) (int, error) {
-		if k%10 == 0 {
+	f := func(ctx context.Context, kv iterutil.KeyVal[int, int]) (int, error) {
+		if kv.Key%10 == 0 {
 			return 0, errors.New("error")
 		}
-		return v * 2, nil
+		return kv.Val * 2, nil
 	}
 	for _, workers := range []int{1, 2, 5, 10} {
 		b.Run(strconv.Itoa(workers), func(b *testing.B) {

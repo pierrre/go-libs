@@ -165,6 +165,35 @@ func drainChannel[T any](ch <-chan T, f func(v T)) {
 	}
 }
 
+// Iter2 is like [Iter] for [iter.Seq2].
+func Iter2[K, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) iter.Seq2[K, Out] {
+	return iter2(ctx, in, workers, f, Iter)
+}
+
+// Iter2Ordered is like [IterOrdered] for [iter.Seq2].
+func Iter2Ordered[K, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) iter.Seq2[K, Out] {
+	return iter2(ctx, in, workers, f, IterOrdered)
+}
+
+type iterFunc[In, Out any] func(ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out]
+
+func iter2[K, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out, ifn iterFunc[iterutil.KeyVal[K, In], iterutil.KeyVal[K, Out]]) iter.Seq2[K, Out] {
+	return iterutil.SeqToSeq2(
+		ifn(
+			ctx,
+			iterutil.Seq2ToSeq(in, iterutil.NewKeyVal),
+			workers,
+			func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
+				return iterutil.KeyVal[K, Out]{
+					Key: kv.Key,
+					Val: f(ctx, kv),
+				}
+			},
+		),
+		iterutil.KeyVal[K, Out].Values,
+	)
+}
+
 // ValErr is a value with an error.
 type ValErr[T any] struct {
 	Val T
@@ -180,33 +209,4 @@ func WithError[In, Out any](f func(context.Context, In) (Out, error)) func(conte
 			Err: err,
 		}
 	}
-}
-
-func iterCollection[K comparable, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(ctx context.Context, k K, v In) Out) iter.Seq[iterutil.KeyVal[K, Out]] {
-	return Iter(
-		ctx,
-		iterutil.Seq2ToSeq(in, iterutil.NewKeyVal),
-		workers,
-		func(ctx context.Context, kv iterutil.KeyVal[K, In]) iterutil.KeyVal[K, Out] {
-			return iterutil.KeyVal[K, Out]{
-				Key: kv.Key,
-				Val: f(ctx, kv.Key, kv.Val),
-			}
-		},
-	)
-}
-
-func iterCollectionError[K comparable, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(ctx context.Context, k K, v In) (Out, error)) iter.Seq[ValErr[iterutil.KeyVal[K, Out]]] {
-	return Iter(
-		ctx,
-		iterutil.Seq2ToSeq(in, iterutil.NewKeyVal),
-		workers,
-		WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (iterutil.KeyVal[K, Out], error) {
-			v, err := f(ctx, kv.Key, kv.Val)
-			return iterutil.KeyVal[K, Out]{
-				Key: kv.Key,
-				Val: v,
-			}, err
-		}),
-	)
 }

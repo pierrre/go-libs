@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"github.com/pierrre/go-libs/iterutil"
 )
 
 func ExampleIter() {
@@ -44,6 +45,40 @@ func ExampleIterOrdered() {
 	// 6
 	// 8
 	// 10
+}
+
+func ExampleIter2() {
+	ctx := context.Background()
+	in := slices.All([]int{1, 2, 3, 4, 5})
+	out := Iter2(ctx, in, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
+	})
+	for i, v := range out {
+		fmt.Println(i, v)
+	}
+	// Unordered output:
+	// 0 2
+	// 1 4
+	// 2 6
+	// 3 8
+	// 4 10
+}
+
+func ExampleIter2Ordered() {
+	ctx := context.Background()
+	in := slices.All([]int{1, 2, 3, 4, 5})
+	out := Iter2Ordered(ctx, in, 2, func(ctx context.Context, kv iterutil.KeyVal[int, int]) int {
+		return kv.Val * 2
+	})
+	for i, v := range out {
+		fmt.Println(i, v)
+	}
+	// Output:
+	// 0 2
+	// 1 4
+	// 2 6
+	// 3 8
+	// 4 10
 }
 
 func ExampleWithError() {
