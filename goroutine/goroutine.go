@@ -88,10 +88,8 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 		}
 		return wg
 	}
-	ctx, cancel := context.WithCancel(ctx)
-	res := &startNResult{
-		cancel: cancel,
-	}
+	res := new(startNResult)
+	ctx, res.cancel = context.WithCancel(ctx)
 	res.wg.Add(n)
 	for i := range n {
 		go func() {
@@ -101,11 +99,11 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 				func(goexit bool, panicErr error) {
 					res.mu.Lock()
 					if goexit {
-						cancel()
+						res.cancel()
 						res.goexit = true
 					}
 					if panicErr != nil {
-						cancel()
+						res.cancel()
 						res.panicErrs = append(res.panicErrs, panicErr)
 					}
 					res.mu.Unlock()
@@ -126,6 +124,7 @@ type startNResult struct {
 
 func (res *startNResult) Wait() {
 	res.wg.Wait()
+	res.cancel()
 	if res.goexit {
 		runtime.Goexit()
 	}
