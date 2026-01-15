@@ -18,11 +18,11 @@ import (
 )
 
 // Waiter is an interface for waiting for goroutines to finish.
+//
+// Wait blocks until all goroutines are finished.
+// It propagates panics or calls to [runtime.Goexit] from the goroutines to the caller.
+// The propagation behavior can be configured with [TerminationPropagationEnabled] or [WithTerminationPropagation].
 type Waiter interface {
-	// Wait blocks until all goroutines are finished.
-	//
-	// It propagates panics or calls to [runtime.Goexit] from the goroutines to the caller.
-	// The propagation behavior can be configured with [TerminationPropagationEnabled] or [WithTerminationPropagation].
 	Wait()
 }
 
