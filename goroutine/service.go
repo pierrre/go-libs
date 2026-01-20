@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"maps"
-	"slices"
 
 	"github.com/pierrre/go-libs/iterutil"
 )
@@ -19,13 +18,15 @@ import (
 func Services(ctx context.Context, services map[string]func(context.Context) error) error {
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
-	errs := Iter(ctx, iterutil.Seq2ToSeq(maps.All(services), iterutil.NewKeyVal), len(services), func(ctx context.Context, service iterutil.KeyVal[string, func(context.Context) error]) error {
-		err := service.Val(ctx)
+	ne := Iter2(ctx, maps.All(services), len(services), func(ctx context.Context, service iterutil.KeyVal[string, func(context.Context) error]) error {
+		return service.Val(ctx)
+	})
+	var errs []error
+	for name, err := range ne {
 		if err != nil {
 			cancel()
-			return fmt.Errorf("%s: %w", service.Key, err)
+			errs = append(errs, fmt.Errorf("%s: %w", name, err))
 		}
-		return nil
-	})
-	return errors.Join(slices.Collect(errs)...)
+	}
+	return errors.Join(errs...)
 }
