@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"go.uber.org/goleak"
 )
 
 func ExampleServices() {
@@ -34,6 +35,7 @@ func ExampleServices() {
 }
 
 func TestServices(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -51,6 +53,7 @@ func TestServices(t *testing.T) {
 }
 
 func TestServicesError(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	err := Services(ctx, map[string]func(context.Context) error{
 		"a": func(_ context.Context) error {

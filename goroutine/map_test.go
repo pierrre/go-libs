@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"go.uber.org/goleak"
 )
 
 func ExampleMap() {
@@ -50,6 +51,7 @@ func ExampleMapError() {
 }
 
 func TestMap(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := map[int]int{
@@ -94,6 +96,7 @@ func BenchmarkMap(b *testing.B) {
 }
 
 func TestMapError(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := map[int]int{

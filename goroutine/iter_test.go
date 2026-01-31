@@ -11,6 +11,7 @@ import (
 
 	"github.com/pierrre/assert"
 	"github.com/pierrre/go-libs/iterutil"
+	"go.uber.org/goleak"
 )
 
 func ExampleIter() {
@@ -119,6 +120,7 @@ func runIterTest(t *testing.T, f func(t *testing.T)) {
 }
 
 func TestIter(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	in := slices.Values(testIterInputInts)
 	workers := 2
@@ -135,6 +137,7 @@ func TestIter(t *testing.T) {
 }
 
 func TestIterStop(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -158,6 +161,7 @@ func TestIterStop(t *testing.T) {
 }
 
 func TestIterContextCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
@@ -181,6 +185,7 @@ func TestIterContextCancel(t *testing.T) {
 }
 
 func TestIterPanicInput(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := func(func(int) bool) {
@@ -203,6 +208,7 @@ func TestIterPanicInput(t *testing.T) {
 }
 
 func TestIterPanicFunction(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -222,6 +228,7 @@ func TestIterPanicFunction(t *testing.T) {
 }
 
 func TestIterPanicOutput(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -266,6 +273,7 @@ func BenchmarkIter(b *testing.B) {
 }
 
 func TestIterOrdered(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	in := slices.Values(testIterInputInts)
 	workers := 2
@@ -281,6 +289,7 @@ func TestIterOrdered(t *testing.T) {
 }
 
 func TestIterOrderedStop(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -304,6 +313,7 @@ func TestIterOrderedStop(t *testing.T) {
 }
 
 func TestIterOrderedContextCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx, cancel := context.WithCancel(t.Context())
 		defer cancel()
@@ -327,6 +337,7 @@ func TestIterOrderedContextCancel(t *testing.T) {
 }
 
 func TestIterOrderedPanicinput(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := func(func(int) bool) {
@@ -349,6 +360,7 @@ func TestIterOrderedPanicinput(t *testing.T) {
 }
 
 func TestIterOrderedPanicFunction(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -368,6 +380,7 @@ func TestIterOrderedPanicFunction(t *testing.T) {
 }
 
 func TestIterOrderedPanicOutput(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)
@@ -412,6 +425,7 @@ func BenchmarkIterOrdered(b *testing.B) {
 }
 
 func TestWithError(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		in := slices.Values(testIterInputInts)

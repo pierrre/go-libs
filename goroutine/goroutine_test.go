@@ -10,6 +10,7 @@ import (
 
 	"github.com/pierrre/assert"
 	"github.com/pierrre/assert/assertauto"
+	"go.uber.org/goleak"
 )
 
 func ExampleStart() {
@@ -45,6 +46,7 @@ func ExampleRunN() {
 }
 
 func TestStart(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	var called int64
 	wait := Start(ctx, func(ctx context.Context) {
@@ -63,6 +65,7 @@ func TestStartAllocs(t *testing.T) {
 }
 
 func TestStartPanic(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	var called int64
 	wait := Start(ctx, func(ctx context.Context) {
@@ -75,6 +78,7 @@ func TestStartPanic(t *testing.T) {
 }
 
 func TestStartGoexit(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	normalReturn := false
 	recovered := false
@@ -99,6 +103,7 @@ func TestStartGoexit(t *testing.T) {
 }
 
 func TestStartNoTerminationPropagation(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	ctx = WithTerminationPropagation(ctx, false)
 	wait := Start(ctx, func(ctx context.Context) {
@@ -116,6 +121,7 @@ func BenchmarkStart(b *testing.B) {
 }
 
 func TestStartWithCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	var called int64
 	cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
@@ -147,6 +153,7 @@ func BenchmarkStartWithCancel(b *testing.B) {
 }
 
 func TestRunN(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	called := make([]int64, 10)
 	RunN(ctx, 10, func(ctx context.Context, i int) {
@@ -164,6 +171,7 @@ func TestRunNAllocs(t *testing.T) {
 }
 
 func TestRunNContextCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	ctx, cancel := context.WithCancel(ctx)
 	var count int64
@@ -176,6 +184,7 @@ func TestRunNContextCancel(t *testing.T) {
 }
 
 func TestRunNZero(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	var called int64
 	RunN(ctx, 0, func(ctx context.Context, _ int) {
@@ -185,6 +194,7 @@ func TestRunNZero(t *testing.T) {
 }
 
 func TestRunNNegativePanic(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	assert.Panics(t, func() {
 		RunN(ctx, -10, func(ctx context.Context, _ int) {})
@@ -192,6 +202,7 @@ func TestRunNNegativePanic(t *testing.T) {
 }
 
 func TestRunNPanic(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	var counter int64
 	assert.Panics(t, func() {
@@ -206,6 +217,7 @@ func TestRunNPanic(t *testing.T) {
 }
 
 func TestRunNPanicAll(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	assert.Panics(t, func() {
 		RunN(ctx, 10, func(ctx context.Context, _ int) {
@@ -215,6 +227,7 @@ func TestRunNPanicAll(t *testing.T) {
 }
 
 func TestRunNGoexit(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	normalReturn := false
 	recovered := false
@@ -238,6 +251,7 @@ func TestRunNGoexit(t *testing.T) {
 }
 
 func TestRunNNoTerminationPropagation(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	ctx = WithTerminationPropagation(ctx, false)
 	RunN(ctx, 10, func(ctx context.Context, _ int) {

@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/pierrre/assert"
+	"go.uber.org/goleak"
 )
 
 func ExampleSlice() {
@@ -38,6 +39,7 @@ func ExampleSliceError() {
 }
 
 func TestSlice(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		workers := 2
@@ -69,6 +71,7 @@ func BenchmarkSlice(b *testing.B) {
 }
 
 func TestSliceError(t *testing.T) {
+	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 		ctx := t.Context()
 		workers := 2
