@@ -3,25 +3,43 @@ package mapsutil_test
 import (
 	"fmt"
 	"maps"
+	"strings"
 	"testing"
 
 	"github.com/pierrre/assert"
 	. "github.com/pierrre/go-libs/mapsutil"
 )
 
-func ExampleSorted() {
+func ExampleSortedByKey() {
 	m := map[string]int{
 		"c": 3,
 		"a": 1,
 		"b": 2,
 	}
-	for k, v := range Sorted(m) {
+	for k, v := range SortedByKey(m) {
 		fmt.Println(k, v)
 	}
 	// Output:
 	// a 1
 	// b 2
 	// c 3
+}
+
+func ExampleSortedByKeyFunc() {
+	m := map[string]int{
+		"c": 3,
+		"a": 1,
+		"b": 2,
+	}
+	for k, v := range SortedByKeyFunc(m, func(a, b string) int {
+		return -strings.Compare(a, b)
+	}) {
+		fmt.Println(k, v)
+	}
+	// Output:
+	// c 3
+	// b 2
+	// a 1
 }
 
 var testMap = func() map[string]int {
@@ -32,9 +50,9 @@ var testMap = func() map[string]int {
 	return m
 }()
 
-func TestSorted(t *testing.T) {
+func TestSortedByKey(t *testing.T) {
 	i := 0
-	for k, v := range Sorted(testMap) {
+	for k, v := range SortedByKey(testMap) {
 		assert.Equal(t, k, string(rune('a'+i)))
 		assert.Equal(t, v, i+1)
 		i++
@@ -42,10 +60,10 @@ func TestSorted(t *testing.T) {
 	assert.Equal(t, i, len(testMap))
 }
 
-func TestSortedDeleteKey(t *testing.T) {
+func TestSortedByKeyDeleteKey(t *testing.T) {
 	i := 0
 	m := maps.Clone(testMap)
-	for k, v := range Sorted(m) {
+	for k, v := range SortedByKey(m) {
 		if k == "a" {
 			delete(m, "c")
 		}
@@ -56,13 +74,25 @@ func TestSortedDeleteKey(t *testing.T) {
 	assert.Equal(t, i, len(testMap)-1)
 }
 
-func TestSortedInterrupt(t *testing.T) {
+func TestSortedByKeyInterrupt(t *testing.T) {
 	i := 0
-	for range Sorted(testMap) {
+	for range SortedByKey(testMap) {
 		if i == 7 {
 			break
 		}
 		i++
 	}
 	assert.Equal(t, i, 7)
+}
+
+func TestSortedByKeyFunc(t *testing.T) {
+	i := 0
+	for k, v := range SortedByKeyFunc(testMap, func(a, b string) int {
+		return -strings.Compare(a, b)
+	}) {
+		assert.Equal(t, k, string(rune('a'+len(testMap)-1-i)))
+		assert.Equal(t, v, len(testMap)-i)
+		i++
+	}
+	assert.Equal(t, i, len(testMap))
 }
