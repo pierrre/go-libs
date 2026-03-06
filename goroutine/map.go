@@ -34,3 +34,17 @@ func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx cont
 	err := errors.Join(errs...)
 	return out, err
 }
+
+// MapFunc processes a map of functions.
+func MapFunc[MOut map[K]Out, K comparable, Out any](ctx context.Context, fs map[K]func(ctx context.Context) Out, workers int) MOut {
+	return Map(ctx, fs, workers, func(ctx context.Context, k K, f func(ctx context.Context) Out) Out {
+		return f(ctx)
+	})
+}
+
+// MapFuncError processes a map of functions that return an error.
+func MapFuncError[MOut map[K]Out, K comparable, Out any](ctx context.Context, fs map[K]func(ctx context.Context) (Out, error), workers int) (MOut, error) {
+	return MapError(ctx, fs, workers, func(ctx context.Context, k K, f func(ctx context.Context) (Out, error)) (Out, error) {
+		return f(ctx)
+	})
+}

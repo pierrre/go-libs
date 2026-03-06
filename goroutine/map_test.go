@@ -50,6 +50,34 @@ func ExampleMapError() {
 	// error
 }
 
+func ExampleMapFunc() {
+	ctx := context.Background()
+	fs := map[int]func(ctx context.Context) int{
+		1: func(ctx context.Context) int { return 1 },
+		2: func(ctx context.Context) int { return 2 },
+		3: func(ctx context.Context) int { return 3 },
+	}
+	out := MapFunc(ctx, fs, 2)
+	fmt.Println(out)
+	// Output:
+	// map[1:1 2:2 3:3]
+}
+
+func ExampleMapFuncError() {
+	ctx := context.Background()
+	fs := map[int]func(ctx context.Context) (int, error){
+		1: func(ctx context.Context) (int, error) { return 1, nil },
+		2: func(ctx context.Context) (int, error) { return 2, nil },
+		3: func(ctx context.Context) (int, error) { return 3, errors.New("error") },
+	}
+	out, err := MapFuncError(ctx, fs, 2)
+	fmt.Println(out)
+	fmt.Println(err)
+	// Output:
+	// map[1:1 2:2 3:3]
+	// error
+}
+
 func TestMap(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.

@@ -38,6 +38,34 @@ func ExampleSliceError() {
 	// error
 }
 
+func ExampleSliceFunc() {
+	ctx := context.Background()
+	fs := []func(ctx context.Context) int{
+		func(ctx context.Context) int { return 1 },
+		func(ctx context.Context) int { return 2 },
+		func(ctx context.Context) int { return 3 },
+	}
+	out := SliceFunc(ctx, fs, 2)
+	fmt.Println(out)
+	// Output:
+	// [1 2 3]
+}
+
+func ExampleSliceFuncError() {
+	ctx := context.Background()
+	fs := []func(ctx context.Context) (int, error){
+		func(ctx context.Context) (int, error) { return 1, nil },
+		func(ctx context.Context) (int, error) { return 2, nil },
+		func(ctx context.Context) (int, error) { return 3, errors.New("error") },
+	}
+	out, err := SliceFuncError(ctx, fs, 2)
+	fmt.Println(out)
+	fmt.Println(err)
+	// Output:
+	// [1 2 3]
+	// error
+}
+
 func TestSlice(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.

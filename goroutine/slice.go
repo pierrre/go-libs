@@ -36,3 +36,17 @@ func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn,
 	err := errors.Join(errs...)
 	return out, err
 }
+
+// SliceFunc processes a slice of functions.
+func SliceFunc[SOut []Out, Out any](ctx context.Context, fs []func(ctx context.Context) Out, workers int) SOut {
+	return Slice(ctx, fs, workers, func(ctx context.Context, i int, f func(ctx context.Context) Out) Out {
+		return f(ctx)
+	})
+}
+
+// SliceFuncError processes a slice of functions that return an error.
+func SliceFuncError[SOut []Out, Out any](ctx context.Context, fs []func(ctx context.Context) (Out, error), workers int) (SOut, error) {
+	return SliceError(ctx, fs, workers, func(ctx context.Context, i int, f func(ctx context.Context) (Out, error)) (Out, error) {
+		return f(ctx)
+	})
+}
