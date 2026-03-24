@@ -133,15 +133,15 @@ type call[V any] struct {
 	shared          bool
 	goexit          bool
 	panicErr        error
-	usages          int32
+	usages          atomic.Int32
 }
 
 func (c *call[V]) incUsages() {
-	atomic.AddInt32(&c.usages, 1)
+	c.usages.Add(1)
 }
 
 func (c *call[V]) releaseUsage() int32 {
-	return atomic.AddInt32(&c.usages, -1)
+	return c.usages.Add(-1)
 }
 
 func (c *call[V]) checkGoexit() {

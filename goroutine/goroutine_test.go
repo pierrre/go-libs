@@ -67,9 +67,9 @@ func TestStartAllocs(t *testing.T) {
 func TestStartPanic(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx := t.Context()
-	var called int64
+	var called atomic.Int64
 	wait := Start(ctx, func(ctx context.Context) {
-		atomic.AddInt64(&called, 1)
+		called.Add(1)
 		panic("panic")
 	})
 	assert.Panics(t, func() {
@@ -174,9 +174,9 @@ func TestRunNContextCancel(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx := t.Context()
 	ctx, cancel := context.WithCancel(ctx)
-	var count int64
+	var count atomic.Int64
 	RunN(ctx, 10, func(ctx context.Context, _ int) {
-		if atomic.AddInt64(&count, 1) == 5 {
+		if count.Add(1) == 5 {
 			cancel()
 		}
 		<-ctx.Done()
@@ -204,10 +204,10 @@ func TestRunNNegativePanic(t *testing.T) {
 func TestRunNPanic(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx := t.Context()
-	var counter int64
+	var counter atomic.Int64
 	assert.Panics(t, func() {
 		RunN(ctx, 10, func(ctx context.Context, _ int) {
-			id := atomic.AddInt64(&counter, 1)
+			id := counter.Add(1)
 			if id == 1 {
 				panic("panic")
 			}
