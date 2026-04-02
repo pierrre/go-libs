@@ -11,12 +11,9 @@ import (
 func Call(f func(), after func(goexit bool, panicErr error)) {
 	normalReturn := false
 	recovered := false
-	var goexit bool
 	var panicErr error
 	defer func() {
-		if !normalReturn && !recovered {
-			goexit = true
-		}
+		goexit := !normalReturn && !recovered
 		after(goexit, panicErr)
 	}()
 	func() {
@@ -29,6 +26,7 @@ func Call(f func(), after func(goexit bool, panicErr error)) {
 			}
 		}()
 		f()
+		normalReturn = true
 	}()
 	if !normalReturn {
 		recovered = true
