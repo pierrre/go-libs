@@ -33,11 +33,13 @@ func (f waiterFunc) Wait() { f() }
 // Start executes a function in a new goroutine.
 // The caller must call the returned [Waiter].
 func Start(ctx context.Context, f func(ctx context.Context)) Waiter {
-	if !isTerminationPropagationEnabled(ctx) {
-		wg := new(sync.WaitGroup)
-		wg.Go(func() { f(ctx) })
-		return wg
+	if isTerminationPropagationEnabled(ctx) {
+		return startWithPropagation(ctx, f)
 	}
+	return startSimple(ctx, f)
+}
+
+func startWithPropagation(ctx context.Context, f func(ctx context.Context)) Waiter {
 	res := new(startResult)
 	res.wg.Add(1)
 	go func() {
@@ -51,6 +53,12 @@ func Start(ctx context.Context, f func(ctx context.Context)) Waiter {
 		)
 	}()
 	return res
+}
+
+func startSimple(ctx context.Context, f func(ctx context.Context)) Waiter {
+	wg := new(sync.WaitGroup)
+	wg.Go(func() { f(ctx) })
+	return wg
 }
 
 type startResult struct {
@@ -81,13 +89,13 @@ func StartWithCancel(ctx context.Context, f func(ctx context.Context)) Waiter {
 }
 
 func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
-	if !isTerminationPropagationEnabled(ctx) {
-		wg := new(sync.WaitGroup)
-		for i := range n {
-			wg.Go(func() { f(ctx, i) })
-		}
-		return wg
+	if isTerminationPropagationEnabled(ctx) {
+		return startNWithPropagation(ctx, n, f)
 	}
+	return startNSimple(ctx, n, f)
+}
+
+func startNWithPropagation(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
 	res := new(startNResult)
 	ctx, res.cancel = context.WithCancel(ctx)
 	res.wg.Add(n)
@@ -112,6 +120,14 @@ func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 		}()
 	}
 	return res
+}
+
+func startNSimple(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
+	wg := new(sync.WaitGroup)
+	for i := range n {
+		wg.Go(func() { f(ctx, i) })
+	}
+	return wg
 }
 
 type startNResult struct {
