@@ -88,7 +88,10 @@ func StartWithCancel(ctx context.Context, f func(ctx context.Context)) Waiter {
 	})
 }
 
-func startN(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
+// StartN executes a function with multiple goroutines.
+// The i parameter is the index of the goroutine (from 0 to n-1).
+// The caller must call the returned [Waiter].
+func StartN(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
 	if isTerminationPropagationEnabled(ctx) {
 		return startNWithPropagation(ctx, n, f)
 	}
@@ -153,11 +156,23 @@ func (res *startNResult) Wait() {
 	}
 }
 
+// StartNWithCancel executes a function with multiple goroutines and allows the caller to cancel them with the [Waiter].
+// The i parameter is the index of the goroutine (from 0 to n-1).
+// The caller must call the returned [Waiter].
+func StartNWithCancel(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
+	ctx, cancel := context.WithCancel(ctx)
+	wait := StartN(ctx, n, f)
+	return waiterFunc(func() {
+		cancel()
+		wait.Wait()
+	})
+}
+
 // RunN executes a function with multiple goroutines.
 // The i parameter is the index of the goroutine (from 0 to n-1).
 // It blocks until all goroutines are terminated (see [Waiter.Wait]).
 func RunN(ctx context.Context, n int, f func(ctx context.Context, i int)) {
-	res := startN(ctx, n, f)
+	res := StartN(ctx, n, f)
 	res.Wait()
 }
 

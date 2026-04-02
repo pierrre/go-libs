@@ -34,6 +34,31 @@ func ExampleStartWithCancel() {
 	// a
 }
 
+func ExampleStartN() {
+	ctx := context.Background()
+	wait := StartN(ctx, 3, func(ctx context.Context, i int) {
+		fmt.Println(i)
+	})
+	wait.Wait()
+	// Unordered output:
+	// 0
+	// 1
+	// 2
+}
+
+func ExampleStartNWithCancel() {
+	ctx := context.Background()
+	cancelWait := StartNWithCancel(ctx, 3, func(ctx context.Context, i int) {
+		fmt.Println(i)
+		<-ctx.Done()
+	})
+	cancelWait.Wait()
+	// Unordered output:
+	// 0
+	// 1
+	// 2
+}
+
 func ExampleRunN() {
 	ctx := context.Background()
 	RunN(ctx, 3, func(ctx context.Context, i int) {
@@ -150,6 +175,19 @@ func BenchmarkStartWithCancel(b *testing.B) {
 		})
 		cancelWait.Wait()
 	}
+}
+
+func TestStartNWithCancel(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	ctx := t.Context()
+	called := make([]int64, 10)
+	cancelWait := StartNWithCancel(ctx, 10, func(ctx context.Context, i int) {
+		atomic.AddInt64(&called[i], 1)
+		<-ctx.Done()
+	})
+	cancelWait.Wait()
+	expected := slices.Repeat([]int64{1}, 10)
+	assert.SliceEqual(t, called, expected)
 }
 
 func TestRunN(t *testing.T) {

@@ -32,7 +32,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 			})
 		}).Wait() // Wait until the producer is stopped.
 		runningWorkers := int64(workers)                              // Count of running workers.
-		defer startN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
+		defer StartN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
 			defer func() { // When the workers are stopped.
 				if atomic.AddInt64(&runningWorkers, -1) == 0 { // Wait for all workers to finish.
 					close(outCh)            // Notify the consumer that there are no more value.
@@ -79,7 +79,7 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 			})
 		}).Wait() // Wait until the producer is stopped.
 		runningWorkers := int64(workers)
-		defer startN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
+		defer StartN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
 			defer func() { // When the workers are stopped.
 				cancel()                                       // Notify the producer to stop sending values (required to handle panic and [runtime.Goexit]).
 				if atomic.AddInt64(&runningWorkers, -1) == 0 { // Wait for all workers to finish.
