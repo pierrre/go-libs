@@ -28,7 +28,7 @@ func CollectTo[E any](ctx context.Context, it iter.Seq[E], ch chan<- E) error {
 		}
 		select {
 		case <-done:
-			return ctx.Err() //nolint:wrapcheck // We want to return the original context error.
+			return context.Cause(ctx) //nolint:wrapcheck // We want to return the original context error.
 		default:
 		}
 	}

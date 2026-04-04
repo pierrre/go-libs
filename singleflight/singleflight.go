@@ -82,7 +82,7 @@ func (g *Group[K, A, V]) waitCall(ctx context.Context, key K, c *call[V]) (v V, 
 		select {
 		case <-c.done:
 		case <-ctx.Done():
-			return v, ctx.Err() //nolint:wrapcheck // Not needed.
+			return v, context.Cause(ctx) //nolint:wrapcheck // Not needed.
 		}
 	}
 	c.checkGoexit()

@@ -49,7 +49,7 @@ func TestDoContextCancel(t *testing.T) {
 	v, err, shared := g.Do(ctx, "key", "arg", func(ctx context.Context, _ string) (int, error) {
 		called.Add(1)
 		cancel()
-		return 123, ctx.Err()
+		return 123, context.Cause(ctx)
 	})
 	assert.ErrorIs(t, err, context.Canceled)
 	assert.False(t, shared)
