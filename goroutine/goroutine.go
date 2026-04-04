@@ -100,7 +100,7 @@ func StartN(ctx context.Context, n int, f func(ctx context.Context, i int)) Wait
 
 func startNWithPropagation(ctx context.Context, n int, f func(ctx context.Context, i int)) Waiter {
 	res := new(startNResult)
-	ctx, res.cancel = context.WithCancel(ctx)
+	ctx, res.cancel = context.WithCancelCause(ctx)
 	res.wg.Add(n)
 	for i := range n {
 		go func() {
@@ -110,11 +110,11 @@ func startNWithPropagation(ctx context.Context, n int, f func(ctx context.Contex
 				func(goexit bool, panicErr error) {
 					res.mu.Lock()
 					if goexit {
-						res.cancel()
+						res.cancel(errors.New("goexit"))
 						res.goexit = true
 					}
 					if panicErr != nil {
-						res.cancel()
+						res.cancel(panicErr)
 						res.panicErrs = append(res.panicErrs, panicErr)
 					}
 					res.mu.Unlock()
@@ -134,7 +134,7 @@ func startNSimple(ctx context.Context, n int, f func(ctx context.Context, i int)
 }
 
 type startNResult struct {
-	cancel    context.CancelFunc
+	cancel    context.CancelCauseFunc
 	wg        sync.WaitGroup
 	mu        sync.Mutex
 	goexit    bool
@@ -143,7 +143,7 @@ type startNResult struct {
 
 func (res *startNResult) Wait() {
 	res.wg.Wait()
-	res.cancel()
+	res.cancel(nil)
 	if res.goexit {
 		runtime.Goexit()
 	}
