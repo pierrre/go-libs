@@ -1,9 +1,9 @@
 // Package goroutine helps to manage goroutines safely.
 //
-//   - Start goroutines: [Start], [StartWithCancel], [RunN].
-//   - Process iterators: [Iter], [IterOrdered], [WithError].
-//   - Process slices: [Slice], [SliceError]
-//   - Process maps: [Map], [MapError].
+//   - Start goroutines: [Start], [StartWithCancel], [StartN], [StartNWithCancel], [RunN].
+//   - Process iterators: [Iter], [IterOrdered], [Iter2], [Iter2Ordered], [WithError].
+//   - Process slices: [Slice], [SliceError], [SliceFunc], [SliceFuncError].
+//   - Process maps: [Map], [MapError], [MapFunc], [MapFuncError].
 //   - Run services: [Services].
 package goroutine
 
