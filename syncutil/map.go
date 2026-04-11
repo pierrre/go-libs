@@ -32,27 +32,21 @@ func (m *Map[K, V]) Delete(key K) {
 // Load is a wrapper around [sync.Map.Load].
 func (m *Map[K, V]) Load(key K) (value V, ok bool) {
 	vi, ok := m.m.Load(key)
-	if ok {
-		value, _ = vi.(V)
-	}
+	value, _ = vi.(V)
 	return value, ok
 }
 
 // LoadAndDelete is a wrapper around [sync.Map.LoadAndDelete].
 func (m *Map[K, V]) LoadAndDelete(key K) (value V, loaded bool) {
 	vi, loaded := m.m.LoadAndDelete(key)
-	if loaded {
-		value, _ = vi.(V)
-	}
+	value, _ = vi.(V)
 	return value, loaded
 }
 
 // LoadOrStore is a wrapper around [sync.Map.LoadOrStore].
 func (m *Map[K, V]) LoadOrStore(key K, value V) (actual V, loaded bool) {
 	vi, loaded := m.m.LoadOrStore(key, value)
-	if loaded {
-		actual, _ = vi.(V)
-	}
+	actual, _ = vi.(V)
 	return actual, loaded
 }
 
@@ -73,8 +67,6 @@ func (m *Map[K, V]) Store(key K, value V) {
 // Swap is a wrapper around [sync.Map.Swap].
 func (m *Map[K, V]) Swap(key K, value V) (previous V, loaded bool) {
 	vi, loaded := m.m.Swap(key, value)
-	if loaded {
-		previous, _ = vi.(V)
-	}
+	previous, _ = vi.(V)
 	return previous, loaded
 }
