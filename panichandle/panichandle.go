@@ -1,4 +1,4 @@
-// Package panichandle handles panic.
+// Package panichandle handles panics.
 package panichandle
 
 import (
@@ -7,14 +7,14 @@ import (
 
 // DefaultHandler is the default [Handler].
 //
-// By default there is no [Handler].
+// By default, there is no [Handler].
 var DefaultHandler Handler
 
 // Recover recovers panic and calls the [Handler] returned by [GetHandler].
 //
-// If there is no [Handler], it doesn't recover.
+// If there is no [Handler], it does not recover.
 //
-// It should be called in defer.
+// It should be called from a deferred function.
 func Recover(ctx context.Context) {
 	h := GetHandler(ctx)
 	if h != nil {

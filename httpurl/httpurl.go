@@ -1,4 +1,4 @@
-// Package httpurl provides an helper to get the real URL of an HTTP request.
+// Package httpurl provides a helper to get the real URL of an HTTP request.
 package httpurl
 
 import (

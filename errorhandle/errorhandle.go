@@ -1,4 +1,4 @@
-// Package errorhandle handles error.
+// Package errorhandle handles errors.
 package errorhandle
 
 import (
@@ -10,7 +10,7 @@ import (
 // DefaultHandler is the default [Handler].
 var DefaultHandler Handler = StderrHandler
 
-// Handler is a function that handles error.
+// Handler is a function that handles an error.
 type Handler func(ctx context.Context, err error)
 
 type contextKey struct{}

@@ -1,7 +1,7 @@
-// Package tmpfs provides function to access the temporary filesystem.
+// Package tmpfs provides functions to access the temporary filesystem.
 //
-// The functions are simple wrapper for the os.*Temp functions.
-// They return close function that guarantee that the files are properly closed and deleted.
+// The functions are simple wrappers around the os.*Temp functions.
+// They return a close function that guarantees files are properly closed and deleted.
 package tmpfs
 
 import (

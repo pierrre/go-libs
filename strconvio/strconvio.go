@@ -1,4 +1,4 @@
-// Package strconvio provides utilities to write values string representation to a writer.
+// Package strconvio provides utilities to write string representations of values to a writer.
 //
 //nolint:gosec // It uses unsafe
 package strconvio

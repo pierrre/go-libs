@@ -1,4 +1,4 @@
-// Package worker provides a way to run a function in a loop, with intervals and error handling.
+// Package worker provides utilities to run a function in a loop with intervals and error handling.
 package worker
 
 import (
@@ -87,7 +87,7 @@ func WithFixed(b bool) Option {
 type ErrorFunc func(ctx context.Context) error
 
 // NewFuncWithError creates a new [Func] that calls the given [ErrorFunc].
-// If no error is returned, it will return.
+// If no error is returned, it returns.
 // If an error is returned, it will call the given [OnErrorFunc] if it is not nil.
 // If the retry parameter is true, it will retry the [ErrorFunc] until it returns no error or the context is done.
 func NewFuncWithError(ef ErrorFunc, onError OnErrorFunc, retry bool) Func {
