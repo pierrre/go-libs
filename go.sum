@@ -2,8 +2,8 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/pierrre/assert v0.13.0 h1:X/uzpiI9yVKjnADfX0NeUDmR+cRaRKyCUe9e80F4szU=
 github.com/pierrre/assert v0.13.0/go.mod h1:nidrsivOCk+asALMyDmibEikupJZiWJB6H50HN/Gz4Y=
-github.com/pierrre/compare v1.4.14 h1:snH4S/2nClsCCgYAvseyQYX6RHX8WvCdd23deiL1ovc=
-github.com/pierrre/compare v1.4.14/go.mod h1:5RkfHZojsCAFZR+mW9SHH55mH1tCWNWMP7xhWgxc6QE=
+github.com/pierrre/compare v1.4.15 h1:ZYzDSe6D07cj54erJHXXBE2Ot9GPM5VnTOhVrvXe74M=
+github.com/pierrre/compare v1.4.15/go.mod h1:WHIREzz9xDNMzyIIp+RyZULubskCL/Vj6nnrd5Xwml8=
 github.com/pierrre/pretty v0.23.0 h1:LYCkefa+DV87cu/xqUnPh75x1T0zXgnHvAn7wW+OgN0=
 github.com/pierrre/pretty v0.23.0/go.mod h1:ILYWjIqXAO9iLC2sDcHkgv2Vp0JIIKGMjRtwHAdOVAM=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
