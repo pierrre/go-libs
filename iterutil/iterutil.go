@@ -73,20 +73,12 @@ func (kv KeyVal[K, V]) Values() (key K, val V) {
 // If n is negative, the sequence is repeated indefinitely.
 func Repeat[V any](seq iter.Seq[V], n int) iter.Seq[V] {
 	return func(yield func(V) bool) {
-		for n := n; n != 0; {
-			i := 0
-			for v := range seq {
-				i++
-				if !yield(v) {
-					return
-				}
-			}
-			if i == 0 {
-				return
-			}
-			if n > 0 {
-				n--
-			}
+		for i, ok := 0, true; ok && (n < 0 || i < n); i++ {
+			ok = false
+			seq(func(v V) bool {
+				ok = yield(v)
+				return ok
+			})
 		}
 	}
 }
@@ -95,20 +87,12 @@ func Repeat[V any](seq iter.Seq[V], n int) iter.Seq[V] {
 // If n is negative, the sequence is repeated indefinitely.
 func Repeat2[K, V any](seq iter.Seq2[K, V], n int) iter.Seq2[K, V] {
 	return func(yield func(K, V) bool) {
-		for n := n; n != 0; {
-			i := 0
-			for k, v := range seq {
-				i++
-				if !yield(k, v) {
-					return
-				}
-			}
-			if i == 0 {
-				return
-			}
-			if n > 0 {
-				n--
-			}
+		for i, ok := 0, true; ok && (n < 0 || i < n); i++ {
+			ok = false
+			seq(func(k K, v V) bool {
+				ok = yield(k, v)
+				return ok
+			})
 		}
 	}
 }
