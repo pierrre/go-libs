@@ -93,10 +93,11 @@ func (m *Map[K, V]) Delete(key K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *Map[K, V]) Clear() {
-	for k, mv := range m.m.Range {
+	m.m.Range(func(k K, mv mapValue[V]) bool {
 		m.m.CompareAndDelete(k, mv)
 		mv.stopCleanup()
-	}
+		return true
+	})
 }
 
 // Swap is like [sync.Map.Swap].
@@ -185,12 +186,10 @@ func (m *Map[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) 
 
 // Range is like [sync.Map.Range].
 func (m *Map[K, V]) Range(f func(key K, value *V) bool) {
-	for k, mv := range m.m.Range {
+	m.m.Range(func(k K, mv mapValue[V]) bool {
 		v, ok := mv.get()
-		if ok && !f(k, v) {
-			return
-		}
-	}
+		return !ok || f(k, v)
+	})
 }
 
 // All returns an iterator over all entries in the map.

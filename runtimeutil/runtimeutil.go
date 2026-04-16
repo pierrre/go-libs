@@ -49,14 +49,12 @@ func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
 
 // WriteFrames writes an [iter.Seq] of [runtime.Frame] to a [io.Writer].
 func WriteFrames(w io.Writer, frames iter.Seq[runtime.Frame]) (total int64, err error) {
-	for f := range frames {
+	frames(func(f runtime.Frame) bool {
 		var n int64
 		n, err = WriteFrame(w, f)
 		total += n
-		if err != nil {
-			break
-		}
-	}
+		return err == nil
+	})
 	return total, err
 }
 

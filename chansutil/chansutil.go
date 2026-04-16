@@ -21,16 +21,19 @@ func Iter[C ~chan E, E any](ch C) iter.Seq[E] {
 // If the context is cancelled, it stops collecting and returns the context error.
 func CollectTo[E any](ctx context.Context, it iter.Seq[E], ch chan<- E) error {
 	done := ctx.Done()
-	for e := range it {
+	var err error
+	it(func(e E) bool {
 		select {
 		case ch <- e:
 		case <-done:
 		}
 		select {
 		case <-done:
-			return context.Cause(ctx) //nolint:wrapcheck // We want to return the original context error.
+			err = context.Cause(ctx)
+			return false
 		default:
 		}
-	}
-	return nil
+		return true
+	})
+	return err //nolint:wrapcheck // We want to return the original context error.
 }

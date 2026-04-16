@@ -14,25 +14,29 @@ func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, work
 		return f(ctx, iv.Key, iv.Val)
 	})
 	out := make(SOut, len(in))
-	for i, v := range res {
+	res(func(i int, v Out) bool {
 		out[i] = v
-	}
+		return true
+	})
 	return out
 }
 
 // SliceError is a [Slice] wrapper that returns an error.
+//
+//nolint:dupl // Not duplicated.
 func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) (Out, error)) (SOut, error) {
 	res := Iter2(ctx, slices.All(in), min(workers, len(in)), WithError(func(ctx context.Context, iv iterutil.KeyVal[int, In]) (Out, error) {
 		return f(ctx, iv.Key, iv.Val)
 	}))
 	out := make(SOut, len(in))
 	var errs []error
-	for i, ve := range res {
+	res(func(i int, ve ValErr[Out]) bool {
 		out[i] = ve.Val
 		if ve.Err != nil {
 			errs = append(errs, ve.Err)
 		}
-	}
+		return true
+	})
 	err := errors.Join(errs...)
 	return out, err
 }

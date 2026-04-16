@@ -22,11 +22,12 @@ func Services(ctx context.Context, services map[string]func(context.Context) err
 		return service.Val(ctx)
 	})
 	var errs []error
-	for name, err := range ne {
+	ne(func(name string, err error) bool {
 		if err != nil {
 			cancel(err)
 			errs = append(errs, fmt.Errorf("%s: %w", name, err))
 		}
-	}
+		return true
+	})
 	return errors.Join(errs...)
 }

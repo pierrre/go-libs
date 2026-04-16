@@ -14,23 +14,29 @@ func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.C
 		return f(ctx, kv.Key, kv.Val)
 	})
 	out := make(MOut, len(in))
-	maps.Insert(out, res)
+	res(func(k K, v Out) bool {
+		out[k] = v
+		return true
+	})
 	return out
 }
 
 // MapError is a [Map] wrapper that returns an error.
+//
+//nolint:dupl // Not duplicated.
 func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {
 	res := Iter2(ctx, maps.All(in), min(workers, len(in)), WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (Out, error) {
 		return f(ctx, kv.Key, kv.Val)
 	}))
 	out := make(MOut, len(in))
 	var errs []error
-	for k, ve := range res {
+	res(func(k K, ve ValErr[Out]) bool {
 		out[k] = ve.Val
 		if ve.Err != nil {
 			errs = append(errs, ve.Err)
 		}
-	}
+		return true
+	})
 	err := errors.Join(errs...)
 	return out, err
 }
