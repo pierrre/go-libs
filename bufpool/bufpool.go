@@ -17,7 +17,7 @@ type Pool struct {
 
 	// MaxCap defines the maximum capacity accepted for recycled buffer.
 	// If Put() is called with a buffer larger than this value, it's discarded.
-	// See https://github.com/golang/go/issues/23199 .
+	// See https://github.com/golang/go/issues/23199.
 	// 0 (default) means 64 KiB.
 	// A negative value means no limit.
 	MaxCap int

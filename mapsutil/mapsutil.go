@@ -8,7 +8,7 @@ import (
 	"slices"
 )
 
-// SortedByKey returns an [iter.Seq2] of the key-value pairs of the map, sorted by ordered keys .
+// SortedByKey returns an [iter.Seq2] of the key-value pairs of the map, sorted by ordered keys.
 // If a key is deleted from the map while the sequence is being iterated, it will be skipped.
 // If a key is added to the map while the sequence is being iterated, it will not be included in the sequence.
 func SortedByKey[M ~map[K]V, K cmp.Ordered, V any](m M) iter.Seq2[K, V] {

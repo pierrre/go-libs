@@ -54,7 +54,7 @@ func GetHandler(ctx context.Context) Handler {
 	return DefaultHandler
 }
 
-// ErrorHandler is a [Handler] that converts the recovered value to error with Convert, and calls Handler.
+// ErrorHandler is a [Handler] that converts the recovered value to an error with Convert, and calls Handler.
 //
 // If the recovered value is already an error, Convert is not called.
 type ErrorHandler struct {

@@ -54,7 +54,7 @@ func (hs Handlers) Handle(ctx context.Context, err error) {
 	}
 }
 
-// FilterHandler is a [Handler] that filters error.
+// FilterHandler is a [Handler] that filters errors.
 //
 // If Filter returns true, the error is passed to Handler.
 type FilterHandler struct {
