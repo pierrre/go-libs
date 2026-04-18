@@ -5,20 +5,17 @@ import (
 	"unicode/utf8"
 )
 
-// Writer appends data to a byte slice.
+// Writer is a []byte that provides methods for appending data.
 //
-// The zero value for Writer is ready to use.
-type Writer struct {
-	// Bytes holds the accumulated data.
-	Bytes []byte
-}
+// The zero value is ready to use.
+type Writer []byte
 
-// Append appends p to w.Bytes.
+// Append appends p to *w.
 func (w *Writer) Append(p []byte) {
-	w.Bytes = append(w.Bytes, p...)
+	*w = append(*w, p...)
 }
 
-// Write appends p to w.Bytes.
+// Write appends p to *w.
 //
 // Write always returns len(p), nil.
 func (w *Writer) Write(p []byte) (n int, err error) {
@@ -26,12 +23,12 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// AppendString appends s to w.Bytes.
+// AppendString appends s to *w.
 func (w *Writer) AppendString(s string) {
-	w.Bytes = append(w.Bytes, s...)
+	*w = append(*w, s...)
 }
 
-// WriteString appends s to w.Bytes.
+// WriteString appends s to *w.
 //
 // WriteString always returns len(s), nil.
 func (w *Writer) WriteString(s string) (n int, err error) {
@@ -39,12 +36,12 @@ func (w *Writer) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
-// AppendByte appends c to w.Bytes.
+// AppendByte appends c to *w.
 func (w *Writer) AppendByte(c byte) {
-	w.Bytes = append(w.Bytes, c)
+	*w = append(*w, c)
 }
 
-// WriteByte appends c to w.Bytes.
+// WriteByte appends c to *w.
 //
 // WriteByte always returns nil.
 func (w *Writer) WriteByte(c byte) error {
@@ -52,66 +49,71 @@ func (w *Writer) WriteByte(c byte) error {
 	return nil
 }
 
-// AppendRune appends the UTF-8 encoding of r to w.Bytes.
+// AppendRune appends the UTF-8 encoding of r to *w.
 func (w *Writer) AppendRune(r rune) {
-	w.Bytes = utf8.AppendRune(w.Bytes, r)
+	*w = utf8.AppendRune(*w, r)
 }
 
-// WriteRune appends the UTF-8 encoding of r to w.Bytes.
+// WriteRune appends the UTF-8 encoding of r to *w.
 //
 // It returns the number of bytes written and a nil error.
 func (w *Writer) WriteRune(r rune) (n int, err error) {
-	l := len(w.Bytes)
+	l := len(*w)
 	w.AppendRune(r)
-	return len(w.Bytes) - l, nil
+	return len(*w) - l, nil
 }
 
-// Reset resets w.Bytes to be empty, while keeping the underlying storage.
+// Reset resets *w to be empty, while keeping the underlying storage.
 func (w *Writer) Reset() {
-	w.Bytes = w.Bytes[:0]
+	*w = []byte(*w)[:0]
 }
 
-// Clear resets w.Bytes to be empty and clears the underlying storage.
+// Clear resets *w to be empty and clears the underlying storage.
 func (w *Writer) Clear() {
 	w.Reset()
-	clear(w.Bytes[:cap(w.Bytes)])
+	clear([]byte(*w)[:cap(*w)])
 }
 
-// Grow grows w.Bytes's capacity, if necessary, to guarantee space for another n bytes.
+// Grow grows *w's capacity, if necessary, to guarantee space for another n bytes.
 //
-// After Grow(n), at least n bytes can be appended to w.Bytes without another allocation.
+// After Grow(n), at least n bytes can be appended to *w without another allocation.
 func (w *Writer) Grow(n int) {
-	w.Bytes = slices.Grow(w.Bytes, n)
+	*w = slices.Grow(*w, n)
 }
 
-// Len returns the number of bytes currently stored in w.Bytes.
-func (w *Writer) Len() int {
-	return len(w.Bytes)
+// Len returns the number of bytes currently stored in *w.
+func (w Writer) Len() int {
+	return len(w)
 }
 
-// Cap returns the capacity of w.Bytes.
-func (w *Writer) Cap() int {
-	return cap(w.Bytes)
+// Cap returns the capacity of *w.
+func (w Writer) Cap() int {
+	return cap(w)
 }
 
-// Available returns how many unused bytes remain in w.Bytes's capacity.
-func (w *Writer) Available() int {
-	return cap(w.Bytes) - len(w.Bytes)
+// Available returns how many unused bytes remain in *w's capacity.
+func (w Writer) Available() int {
+	return cap(w) - len(w)
 }
 
-// AvailableBuffer returns an empty slice backed by w.Bytes's unused capacity.
+// AvailableBuffer returns an empty slice backed by *w's unused capacity.
 //
 // The returned slice has length 0 and capacity Available(). It is intended for immediate use with append.
-func (w *Writer) AvailableBuffer() []byte {
-	return w.Bytes[len(w.Bytes):]
+func (w Writer) AvailableBuffer() []byte {
+	return []byte(w)[len(w):]
 }
 
-// CloneBytes returns a copy of w.Bytes.
-func (w *Writer) CloneBytes() []byte {
-	return slices.Clone(w.Bytes)
+// Bytes returns the contents of w.
+func (w Writer) Bytes() []byte {
+	return w
 }
 
-// String returns the contents of w.Bytes as a string.
-func (w *Writer) String() string {
-	return string(w.Bytes)
+// CloneBytes returns a copy of w.
+func (w Writer) CloneBytes() []byte {
+	return slices.Clone(w)
+}
+
+// String returns the contents of w as a string.
+func (w Writer) String() string {
+	return string(w)
 }

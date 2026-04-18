@@ -21,7 +21,7 @@ func ExampleWriter() {
 func TestWriterAppend(t *testing.T) {
 	w := new(Writer)
 	w.Append([]byte("abc"))
-	assert.SliceEqual(t, w.Bytes, []byte("abc"))
+	assert.BytesEqual(t, *w, []byte("abc"))
 }
 
 func BenchmarkWriterAppend(b *testing.B) {
@@ -37,7 +37,7 @@ func TestWriterWrite(t *testing.T) {
 	n, err := w.Write([]byte("abc")) //nolint:gocritic // Don't want to rewrite to WriteString.
 	assert.NoError(t, err)
 	assert.Equal(t, n, 3)
-	assert.SliceEqual(t, w.Bytes, []byte("abc"))
+	assert.BytesEqual(t, *w, []byte("abc"))
 }
 
 func BenchmarkWriterWrite(b *testing.B) {
@@ -51,7 +51,7 @@ func BenchmarkWriterWrite(b *testing.B) {
 func TestWriterAppendString(t *testing.T) {
 	w := new(Writer)
 	w.AppendString("abc")
-	assert.SliceEqual(t, w.Bytes, []byte("abc"))
+	assert.BytesEqual(t, *w, []byte("abc"))
 }
 
 func BenchmarkWriterAppendString(b *testing.B) {
@@ -67,7 +67,7 @@ func TestWriterWriteString(t *testing.T) {
 	n, err := w.WriteString("abc")
 	assert.NoError(t, err)
 	assert.Equal(t, n, 3)
-	assert.SliceEqual(t, w.Bytes, []byte("abc"))
+	assert.BytesEqual(t, *w, []byte("abc"))
 }
 
 func BenchmarkWriterWriteString(b *testing.B) {
@@ -81,7 +81,7 @@ func BenchmarkWriterWriteString(b *testing.B) {
 func TestWriterAppendByte(t *testing.T) {
 	w := new(Writer)
 	w.AppendByte('a')
-	assert.SliceEqual(t, w.Bytes, []byte("a"))
+	assert.BytesEqual(t, *w, []byte("a"))
 }
 
 func BenchmarkWriterAppendByte(b *testing.B) {
@@ -96,7 +96,7 @@ func TestWriterWriteByte(t *testing.T) {
 	w := new(Writer)
 	err := w.WriteByte('a')
 	assert.NoError(t, err)
-	assert.SliceEqual(t, w.Bytes, []byte("a"))
+	assert.BytesEqual(t, *w, []byte("a"))
 }
 
 func BenchmarkWriterWriteByte(b *testing.B) {
@@ -110,7 +110,7 @@ func BenchmarkWriterWriteByte(b *testing.B) {
 func TestWriterAppendRune(t *testing.T) {
 	w := new(Writer)
 	w.AppendRune('é')
-	assert.SliceEqual(t, w.Bytes, []byte("é"))
+	assert.BytesEqual(t, *w, []byte("é"))
 }
 
 func BenchmarkWriterAppendRune(b *testing.B) {
@@ -126,7 +126,7 @@ func TestWriterWriteRune(t *testing.T) {
 	n, err := w.WriteRune('é')
 	assert.NoError(t, err)
 	assert.Equal(t, n, 2)
-	assert.SliceEqual(t, w.Bytes, []byte("é"))
+	assert.BytesEqual(t, *w, []byte("é"))
 }
 
 func BenchmarkWriterWriteRune(b *testing.B) {
@@ -138,56 +138,63 @@ func BenchmarkWriterWriteRune(b *testing.B) {
 }
 
 func TestWriterReset(t *testing.T) {
-	w := &Writer{Bytes: []byte("abc")}
+	w := new(Writer("abc"))
 	w.Reset()
-	assert.SliceEmpty(t, w.Bytes)
-	assert.SliceEqual(t, w.Bytes[:cap(w.Bytes)], []byte("abc"))
+	assert.SliceEmpty(t, *w)
+	assert.BytesEqual(t, []byte(*w)[:cap(*w)], []byte("abc"))
 }
 
 func TestWriterClear(t *testing.T) {
-	w := &Writer{Bytes: []byte("abc")}
+	w := new(Writer("abc"))
 	w.Clear()
-	assert.SliceEmpty(t, w.Bytes)
-	assert.SliceEqual(t, w.Bytes[:cap(w.Bytes)], make([]byte, 3))
+	assert.SliceEmpty(t, *w)
+	assert.SliceEqual(t, []byte(*w)[:cap(*w)], make([]byte, 3))
 }
 
 func TestWriterGrow(t *testing.T) {
 	w := new(Writer)
 	w.Grow(3)
-	assert.GreaterOrEqual(t, cap(w.Bytes), 3)
+	assert.GreaterOrEqual(t, cap([]byte(*w)), 3)
 }
 
 func TestWriterLen(t *testing.T) {
-	w := &Writer{Bytes: []byte("abc")}
+	w := new(Writer("abc"))
 	assert.Equal(t, w.Len(), 3)
 }
 
 func TestWriterCap(t *testing.T) {
-	w := &Writer{Bytes: make([]byte, 0, 3)}
+	w := new(Writer("abc"))
 	assert.Equal(t, w.Cap(), 3)
 }
 
 func TestWriterAvailable(t *testing.T) {
-	w := &Writer{Bytes: make([]byte, 1, 3)}
+	w := new(Writer(make([]byte, 1, 3)))
 	assert.Equal(t, w.Available(), 2)
 }
 
 func TestWriterAvailableBuffer(t *testing.T) {
-	w := &Writer{Bytes: make([]byte, 1, 3)}
+	w := new(Writer(make([]byte, 1, 3)))
 	buf := w.AvailableBuffer()
 	assert.SliceEmpty(t, buf)
 	assert.Equal(t, cap(buf), 2)
 }
 
+func TestWriterBytes(t *testing.T) {
+	w := new(Writer("abc"))
+	b := w.Bytes()
+	assert.SliceEqual(t, b, []byte("abc"))
+	assert.Equal(t, &b[0], &(*w)[0])
+}
+
 func TestWriterCloneBytes(t *testing.T) {
-	w := &Writer{Bytes: []byte("abc")}
+	w := new(Writer("abc"))
 	clone := w.CloneBytes()
 	assert.SliceEqual(t, clone, []byte("abc"))
-	assert.NotEqual(t, &clone[0], &w.Bytes[0])
+	assert.NotEqual(t, &clone[0], &(*w)[0])
 }
 
 func TestWriterString(t *testing.T) {
-	w := &Writer{Bytes: []byte("abc")}
+	w := new(Writer("abc"))
 	s := w.String()
 	assert.Equal(t, s, "abc")
 }
