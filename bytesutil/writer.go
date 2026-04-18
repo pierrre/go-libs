@@ -19,7 +19,7 @@ func (w *Writer) Append(p []byte) {
 //
 // Write always returns len(p), nil.
 func (w *Writer) Write(p []byte) (n int, err error) {
-	w.Append(p)
+	*w = append(*w, p...)
 	return len(p), nil
 }
 
@@ -32,7 +32,7 @@ func (w *Writer) AppendString(s string) {
 //
 // WriteString always returns len(s), nil.
 func (w *Writer) WriteString(s string) (n int, err error) {
-	w.AppendString(s)
+	*w = append(*w, s...)
 	return len(s), nil
 }
 
@@ -45,7 +45,7 @@ func (w *Writer) AppendByte(c byte) {
 //
 // WriteByte always returns nil.
 func (w *Writer) WriteByte(c byte) error {
-	w.AppendByte(c)
+	*w = append(*w, c)
 	return nil
 }
 
@@ -59,19 +59,19 @@ func (w *Writer) AppendRune(r rune) {
 // It returns the number of bytes written and a nil error.
 func (w *Writer) WriteRune(r rune) (n int, err error) {
 	l := len(*w)
-	w.AppendRune(r)
+	*w = utf8.AppendRune(*w, r)
 	return len(*w) - l, nil
 }
 
 // Reset resets *w to be empty, while keeping the underlying storage.
 func (w *Writer) Reset() {
-	*w = []byte(*w)[:0]
+	*w = (*w)[:0]
 }
 
 // Clear resets *w to be empty and clears the underlying storage.
 func (w *Writer) Clear() {
-	w.Reset()
-	clear([]byte(*w)[:cap(*w)])
+	*w = (*w)[:0]
+	clear((*w)[:cap(*w)])
 }
 
 // Grow grows *w's capacity, if necessary, to guarantee space for another n bytes.
@@ -100,7 +100,7 @@ func (w Writer) Available() int {
 //
 // The returned slice has length 0 and capacity Available(). It is intended for immediate use with append.
 func (w Writer) AvailableBuffer() []byte {
-	return []byte(w)[len(w):]
+	return w[len(w):]
 }
 
 // Bytes returns the contents of w.
