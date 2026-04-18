@@ -58,6 +58,10 @@ func (w *Writer) AppendRune(r rune) {
 //
 // It returns the number of bytes written and a nil error.
 func (w *Writer) WriteRune(r rune) (n int, err error) {
+	if r < utf8.RuneSelf {
+		*w = append(*w, byte(r))
+		return 1, nil
+	}
 	l := len(*w)
 	*w = utf8.AppendRune(*w, r)
 	return len(*w) - l, nil

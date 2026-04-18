@@ -121,7 +121,15 @@ func BenchmarkWriterAppendRune(b *testing.B) {
 	}
 }
 
-func TestWriterWriteRune(t *testing.T) {
+func TestWriterWriteRuneSimple(t *testing.T) {
+	w := new(Writer)
+	n, err := w.WriteRune('a') //nolint:gocritic // Don't want to rewrite to WriteByte.
+	assert.NoError(t, err)
+	assert.Equal(t, n, 1)
+	assert.BytesEqual(t, *w, []byte("a"))
+}
+
+func TestWriterWriteRuneMulti(t *testing.T) {
 	w := new(Writer)
 	n, err := w.WriteRune('é')
 	assert.NoError(t, err)
@@ -129,7 +137,15 @@ func TestWriterWriteRune(t *testing.T) {
 	assert.BytesEqual(t, *w, []byte("é"))
 }
 
-func BenchmarkWriterWriteRune(b *testing.B) {
+func BenchmarkWriterWriteRuneSimple(b *testing.B) {
+	w := new(Writer)
+	for b.Loop() {
+		_, _ = w.WriteRune('a') //nolint:gocritic // Don't want to rewrite to WriteByte.
+		w.Reset()
+	}
+}
+
+func BenchmarkWriterWriteRuneMulti(b *testing.B) {
 	w := new(Writer)
 	for b.Loop() {
 		_, _ = w.WriteRune('é')
