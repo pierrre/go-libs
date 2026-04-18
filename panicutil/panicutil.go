@@ -4,7 +4,7 @@ package panicutil
 import (
 	"fmt"
 
-	"github.com/pierrre/go-libs/bufpool"
+	"github.com/pierrre/go-libs/bytesutil"
 	"github.com/pierrre/go-libs/runtimeutil"
 )
 
@@ -25,13 +25,13 @@ func NewError(r any) error {
 
 // Error implements error.
 func (p *Error) Error() string {
-	buf := bufPool.Get()
-	defer bufPool.Put(buf)
-	_, _ = fmt.Fprint(buf, p.Recovered)
-	_, _ = buf.WriteString("\n\n")
+	bw := bytesWriterPool.Get()
+	defer bytesWriterPool.Put(bw)
+	_, _ = fmt.Fprint(bw, p.Recovered)
+	bw.AppendString("\n\n")
 	fs := runtimeutil.GetCallersFrames(p.Callers)
-	_, _ = runtimeutil.WriteFrames(buf, fs)
-	return buf.String()
+	_, _ = runtimeutil.WriteFrames(bw, fs)
+	return bw.String()
 }
 
 // Unwrap returns the wrapped error if the recovered panic value is an error.
@@ -47,6 +47,6 @@ func (p *Error) StackFrames() []uintptr {
 	return p.Callers
 }
 
-var bufPool = &bufpool.Pool{
+var bytesWriterPool = &bytesutil.WriterPool{
 	MaxCap: -1,
 }
