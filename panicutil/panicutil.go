@@ -30,7 +30,7 @@ func (p *Error) Error() string {
 	_, _ = fmt.Fprint(bw, p.Recovered)
 	bw.AppendString("\n\n")
 	fs := runtimeutil.GetCallersFrames(p.Callers)
-	_, _ = runtimeutil.WriteFrames(bw, fs)
+	*bw = runtimeutil.AppendFrames(*bw, fs)
 	return bw.String()
 }
 

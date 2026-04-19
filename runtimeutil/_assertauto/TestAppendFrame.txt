@@ -1,0 +1,1 @@
+[string] (len=22) "function\n\tfile.go:123\n"

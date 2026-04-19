@@ -5,10 +5,10 @@ import (
 	"io"
 	"iter"
 	"runtime"
+	"strconv"
 
-	"github.com/pierrre/go-libs/strconvio"
+	"github.com/pierrre/go-libs/bytesutil"
 	"github.com/pierrre/go-libs/syncutil"
-	"github.com/pierrre/go-libs/unsafeio"
 )
 
 // GetCallers returns the callers.
@@ -58,30 +58,35 @@ func WriteFrames(w io.Writer, frames iter.Seq[runtime.Frame]) (total int64, err 
 	return total, err
 }
 
+// AppendFrames appends an [iter.Seq] of [runtime.Frame] to a []byte.
+func AppendFrames(dst []byte, frames iter.Seq[runtime.Frame]) []byte {
+	frames(func(f runtime.Frame) bool {
+		dst = AppendFrame(dst, f)
+		return true
+	})
+	return dst
+}
+
 // WriteFrame writes a [runtime.Frame] to a [io.Writer].
 func WriteFrame(w io.Writer, f runtime.Frame) (int64, error) { //nolint:gocritic // runtime.Frame is large.
-	var total int64
-	n, err := unsafeio.WriteString(w, f.Function)
-	total += int64(n)
-	if err == nil {
-		n, err = unsafeio.WriteString(w, "\n\t")
-		total += int64(n)
-	}
-	if err == nil {
-		n, err = unsafeio.WriteString(w, f.File)
-		total += int64(n)
-	}
-	if err == nil {
-		n, err = unsafeio.WriteString(w, ":")
-		total += int64(n)
-	}
-	if err == nil {
-		n, err = strconvio.WriteInt(w, int64(f.Line), 10)
-		total += int64(n)
-	}
-	if err == nil {
-		n, err = unsafeio.WriteString(w, "\n")
-		total += int64(n)
-	}
-	return total, err //nolint:wrapcheck // No need to wrap.
+	bw := bytesWriterPool.Get()
+	defer bytesWriterPool.Put(bw)
+	*bw = AppendFrame(*bw, f)
+	n, err := w.Write(*bw)
+	return int64(n), err
+}
+
+// AppendFrame appends a [runtime.Frame] to a []byte.
+func AppendFrame(dst []byte, f runtime.Frame) []byte { //nolint:gocritic // runtime.Frame is large.
+	dst = append(dst, f.Function...)
+	dst = append(dst, "\n\t"...)
+	dst = append(dst, f.File...)
+	dst = append(dst, ':')
+	dst = strconv.AppendInt(dst, int64(f.Line), 10)
+	dst = append(dst, '\n')
+	return dst
+}
+
+var bytesWriterPool = &bytesutil.WriterPool{
+	MaxCap: -1,
 }

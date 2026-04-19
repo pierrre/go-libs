@@ -96,24 +96,33 @@ func TestWriteFramesError(t *testing.T) {
 	assert.Equal(t, n, 0)
 }
 
-var benchRes any
-
 func BenchmarkWriteFrames(b *testing.B) {
-	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
-
-	var n int64
-	var err error
-	for b.Loop() {
-		n, err = WriteFrames(io.Discard, fs)
-	}
-	benchRes = n
-	benchRes = err
-}
-
-func BenchmarkWriteFramesNew(b *testing.B) {
 	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
 	for b.Loop() {
 		_, _ = WriteFrames(io.Discard, fs)
+	}
+}
+
+func TestAppendFrames(t *testing.T) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	dst := AppendFrames(nil, fs)
+	assertauto.Equal(t, string(dst))
+}
+
+func TestAppendFramesAllocs(t *testing.T) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	var dst []byte
+	assert.AllocsPerRun(t, 100, func() {
+		dst = AppendFrames(dst[:0], fs)
+	}, 0)
+	runtime.KeepAlive(dst)
+}
+
+func BenchmarkAppendFrames(b *testing.B) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	var dst []byte
+	for b.Loop() {
+		dst = AppendFrames(dst[:0], fs)
 	}
 }
 
@@ -145,6 +154,26 @@ func TestWriteFrameError(t *testing.T) {
 func BenchmarkWriteFrame(b *testing.B) {
 	for b.Loop() {
 		_, _ = WriteFrame(io.Discard, testFrame)
+	}
+}
+
+func TestAppendFrame(t *testing.T) {
+	dst := AppendFrame(nil, testFrame)
+	assertauto.Equal(t, string(dst))
+}
+
+func TestAppendFrameAllocs(t *testing.T) {
+	var dst []byte
+	assert.AllocsPerRun(t, 100, func() {
+		dst = AppendFrame(dst[:0], testFrame)
+	}, 0)
+	runtime.KeepAlive(dst)
+}
+
+func BenchmarkAppendFrame(b *testing.B) {
+	var dst []byte
+	for b.Loop() {
+		dst = AppendFrame(dst[:0], testFrame)
 	}
 }
 
