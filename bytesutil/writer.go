@@ -10,12 +10,12 @@ import (
 // The zero value is ready to use.
 type Writer []byte
 
-// Append appends p to *w.
+// Append appends p to the writer.
 func (w *Writer) Append(p []byte) {
 	*w = append(*w, p...)
 }
 
-// Write appends p to *w.
+// Write appends p to the writer.
 //
 // Write always returns len(p), nil.
 func (w *Writer) Write(p []byte) (n int, err error) {
@@ -23,12 +23,12 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-// AppendString appends s to *w.
+// AppendString appends s to the writer.
 func (w *Writer) AppendString(s string) {
 	*w = append(*w, s...)
 }
 
-// WriteString appends s to *w.
+// WriteString appends s to the writer.
 //
 // WriteString always returns len(s), nil.
 func (w *Writer) WriteString(s string) (n int, err error) {
@@ -36,12 +36,12 @@ func (w *Writer) WriteString(s string) (n int, err error) {
 	return len(s), nil
 }
 
-// AppendByte appends c to *w.
+// AppendByte appends c to the writer.
 func (w *Writer) AppendByte(c byte) {
 	*w = append(*w, c)
 }
 
-// WriteByte appends c to *w.
+// WriteByte appends c to the writer.
 //
 // WriteByte always returns nil.
 func (w *Writer) WriteByte(c byte) error {
@@ -49,12 +49,12 @@ func (w *Writer) WriteByte(c byte) error {
 	return nil
 }
 
-// AppendRune appends the UTF-8 encoding of r to *w.
+// AppendRune appends the UTF-8 encoding of r to the writer.
 func (w *Writer) AppendRune(r rune) {
 	*w = utf8.AppendRune(*w, r)
 }
 
-// WriteRune appends the UTF-8 encoding of r to *w.
+// WriteRune appends the UTF-8 encoding of r to the writer.
 //
 // It returns the number of bytes written and a nil error.
 func (w *Writer) WriteRune(r rune) (n int, err error) {
@@ -87,20 +87,20 @@ func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 	}
 }
 
-// Reset resets *w to be empty, while keeping the underlying storage.
+// Reset resets the writer to be empty, while keeping the underlying storage.
 func (w *Writer) Reset() {
 	*w = (*w)[:0]
 }
 
-// Clear resets *w to be empty and clears the underlying storage.
+// Clear resets the writer to be empty and clears the underlying storage.
 func (w *Writer) Clear() {
 	*w = (*w)[:0]
 	clear((*w)[:cap(*w)])
 }
 
-// Grow grows *w's capacity, if necessary, to guarantee space for another n bytes.
+// Grow grows the writer's capacity, if necessary, to guarantee space for another n bytes.
 //
-// After Grow(n), at least n bytes can be appended to *w without another allocation.
+// After Grow(n), at least n bytes can be appended to the writer without another allocation.
 func (w *Writer) Grow(n int) {
 	if n < 0 {
 		panic("cannot be negative")
@@ -115,34 +115,34 @@ func (w *Writer) grow(n int) {
 	}
 }
 
-// Len returns the number of bytes currently stored in *w.
+// Len returns the number of bytes currently stored in the writer.
 func (w Writer) Len() int {
 	return len(w)
 }
 
-// Cap returns the capacity of *w.
+// Cap returns the capacity of the writer.
 func (w Writer) Cap() int {
 	return cap(w)
 }
 
-// Available returns how many unused bytes remain in *w's capacity.
+// Available returns how many unused bytes remain in the writer's capacity.
 func (w Writer) Available() int {
 	return cap(w) - len(w)
 }
 
-// AvailableBuffer returns an empty slice backed by *w's unused capacity.
+// AvailableBuffer returns an empty slice backed by the writer's unused capacity.
 //
 // The returned slice has length 0 and capacity Available(). It is intended for immediate use with append.
 func (w Writer) AvailableBuffer() []byte {
 	return w[len(w):]
 }
 
-// Bytes returns the contents of w.
+// Bytes returns the contents of the writer.
 func (w Writer) Bytes() []byte {
 	return w
 }
 
-// CloneBytes returns a copy of w.
+// CloneBytes returns a copy of the writer's contents.
 func (w Writer) CloneBytes() []byte {
 	if w == nil {
 		return nil
@@ -150,7 +150,7 @@ func (w Writer) CloneBytes() []byte {
 	return append(Writer{}, w...)
 }
 
-// String returns the contents of w as a string.
+// String returns the contents of the writer as a string.
 func (w Writer) String() string {
 	return string(w)
 }
