@@ -1,6 +1,8 @@
 package bytesutil_test
 
 import (
+	"bytes"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -149,6 +151,52 @@ func BenchmarkWriterWriteRuneMulti(b *testing.B) {
 	w := new(Writer)
 	for b.Loop() {
 		_, _ = w.WriteRune('é')
+		w.Reset()
+	}
+}
+
+func TestWriterReadFrom(t *testing.T) {
+	w := new(Writer)
+	n, err := w.ReadFrom(bytes.NewReader([]byte("abc")))
+	assert.NoError(t, err)
+	assert.Equal(t, n, 3)
+	assert.BytesEqual(t, *w, []byte("abc"))
+}
+
+func TestWriterReadFromError(t *testing.T) {
+	w := new(Writer)
+	r := readerFunc(func(p []byte) (n int, err error) {
+		return 0, errors.New("error")
+	})
+	n, err := w.ReadFrom(r)
+	assert.Error(t, err)
+	assert.Equal(t, n, 0)
+	assert.SliceEmpty(t, *w)
+}
+
+func TestWriterReadFromPanicNegative(t *testing.T) {
+	w := new(Writer)
+	r := readerFunc(func(p []byte) (n int, err error) {
+		return -1, nil
+	})
+	assert.Panics(t, func() {
+		_, _ = w.ReadFrom(r)
+	})
+	assert.SliceEmpty(t, *w)
+}
+
+type readerFunc func(p []byte) (n int, err error)
+
+func (f readerFunc) Read(p []byte) (n int, err error) {
+	return f(p)
+}
+
+func BenchmarkWriterReadFrom(b *testing.B) {
+	w := new(Writer)
+	r := new(bytes.Reader)
+	for b.Loop() {
+		r.Reset([]byte("abc"))
+		_, _ = w.ReadFrom(r)
 		w.Reset()
 	}
 }

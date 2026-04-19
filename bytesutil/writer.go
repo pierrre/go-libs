@@ -1,6 +1,8 @@
 package bytesutil
 
 import (
+	"bytes"
+	"io"
 	"slices"
 	"unicode/utf8"
 )
@@ -65,6 +67,26 @@ func (w *Writer) WriteRune(r rune) (n int, err error) {
 	l := len(*w)
 	*w = utf8.AppendRune(*w, r)
 	return len(*w) - l, nil
+}
+
+// ReadFrom reads data from r until EOF and appends it to the writer.
+// It returns the number of bytes read and any error encountered.
+func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
+	for {
+		*w = slices.Grow(*w, bytes.MinRead)
+		m, e := r.Read((*w)[len(*w):cap(*w)])
+		if m < 0 {
+			panic("reader returned negative count from Read")
+		}
+		*w = (*w)[:len(*w)+m]
+		n += int64(m)
+		if e != nil {
+			if e == io.EOF {
+				return n, nil
+			}
+			return n, e //nolint:wrapcheck // Not needed.
+		}
+	}
 }
 
 // Reset resets *w to be empty, while keeping the underlying storage.
