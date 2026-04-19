@@ -221,6 +221,13 @@ func TestWriterGrow(t *testing.T) {
 	assert.GreaterOrEqual(t, cap([]byte(*w)), 3)
 }
 
+func TestWriterGrowPanicNegative(t *testing.T) {
+	w := new(Writer)
+	assert.Panics(t, func() {
+		w.Grow(-1)
+	})
+}
+
 func TestWriterLen(t *testing.T) {
 	w := new(Writer("abc"))
 	assert.Equal(t, w.Len(), 3)
@@ -255,6 +262,12 @@ func TestWriterCloneBytes(t *testing.T) {
 	clone := w.CloneBytes()
 	assert.SliceEqual(t, clone, []byte("abc"))
 	assert.NotEqual(t, &clone[0], &(*w)[0])
+}
+
+func TestWriterCloneBytesNil(t *testing.T) {
+	w := new(Writer)
+	clone := w.CloneBytes()
+	assert.SliceNil(t, clone)
 }
 
 func TestWriterString(t *testing.T) {

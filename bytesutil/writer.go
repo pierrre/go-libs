@@ -1,9 +1,7 @@
 package bytesutil
 
 import (
-	"bytes"
 	"io"
-	"slices"
 	"unicode/utf8"
 )
 
@@ -73,7 +71,7 @@ func (w *Writer) WriteRune(r rune) (n int, err error) {
 // It returns the number of bytes read and any error encountered.
 func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 	for {
-		*w = slices.Grow(*w, bytes.MinRead)
+		w.grow(512) // bytes.MinRead
 		m, e := r.Read((*w)[len(*w):cap(*w)])
 		if m < 0 {
 			panic("reader returned negative count from Read")
@@ -104,7 +102,17 @@ func (w *Writer) Clear() {
 //
 // After Grow(n), at least n bytes can be appended to *w without another allocation.
 func (w *Writer) Grow(n int) {
-	*w = slices.Grow(*w, n)
+	if n < 0 {
+		panic("cannot be negative")
+	}
+	w.grow(n)
+}
+
+func (w *Writer) grow(n int) {
+	n -= cap(*w) - len(*w)
+	if n > 0 {
+		*w = append((*w)[:cap(*w)], make(Writer, n)...)[:len(*w)]
+	}
 }
 
 // Len returns the number of bytes currently stored in *w.
@@ -136,7 +144,10 @@ func (w Writer) Bytes() []byte {
 
 // CloneBytes returns a copy of w.
 func (w Writer) CloneBytes() []byte {
-	return slices.Clone(w)
+	if w == nil {
+		return nil
+	}
+	return append(Writer{}, w...)
 }
 
 // String returns the contents of w as a string.
