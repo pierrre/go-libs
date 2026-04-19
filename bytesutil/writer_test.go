@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"testing"
 
 	"github.com/pierrre/assert"
@@ -193,11 +194,11 @@ func (f readerFunc) Read(p []byte) (n int, err error) {
 
 func BenchmarkWriterReadFrom(b *testing.B) {
 	var w Writer
-	r := new(bytes.Reader)
+	r := bytes.NewReader([]byte("abc"))
 	for b.Loop() {
-		r.Reset([]byte("abc"))
 		_, _ = w.ReadFrom(r)
 		w.Reset()
+		_, _ = r.Seek(0, io.SeekStart)
 	}
 }
 
