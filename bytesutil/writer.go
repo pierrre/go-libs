@@ -74,7 +74,7 @@ func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 		w.grow(512) // bytes.MinRead
 		m, e := r.Read((*w)[len(*w):cap(*w)])
 		if m < 0 {
-			panic("reader returned negative count from Read")
+			panic("bytesutil.Writer.ReadFrom: reader returned negative count from Read")
 		}
 		*w = (*w)[:len(*w)+m]
 		n += int64(m)
@@ -103,7 +103,7 @@ func (w *Writer) Clear() {
 // After Grow(n), at least n bytes can be appended to the writer without another allocation.
 func (w *Writer) Grow(n int) {
 	if n < 0 {
-		panic("cannot be negative")
+		panic("bytesutil.Writer.Grow: negative count")
 	}
 	w.grow(n)
 }
