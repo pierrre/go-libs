@@ -17,20 +17,20 @@ func GetCallers(skip int) []uintptr {
 	skip += 2 // Skip [GetCallers] and [runtime.Callers].
 	pc := callersPool.Get()
 	for {
-		n := runtime.Callers(skip, pc)
-		if n < len(pc) {
+		n := runtime.Callers(skip, *pc)
+		if n < len(*pc) {
 			res := make([]uintptr, n)
-			copy(res, pc[:n])
+			copy(res, (*pc)[:n])
 			callersPool.Put(pc)
 			return res
 		}
-		pc = make([]uintptr, 2*len(pc))
+		*pc = make([]uintptr, 2*len(*pc))
 	}
 }
 
-var callersPool = syncutil.ValuePool[[]uintptr]{
-	New: func() []uintptr {
-		return make([]uintptr, 1024)
+var callersPool = syncutil.Pool[*[]uintptr]{
+	New: func() *[]uintptr {
+		return new(make([]uintptr, 1024))
 	},
 }
 
