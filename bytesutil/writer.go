@@ -142,8 +142,8 @@ func (w Writer) Bytes() []byte {
 	return w
 }
 
-// CloneBytes returns a copy of the writer's contents.
-func (w Writer) CloneBytes() []byte {
+// Clone returns a copy of the writer's contents.
+func (w Writer) Clone() Writer {
 	if w == nil {
 		return nil
 	}

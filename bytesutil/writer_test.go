@@ -258,16 +258,16 @@ func TestWriterBytes(t *testing.T) {
 	assert.Equal(t, &b[0], &w[0])
 }
 
-func TestWriterCloneBytes(t *testing.T) {
+func TestWriterClone(t *testing.T) {
 	w := Writer("abc")
-	clone := w.CloneBytes()
+	clone := w.Clone()
 	assert.SliceEqual(t, clone, []byte("abc"))
 	assert.NotEqual(t, &clone[0], &w[0])
 }
 
-func TestWriterCloneBytesNil(t *testing.T) {
+func TestWriterCloneNil(t *testing.T) {
 	var w Writer
-	clone := w.CloneBytes()
+	clone := w.Clone()
 	assert.SliceNil(t, clone)
 }
 
