@@ -1,6 +1,8 @@
 package bytesutil
 
 import (
+	"cmp"
+
 	"github.com/pierrre/go-libs/syncutil"
 )
 
@@ -36,10 +38,7 @@ func (p *WriterPool) Get() *Writer {
 // Put puts the [Writer] to the Pool.
 // WARNING: the caller MUST NOT reuse the writer's content after this call.
 func (p *WriterPool) Put(w *Writer) {
-	maxCap := p.MaxCap
-	if maxCap == 0 {
-		maxCap = writerPoolMaxCapDefault
-	}
+	maxCap := cmp.Or(p.MaxCap, writerPoolMaxCapDefault)
 	if maxCap < 0 || w.Cap() <= maxCap {
 		if p.Clear {
 			w.Clear()
