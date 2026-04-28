@@ -71,7 +71,7 @@ func (w *Writer) WriteRune(r rune) (n int, err error) {
 // It returns the number of bytes read and any error encountered.
 func (w *Writer) ReadFrom(r io.Reader) (n int64, err error) {
 	for {
-		w.grow(512) // bytes.MinRead
+		w.grow(4096)
 		m, e := r.Read((*w)[len(*w):cap(*w)])
 		if m < 0 {
 			panic("bytesutil.Writer.ReadFrom: reader returned negative count from Read")
