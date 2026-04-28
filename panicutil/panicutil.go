@@ -29,8 +29,7 @@ func (p *Error) Error() string {
 	defer bytesWriterPool.Put(bw)
 	_, _ = fmt.Fprint(bw, p.Recovered)
 	bw.AppendString("\n\n")
-	fs := runtimeutil.GetCallersFrames(p.Callers)
-	*bw = runtimeutil.AppendFrames(*bw, fs)
+	*bw = runtimeutil.AppendCallersFrames(*bw, p.Callers)
 	return bw.String()
 }
 
