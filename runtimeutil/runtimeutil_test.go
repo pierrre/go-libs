@@ -81,7 +81,7 @@ func TestWriteCallersFramesAllocs(t *testing.T) {
 		buf := new(bytes.Buffer)
 		assert.AllocsPerRun(t, 100, func() {
 			_, _ = WriteCallersFrames(buf, pc)
-		}, 2)
+		}, 1)
 	})
 }
 
