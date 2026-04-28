@@ -27,7 +27,7 @@ func NewError(r any) error {
 func (p *Error) Error() string {
 	bw := bytesWriterPool.Get()
 	defer bytesWriterPool.Put(bw)
-	_, _ = fmt.Fprint(bw, p.Recovered)
+	*bw = fmt.Append(*bw, p.Recovered)
 	bw.AppendString("\n\n")
 	*bw = runtimeutil.AppendCallersFrames(*bw, p.Callers)
 	return bw.String()
