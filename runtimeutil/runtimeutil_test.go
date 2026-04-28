@@ -62,6 +62,75 @@ func TestGetCallersFrames(t *testing.T) {
 	})
 }
 
+func TestWriteCallersFrames(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		buf := new(bytes.Buffer)
+		n, err := WriteCallersFrames(buf, pc)
+		assert.NoError(t, err)
+		assert.NotZero(t, n)
+		assert.SliceNotEmpty(t, buf.Bytes())
+	})
+}
+
+func TestWriteCallersFramesAllocs(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		buf := new(bytes.Buffer)
+		assert.AllocsPerRun(t, 100, func() {
+			_, _ = WriteCallersFrames(buf, pc)
+		}, 2)
+	})
+}
+
+func BenchmarkWriteCallersFrames(b *testing.B) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		buf := new(bytes.Buffer)
+		for b.Loop() {
+			_, _ = WriteCallersFrames(buf, pc)
+			buf.Reset()
+		}
+	})
+}
+
+func TestAppendCallersFrames(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		var dst []byte
+		dst = AppendCallersFrames(dst, pc)
+		assert.SliceNotEmpty(t, dst)
+	})
+}
+
+func TestAppendCallersFramesAllocs(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		var dst []byte
+		assert.AllocsPerRun(t, 100, func() {
+			dst = AppendCallersFrames(dst[:0], pc)
+		}, 1)
+		runtime.KeepAlive(dst)
+	})
+}
+
+func BenchmarkAppendCallersFrames(b *testing.B) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		var dst []byte
+		for b.Loop() {
+			dst = AppendCallersFrames(dst[:0], pc)
+		}
+		runtime.KeepAlive(dst)
+	})
+}
+
 var testFrame = runtime.Frame{
 	Function: "function",
 	File:     "file.go",
