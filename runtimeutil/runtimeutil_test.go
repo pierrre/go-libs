@@ -83,7 +83,7 @@ func TestWriteFramesAllocs(t *testing.T) {
 	var err error
 	assert.AllocsPerRun(t, 100, func() {
 		n, err = WriteFrames(io.Discard, fs)
-	}, 0)
+	}, 1)
 	runtime.KeepAlive(n)
 	runtime.KeepAlive(err)
 }

@@ -49,13 +49,14 @@ func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
 
 // WriteFrames writes an [iter.Seq] of [runtime.Frame] to a [io.Writer].
 func WriteFrames(w io.Writer, frames iter.Seq[runtime.Frame]) (total int64, err error) {
+	bw := bytesWriterPool.Get()
+	defer bytesWriterPool.Put(bw)
 	frames(func(f runtime.Frame) bool {
-		var n int64
-		n, err = WriteFrame(w, f)
-		total += n
-		return err == nil
+		*bw = AppendFrame(*bw, f)
+		return true
 	})
-	return total, err
+	n, err := w.Write(*bw)
+	return int64(n), err
 }
 
 // AppendFrames appends an [iter.Seq] of [runtime.Frame] to a []byte.
