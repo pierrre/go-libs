@@ -15,7 +15,9 @@ import (
 // It returns an [iter.Seq] of unordered output values.
 // For an ordered version, see [IterOrdered].
 //
-// If the [context.Context] is canceled, it stops reading values from the input.
+// If the [context.Context] is canceled, iteration stops as soon as possible.
+// A value already yielded by the input iterator may still be processed, and work already started by workers may still complete and be yielded.
+// This avoids silently discarding a value already consumed from a single-use iterator.
 // If the caller stops iterating the output, the [context.Context] is canceled.
 func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1) // We need at least 1 worker.
