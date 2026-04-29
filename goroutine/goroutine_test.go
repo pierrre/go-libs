@@ -7,10 +7,10 @@ import (
 	"slices"
 	"sync/atomic"
 	"testing"
+	"testing/synctest"
 
 	"github.com/pierrre/assert"
 	"github.com/pierrre/assert/assertauto"
-	"go.uber.org/goleak"
 )
 
 func ExampleStart() {
@@ -71,14 +71,15 @@ func ExampleRunN() {
 }
 
 func TestStart(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	var called int64
-	wait := Start(ctx, func(ctx context.Context) {
-		atomic.AddInt64(&called, 1)
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		var called int64
+		wait := Start(ctx, func(ctx context.Context) {
+			atomic.AddInt64(&called, 1)
+		})
+		wait.Wait()
+		assert.Equal(t, called, 1)
 	})
-	wait.Wait()
-	assert.Equal(t, called, 1)
 }
 
 func TestStartAllocs(t *testing.T) {
@@ -90,65 +91,69 @@ func TestStartAllocs(t *testing.T) {
 }
 
 func TestStartPanic(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	var called atomic.Int64
-	wait := Start(ctx, func(ctx context.Context) {
-		called.Add(1)
-		panic("panic")
-	})
-	assert.Panics(t, func() {
-		wait.Wait()
-	})
-}
-
-func TestStartGoexit(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	normalReturn := false
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		var called atomic.Int64
 		wait := Start(ctx, func(ctx context.Context) {
-			runtime.Goexit()
-		})
-		assert.NotPanics(t, func() {
-			wait.Wait()
-		})
-		normalReturn = true
-	}()
-	<-done
-	assert.False(t, normalReturn)
-}
-
-func TestStartGoexitAndPanic(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	normalReturn := false
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		wait := Start(ctx, func(ctx context.Context) {
-			defer panic("panic")
-			runtime.Goexit()
+			called.Add(1)
+			panic("panic")
 		})
 		assert.Panics(t, func() {
 			wait.Wait()
 		})
-		normalReturn = true
-	}()
-	<-done
-	assert.False(t, normalReturn)
+	})
+}
+
+func TestStartGoexit(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		normalReturn := false
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			wait := Start(ctx, func(ctx context.Context) {
+				runtime.Goexit()
+			})
+			assert.NotPanics(t, func() {
+				wait.Wait()
+			})
+			normalReturn = true
+		}()
+		<-done
+		assert.False(t, normalReturn)
+	})
+}
+
+func TestStartGoexitAndPanic(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		normalReturn := false
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			wait := Start(ctx, func(ctx context.Context) {
+				defer panic("panic")
+				runtime.Goexit()
+			})
+			assert.Panics(t, func() {
+				wait.Wait()
+			})
+			normalReturn = true
+		}()
+		<-done
+		assert.False(t, normalReturn)
+	})
 }
 
 func TestStartNoTerminationPropagation(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	ctx = WithTerminationPropagation(ctx, false)
-	wait := Start(ctx, func(ctx context.Context) {
-		runtime.Goexit()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		ctx = WithTerminationPropagation(ctx, false)
+		wait := Start(ctx, func(ctx context.Context) {
+			runtime.Goexit()
+		})
+		wait.Wait()
 	})
-	wait.Wait()
 }
 
 func BenchmarkStart(b *testing.B) {
@@ -160,15 +165,16 @@ func BenchmarkStart(b *testing.B) {
 }
 
 func TestStartWithCancel(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	var called int64
-	cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
-		atomic.AddInt64(&called, 1)
-		<-ctx.Done()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		var called int64
+		cancelWait := StartWithCancel(ctx, func(ctx context.Context) {
+			atomic.AddInt64(&called, 1)
+			<-ctx.Done()
+		})
+		cancelWait.Wait()
+		assert.Equal(t, called, 1)
 	})
-	cancelWait.Wait()
-	assert.Equal(t, called, 1)
 }
 
 func TestStartWithCancelAllocs(t *testing.T) {
@@ -192,27 +198,29 @@ func BenchmarkStartWithCancel(b *testing.B) {
 }
 
 func TestStartNWithCancel(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	called := make([]int64, 10)
-	cancelWait := StartNWithCancel(ctx, 10, func(ctx context.Context, i int) {
-		atomic.AddInt64(&called[i], 1)
-		<-ctx.Done()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		called := make([]int64, 10)
+		cancelWait := StartNWithCancel(ctx, 10, func(ctx context.Context, i int) {
+			atomic.AddInt64(&called[i], 1)
+			<-ctx.Done()
+		})
+		cancelWait.Wait()
+		expected := slices.Repeat([]int64{1}, 10)
+		assert.SliceEqual(t, called, expected)
 	})
-	cancelWait.Wait()
-	expected := slices.Repeat([]int64{1}, 10)
-	assert.SliceEqual(t, called, expected)
 }
 
 func TestRunN(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	called := make([]int64, 10)
-	RunN(ctx, 10, func(ctx context.Context, i int) {
-		atomic.AddInt64(&called[i], 1)
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		called := make([]int64, 10)
+		RunN(ctx, 10, func(ctx context.Context, i int) {
+			atomic.AddInt64(&called[i], 1)
+		})
+		expected := slices.Repeat([]int64{1}, 10)
+		assert.SliceEqual(t, called, expected)
 	})
-	expected := slices.Repeat([]int64{1}, 10)
-	assert.SliceEqual(t, called, expected)
 }
 
 func TestRunNAllocs(t *testing.T) {
@@ -223,104 +231,112 @@ func TestRunNAllocs(t *testing.T) {
 }
 
 func TestRunNContextCancel(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	ctx, cancel := context.WithCancel(ctx)
-	var count atomic.Int64
-	RunN(ctx, 10, func(ctx context.Context, _ int) {
-		if count.Add(1) == 5 {
-			cancel()
-		}
-		<-ctx.Done()
-	})
-}
-
-func TestRunNZero(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	var called int64
-	RunN(ctx, 0, func(ctx context.Context, _ int) {
-		atomic.AddInt64(&called, 1)
-	})
-	assert.Equal(t, called, 0)
-}
-
-func TestRunNNegativePanic(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	assert.Panics(t, func() {
-		RunN(ctx, -10, func(ctx context.Context, _ int) {})
-	})
-}
-
-func TestRunNPanic(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	var counter atomic.Int64
-	assert.Panics(t, func() {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		ctx, cancel := context.WithCancel(ctx)
+		var count atomic.Int64
 		RunN(ctx, 10, func(ctx context.Context, _ int) {
-			id := counter.Add(1)
-			if id == 1 {
-				panic("panic")
+			if count.Add(1) == 5 {
+				cancel()
 			}
 			<-ctx.Done()
 		})
 	})
 }
 
+func TestRunNZero(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		var called int64
+		RunN(ctx, 0, func(ctx context.Context, _ int) {
+			atomic.AddInt64(&called, 1)
+		})
+		assert.Equal(t, called, 0)
+	})
+}
+
+func TestRunNNegativePanic(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		assert.Panics(t, func() {
+			RunN(ctx, -10, func(ctx context.Context, _ int) {})
+		})
+	})
+}
+
+func TestRunNPanic(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		var counter atomic.Int64
+		assert.Panics(t, func() {
+			RunN(ctx, 10, func(ctx context.Context, _ int) {
+				id := counter.Add(1)
+				if id == 1 {
+					panic("panic")
+				}
+				<-ctx.Done()
+			})
+		})
+	})
+}
+
 func TestRunNPanicAll(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	assert.Panics(t, func() {
-		RunN(ctx, 10, func(ctx context.Context, _ int) {
-			panic("panic")
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		assert.Panics(t, func() {
+			RunN(ctx, 10, func(ctx context.Context, _ int) {
+				panic("panic")
+			})
 		})
 	})
 }
 
 func TestRunNGoexit(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	normalReturn := false
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		assert.NotPanics(t, func() {
-			RunN(ctx, 10, func(ctx context.Context, _ int) {
-				runtime.Goexit()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		normalReturn := false
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			assert.NotPanics(t, func() {
+				RunN(ctx, 10, func(ctx context.Context, _ int) {
+					runtime.Goexit()
+				})
 			})
-		})
-		normalReturn = true
-	}()
-	<-done
-	assert.False(t, normalReturn)
+			normalReturn = true
+		}()
+		<-done
+		assert.False(t, normalReturn)
+	})
 }
 
 func TestRunNGoexitAndPanic(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	normalReturn := false
-	done := make(chan struct{})
-	go func() {
-		defer close(done)
-		assert.Panics(t, func() {
-			RunN(ctx, 10, func(ctx context.Context, _ int) {
-				defer panic("panic")
-				runtime.Goexit()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		normalReturn := false
+		done := make(chan struct{})
+		go func() {
+			defer close(done)
+			assert.Panics(t, func() {
+				RunN(ctx, 10, func(ctx context.Context, _ int) {
+					defer panic("panic")
+					runtime.Goexit()
+				})
 			})
-		})
-		normalReturn = true
-	}()
-	<-done
-	assert.False(t, normalReturn)
+			normalReturn = true
+		}()
+		<-done
+		assert.False(t, normalReturn)
+	})
 }
 
 func TestRunNNoTerminationPropagation(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	ctx = WithTerminationPropagation(ctx, false)
-	RunN(ctx, 10, func(ctx context.Context, _ int) {
-		runtime.Goexit()
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		ctx = WithTerminationPropagation(ctx, false)
+		RunN(ctx, 10, func(ctx context.Context, _ int) {
+			runtime.Goexit()
+		})
 	})
 }
 

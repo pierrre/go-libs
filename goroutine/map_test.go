@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"testing/synctest"
 
 	"github.com/pierrre/assert"
-	"go.uber.org/goleak"
 )
 
 func ExampleMap() {
@@ -79,29 +79,30 @@ func ExampleMapFuncError() {
 }
 
 func TestMap(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		in := map[int]int{
-			1: 1,
-			2: 2,
-			3: 3,
-			4: 4,
-			5: 5,
-		}
-		workers := 2
-		f := func(ctx context.Context, k int, v int) int {
-			return v * 2
-		}
-		out := Map(ctx, in, workers, f)
-		expected := map[int]int{
-			1: 2,
-			2: 4,
-			3: 6,
-			4: 8,
-			5: 10,
-		}
-		assert.MapEqual(t, out, expected)
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			in := map[int]int{
+				1: 1,
+				2: 2,
+				3: 3,
+				4: 4,
+				5: 5,
+			}
+			workers := 2
+			f := func(ctx context.Context, k int, v int) int {
+				return v * 2
+			}
+			out := Map(ctx, in, workers, f)
+			expected := map[int]int{
+				1: 2,
+				2: 4,
+				3: 6,
+				4: 8,
+				5: 10,
+			}
+			assert.MapEqual(t, out, expected)
+		})
 	})
 }
 
@@ -124,33 +125,34 @@ func BenchmarkMap(b *testing.B) {
 }
 
 func TestMapError(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		in := map[int]int{
-			1: 1,
-			2: 2,
-			3: 3,
-			4: 4,
-			5: 5,
-		}
-		workers := 2
-		f := func(ctx context.Context, k int, v int) (int, error) {
-			if v == 3 {
-				return 0, errors.New("error")
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			in := map[int]int{
+				1: 1,
+				2: 2,
+				3: 3,
+				4: 4,
+				5: 5,
 			}
-			return v * 2, nil
-		}
-		out, err := MapError(ctx, in, workers, f)
-		expected := map[int]int{
-			1: 2,
-			2: 4,
-			3: 0,
-			4: 8,
-			5: 10,
-		}
-		assert.MapEqual(t, out, expected)
-		assert.Error(t, err)
+			workers := 2
+			f := func(ctx context.Context, k int, v int) (int, error) {
+				if v == 3 {
+					return 0, errors.New("error")
+				}
+				return v * 2, nil
+			}
+			out, err := MapError(ctx, in, workers, f)
+			expected := map[int]int{
+				1: 2,
+				2: 4,
+				3: 0,
+				4: 8,
+				5: 10,
+			}
+			assert.MapEqual(t, out, expected)
+			assert.Error(t, err)
+		})
 	})
 }
 

@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"testing"
+	"testing/synctest"
 
 	"github.com/pierrre/assert"
-	"go.uber.org/goleak"
 )
 
 func ExampleServices() {
@@ -35,34 +35,36 @@ func ExampleServices() {
 }
 
 func TestServices(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-	err := Services(ctx, map[string]func(context.Context) error{
-		"a": func(_ context.Context) error { //nolint:unparam // It's a test.
-			cancel()
-			return nil
-		},
-		"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
-			<-ctx.Done()
-			return nil
-		},
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		ctx, cancel := context.WithCancel(ctx)
+		defer cancel()
+		err := Services(ctx, map[string]func(context.Context) error{
+			"a": func(_ context.Context) error { //nolint:unparam // It's a test.
+				cancel()
+				return nil
+			},
+			"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
+				<-ctx.Done()
+				return nil
+			},
+		})
+		assert.NoError(t, err)
 	})
-	assert.NoError(t, err)
 }
 
 func TestServicesError(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	ctx := t.Context()
-	err := Services(ctx, map[string]func(context.Context) error{
-		"a": func(_ context.Context) error {
-			return errors.New("error")
-		},
-		"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
-			<-ctx.Done()
-			return nil
-		},
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		err := Services(ctx, map[string]func(context.Context) error{
+			"a": func(_ context.Context) error {
+				return errors.New("error")
+			},
+			"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
+				<-ctx.Done()
+				return nil
+			},
+		})
+		assert.Error(t, err)
 	})
-	assert.Error(t, err)
 }

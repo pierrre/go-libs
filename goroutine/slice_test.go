@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"strconv"
 	"testing"
+	"testing/synctest"
 
 	"github.com/pierrre/assert"
-	"go.uber.org/goleak"
 )
 
 func ExampleSlice() {
@@ -67,16 +67,17 @@ func ExampleSliceFuncError() {
 }
 
 func TestSlice(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		workers := 2
-		f := func(ctx context.Context, i int, v int) int {
-			return v * 2
-		}
-		out := Slice(ctx, testIterInputInts, workers, f)
-		expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
-		assert.SliceEqual(t, out, expected)
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			workers := 2
+			f := func(ctx context.Context, i int, v int) int {
+				return v * 2
+			}
+			out := Slice(ctx, testIterInputInts, workers, f)
+			expected := []int{2, 4, 6, 8, 10, 12, 14, 16, 18, 20}
+			assert.SliceEqual(t, out, expected)
+		})
 	})
 }
 
@@ -99,20 +100,21 @@ func BenchmarkSlice(b *testing.B) {
 }
 
 func TestSliceError(t *testing.T) {
-	defer goleak.VerifyNone(t)
-	runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
-		ctx := t.Context()
-		workers := 2
-		f := func(ctx context.Context, i int, v int) (int, error) {
-			if v == 3 {
-				return 0, errors.New("error")
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			workers := 2
+			f := func(ctx context.Context, i int, v int) (int, error) {
+				if v == 3 {
+					return 0, errors.New("error")
+				}
+				return v * 2, nil
 			}
-			return v * 2, nil
-		}
-		out, err := SliceError(ctx, testIterInputInts, workers, f)
-		expected := []int{2, 4, 0, 8, 10, 12, 14, 16, 18, 20}
-		assert.SliceEqual(t, out, expected)
-		assert.Error(t, err)
+			out, err := SliceError(ctx, testIterInputInts, workers, f)
+			expected := []int{2, 4, 0, 8, 10, 12, 14, 16, 18, 20}
+			assert.SliceEqual(t, out, expected)
+			assert.Error(t, err)
+		})
 	})
 }
 
