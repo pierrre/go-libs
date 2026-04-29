@@ -8,6 +8,7 @@ import (
 // Call calls the function f, then calls after with the result.
 // The goexit flag indicates whether [runtime.Goexit] was called.
 // The panicErr error indicates whether a panic occurred.
+// If [runtime.Goexit] was called and a panic occurred, the goexit flag is true and the panicErr is nil.
 func Call(f func(), after func(goexit bool, panicErr error)) {
 	normalReturn := false
 	recovered := false
