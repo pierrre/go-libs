@@ -69,11 +69,11 @@ type startResult struct {
 
 func (res *startResult) Wait() {
 	res.wg.Wait()
+	if res.panicErr != nil {
+		defer panic(res.panicErr)
+	}
 	if res.goexit {
 		runtime.Goexit()
-	}
-	if res.panicErr != nil {
-		panic(res.panicErr)
 	}
 }
 
@@ -144,15 +144,15 @@ type startNResult struct {
 func (res *startNResult) Wait() {
 	res.wg.Wait()
 	res.cancel(nil)
-	if res.goexit {
-		runtime.Goexit()
-	}
 	if len(res.panicErrs) > 0 {
 		err := res.panicErrs[0]
 		if len(res.panicErrs) > 1 {
 			err = errors.Join(res.panicErrs...)
 		}
-		panic(err)
+		defer panic(err)
+	}
+	if res.goexit {
+		runtime.Goexit()
 	}
 }
 

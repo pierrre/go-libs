@@ -121,6 +121,26 @@ func TestStartGoexit(t *testing.T) {
 	assert.False(t, normalReturn)
 }
 
+func TestStartGoexitAndPanic(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	ctx := t.Context()
+	normalReturn := false
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		wait := Start(ctx, func(ctx context.Context) {
+			defer panic("panic")
+			runtime.Goexit()
+		})
+		assert.Panics(t, func() {
+			wait.Wait()
+		})
+		normalReturn = true
+	}()
+	<-done
+	assert.False(t, normalReturn)
+}
+
 func TestStartNoTerminationPropagation(t *testing.T) {
 	defer goleak.VerifyNone(t)
 	ctx := t.Context()
@@ -267,6 +287,25 @@ func TestRunNGoexit(t *testing.T) {
 		defer close(done)
 		assert.NotPanics(t, func() {
 			RunN(ctx, 10, func(ctx context.Context, _ int) {
+				runtime.Goexit()
+			})
+		})
+		normalReturn = true
+	}()
+	<-done
+	assert.False(t, normalReturn)
+}
+
+func TestRunNGoexitAndPanic(t *testing.T) {
+	defer goleak.VerifyNone(t)
+	ctx := t.Context()
+	normalReturn := false
+	done := make(chan struct{})
+	go func() {
+		defer close(done)
+		assert.Panics(t, func() {
+			RunN(ctx, 10, func(ctx context.Context, _ int) {
+				defer panic("panic")
 				runtime.Goexit()
 			})
 		})
