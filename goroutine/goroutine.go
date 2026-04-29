@@ -176,9 +176,11 @@ func RunN(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 	res.Wait()
 }
 
-// TerminationPropagationEnabled indicates whether termination propagation is enabled (true by default).
-// It determines if abnormal termination ([panic] or [runtime.Goexit]) in goroutines should be propagated to the caller.
-// It can be overridden per goroutine with [WithTerminationPropagation].
+// TerminationPropagationEnabled controls whether termination propagation is enabled globally (true by default).
+// When enabled, abnormal termination ([panic] or [runtime.Goexit]) in goroutines is propagated to the caller.
+// If true, the caller of [Waiter.Wait] will experience the same termination as the goroutine (panic or goexit).
+// If false, [runtime.Goexit] will simply terminate the goroutine without affecting the caller, and unhandled panics will crash the program.
+// It can be overridden for individual goroutines with [WithTerminationPropagation].
 var TerminationPropagationEnabled atomic.Bool
 
 func init() {
