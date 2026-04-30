@@ -132,6 +132,37 @@ func BenchmarkWriteCallersFrames(b *testing.B) {
 	})
 }
 
+func TestStringCallersFrames(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		s := StringCallersFrames(pc)
+		assert.NotZero(t, s)
+	})
+}
+
+func TestStringCallersFramesAllocs(t *testing.T) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		var s string
+		assert.AllocsPerRun(t, 100, func() {
+			s = StringCallersFrames(pc)
+		}, 2)
+		testSink = s
+	})
+}
+
+func BenchmarkStringCallersFrames(b *testing.B) {
+	depth := 100
+	callWithDepth(depth, func() {
+		pc := GetCallers(0)
+		for b.Loop() {
+			_ = StringCallersFrames(pc)
+		}
+	})
+}
+
 var testFrame = runtime.Frame{
 	Function: "function",
 	File:     "file.go",
@@ -196,6 +227,28 @@ func BenchmarkWriteFrames(b *testing.B) {
 	}
 }
 
+func TestStringFrames(t *testing.T) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	s := StringFrames(fs)
+	assertauto.Equal(t, s)
+}
+
+func TestStringFramesAllocs(t *testing.T) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	var s string
+	assert.AllocsPerRun(t, 100, func() {
+		s = StringFrames(fs)
+	}, 2)
+	testSink = s
+}
+
+func BenchmarkStringFrames(b *testing.B) {
+	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	for b.Loop() {
+		_ = StringFrames(fs)
+	}
+}
+
 func TestAppendFrame(t *testing.T) {
 	dst := AppendFrame(nil, testFrame)
 	assertauto.Equal(t, string(dst))
@@ -244,6 +297,25 @@ func TestWriteFrameError(t *testing.T) {
 func BenchmarkWriteFrame(b *testing.B) {
 	for b.Loop() {
 		_, _ = WriteFrame(io.Discard, testFrame)
+	}
+}
+
+func TestStringFrame(t *testing.T) {
+	s := StringFrame(testFrame)
+	assertauto.Equal(t, s)
+}
+
+func TestStringFrameAllocs(t *testing.T) {
+	var s string
+	assert.AllocsPerRun(t, 100, func() {
+		s = StringFrame(testFrame)
+	}, 1)
+	testSink = s
+}
+
+func BenchmarkStringFrame(b *testing.B) {
+	for b.Loop() {
+		_ = StringFrame(testFrame)
 	}
 }
 
