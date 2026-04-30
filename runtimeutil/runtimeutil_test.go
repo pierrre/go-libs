@@ -13,6 +13,8 @@ import (
 	. "github.com/pierrre/go-libs/runtimeutil"
 )
 
+var testSink any
+
 func TestGetCallers(t *testing.T) {
 	depth := 10000
 	callWithDepth(depth, func() {
@@ -115,7 +117,7 @@ func TestAppendCallersFramesAllocs(t *testing.T) {
 		assert.AllocsPerRun(t, 100, func() {
 			dst = AppendCallersFrames(dst[:0], pc)
 		}, 1)
-		runtime.KeepAlive(dst)
+		testSink = dst
 	})
 }
 
@@ -127,7 +129,6 @@ func BenchmarkAppendCallersFrames(b *testing.B) {
 		for b.Loop() {
 			dst = AppendCallersFrames(dst[:0], pc)
 		}
-		runtime.KeepAlive(dst)
 	})
 }
 
@@ -153,8 +154,8 @@ func TestWriteFramesAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		n, err = WriteFrames(io.Discard, fs)
 	}, 1)
-	runtime.KeepAlive(n)
-	runtime.KeepAlive(err)
+	testSink = n
+	testSink = err
 }
 
 func TestWriteFramesError(t *testing.T) {
@@ -184,7 +185,7 @@ func TestAppendFramesAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		dst = AppendFrames(dst[:0], fs)
 	}, 0)
-	runtime.KeepAlive(dst)
+	testSink = dst
 }
 
 func BenchmarkAppendFrames(b *testing.B) {
@@ -209,8 +210,8 @@ func TestWriteFrameAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		n, err = WriteFrame(io.Discard, testFrame)
 	}, 0)
-	runtime.KeepAlive(n)
-	runtime.KeepAlive(err)
+	testSink = n
+	testSink = err
 }
 
 func TestWriteFrameError(t *testing.T) {
@@ -236,7 +237,7 @@ func TestAppendFrameAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		dst = AppendFrame(dst[:0], testFrame)
 	}, 0)
-	runtime.KeepAlive(dst)
+	testSink = dst
 }
 
 func BenchmarkAppendFrame(b *testing.B) {
