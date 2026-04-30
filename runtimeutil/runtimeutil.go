@@ -47,6 +47,11 @@ func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
 	}
 }
 
+// AppendCallersFrames appends the frames of the given callers to a []byte.
+func AppendCallersFrames(dst []byte, callers []uintptr) []byte {
+	return AppendFrames(dst, GetCallersFrames(callers))
+}
+
 // WriteCallersFrames writes the frames of the given callers to a [io.Writer].
 func WriteCallersFrames(w io.Writer, callers []uintptr) (total int64, err error) {
 	bw := bytesWriterPool.Get()
@@ -56,9 +61,13 @@ func WriteCallersFrames(w io.Writer, callers []uintptr) (total int64, err error)
 	return int64(n), err
 }
 
-// AppendCallersFrames appends the frames of the given callers to a []byte.
-func AppendCallersFrames(dst []byte, callers []uintptr) []byte {
-	return AppendFrames(dst, GetCallersFrames(callers))
+// AppendFrames appends an [iter.Seq] of [runtime.Frame] to a []byte.
+func AppendFrames(dst []byte, frames iter.Seq[runtime.Frame]) []byte {
+	frames(func(f runtime.Frame) bool {
+		dst = AppendFrame(dst, f)
+		return true
+	})
+	return dst
 }
 
 // WriteFrames writes an [iter.Seq] of [runtime.Frame] to a [io.Writer].
@@ -73,12 +82,14 @@ func WriteFrames(w io.Writer, frames iter.Seq[runtime.Frame]) (total int64, err 
 	return int64(n), err
 }
 
-// AppendFrames appends an [iter.Seq] of [runtime.Frame] to a []byte.
-func AppendFrames(dst []byte, frames iter.Seq[runtime.Frame]) []byte {
-	frames(func(f runtime.Frame) bool {
-		dst = AppendFrame(dst, f)
-		return true
-	})
+// AppendFrame appends a [runtime.Frame] to a []byte.
+func AppendFrame(dst []byte, f runtime.Frame) []byte { //nolint:gocritic // runtime.Frame is large.
+	dst = append(dst, f.Function...)
+	dst = append(dst, "\n\t"...)
+	dst = append(dst, f.File...)
+	dst = append(dst, ':')
+	dst = strconv.AppendInt(dst, int64(f.Line), 10)
+	dst = append(dst, '\n')
 	return dst
 }
 
@@ -89,17 +100,6 @@ func WriteFrame(w io.Writer, f runtime.Frame) (int64, error) { //nolint:gocritic
 	*bw = AppendFrame(*bw, f)
 	n, err := w.Write(*bw)
 	return int64(n), err
-}
-
-// AppendFrame appends a [runtime.Frame] to a []byte.
-func AppendFrame(dst []byte, f runtime.Frame) []byte { //nolint:gocritic // runtime.Frame is large.
-	dst = append(dst, f.Function...)
-	dst = append(dst, "\n\t"...)
-	dst = append(dst, f.File...)
-	dst = append(dst, ':')
-	dst = strconv.AppendInt(dst, int64(f.Line), 10)
-	dst = append(dst, '\n')
-	return dst
 }
 
 var bytesWriterPool = &bytesutil.WriterPool{
