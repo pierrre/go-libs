@@ -115,6 +115,7 @@ func TestAppendCallersFramesAllocs(t *testing.T) {
 		assert.AllocsPerRun(t, 100, func() {
 			dst = AppendCallersFrames(dst[:0], pc)
 		}, 1)
+		runtime.KeepAlive(dst)
 	})
 }
 
@@ -126,6 +127,7 @@ func BenchmarkAppendCallersFrames(b *testing.B) {
 		for b.Loop() {
 			dst = AppendCallersFrames(dst[:0], pc)
 		}
+		runtime.KeepAlive(dst)
 	})
 }
 
@@ -146,9 +148,13 @@ func TestWriteFrames(t *testing.T) {
 
 func TestWriteFramesAllocs(t *testing.T) {
 	fs := slices.Values(slices.Repeat([]runtime.Frame{testFrame}, 100))
+	var n int64
+	var err error
 	assert.AllocsPerRun(t, 100, func() {
-		_, _ = WriteFrames(io.Discard, fs)
+		n, err = WriteFrames(io.Discard, fs)
 	}, 1)
+	runtime.KeepAlive(n)
+	runtime.KeepAlive(err)
 }
 
 func TestWriteFramesError(t *testing.T) {
@@ -178,6 +184,7 @@ func TestAppendFramesAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		dst = AppendFrames(dst[:0], fs)
 	}, 0)
+	runtime.KeepAlive(dst)
 }
 
 func BenchmarkAppendFrames(b *testing.B) {
@@ -197,9 +204,13 @@ func TestWriteFrame(t *testing.T) {
 }
 
 func TestWriteFrameAllocs(t *testing.T) {
+	var n int64
+	var err error
 	assert.AllocsPerRun(t, 100, func() {
-		_, _ = WriteFrame(io.Discard, testFrame)
+		n, err = WriteFrame(io.Discard, testFrame)
 	}, 0)
+	runtime.KeepAlive(n)
+	runtime.KeepAlive(err)
 }
 
 func TestWriteFrameError(t *testing.T) {
@@ -225,6 +236,7 @@ func TestAppendFrameAllocs(t *testing.T) {
 	assert.AllocsPerRun(t, 100, func() {
 		dst = AppendFrame(dst[:0], testFrame)
 	}, 0)
+	runtime.KeepAlive(dst)
 }
 
 func BenchmarkAppendFrame(b *testing.B) {
