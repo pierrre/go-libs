@@ -8,7 +8,9 @@ import (
 	"github.com/pierrre/go-libs/iterutil"
 )
 
-// Map processes a map with [Iter].
+// Map processes a map with [Iter2].
+// The output map contains the same keys as the input map.
+// The workers parameter is capped to the length of the input map.
 func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) Out) MOut {
 	res := Iter2(ctx, maps.All(in), min(workers, len(in)), func(ctx context.Context, kv iterutil.KeyVal[K, In]) Out {
 		return f(ctx, kv.Key, kv.Val)
@@ -21,7 +23,9 @@ func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.C
 	return out
 }
 
-// MapError is a [Map] wrapper that returns an error.
+// MapError is like [Map] but returns an error.
+// The output map contains the same keys as the input map.
+// The workers parameter is capped to the length of the input map.
 //
 //nolint:dupl // Not duplicated.
 func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {

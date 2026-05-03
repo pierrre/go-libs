@@ -9,11 +9,11 @@ import (
 	"github.com/pierrre/go-libs/iterutil"
 )
 
-// Services runs multiple services in goroutines.
+// Services runs multiple services concurrently, each in its own goroutine.
 //
 // It waits for all services to finish.
 //
-// If a service returns an error, it cancels the context.
+// If a service returns an error, it cancels the context of all services.
 // All errors are joined and returned.
 func Services(ctx context.Context, services map[string]func(context.Context) error) error {
 	ctx, cancel := context.WithCancelCause(ctx)

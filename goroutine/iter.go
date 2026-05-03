@@ -14,6 +14,7 @@ import (
 // Iter runs a function for each values of an input [iter.Seq] with concurrent workers.
 // It returns an [iter.Seq] of unordered output values.
 // For an ordered version, see [IterOrdered].
+// The workers parameter is enforced to be at minimum 1.
 //
 // If the [context.Context] is canceled, iteration stops as soon as possible.
 // A value already yielded by the input iterator may still be processed, and work already started by workers may still complete and be yielded.
