@@ -26,8 +26,6 @@ func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.C
 // MapError is like [Map] but returns an error.
 // The output map contains the same keys as the input map.
 // The workers parameter is capped to the length of the input map.
-//
-//nolint:dupl // Not duplicated.
 func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {
 	res := Iter2(ctx, maps.All(in), min(workers, len(in)), WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (Out, error) {
 		return f(ctx, kv.Key, kv.Val)
