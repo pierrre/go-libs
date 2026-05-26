@@ -347,7 +347,7 @@ func TestIterOrderedContextCancel(t *testing.T) {
 	})
 }
 
-func TestIterOrderedPanicinput(t *testing.T) {
+func TestIterOrderedPanicInput(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
 			ctx := t.Context()
