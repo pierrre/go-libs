@@ -40,7 +40,7 @@ func NewImplementsCacheFor[T any]() *ImplementsCache {
 	return NewImplementsCache(reflect.TypeFor[T]())
 }
 
-// ImplementedBy checks if the interface is impleented by the given type.
+// ImplementedBy checks if the interface is implemented by the given type.
 func (c *ImplementsCache) ImplementedBy(typ reflect.Type) bool {
 	if c.numMethod == 0 {
 		return true
