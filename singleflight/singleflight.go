@@ -1,6 +1,6 @@
 // Package singleflight provides a duplicate function call suppression mechanism.
 //
-// It is inspired by golang.org/x/sync/singleflight, and supports additionally generic types and context cancellation.
+// It is inspired by golang.org/x/sync/singleflight, and additionally supports generic types and context cancellation.
 package singleflight
 
 import (
@@ -22,7 +22,7 @@ type Group[K comparable, A any, V any] struct {
 	mu   sync.Mutex
 	m    map[K]*call[V]
 	pool syncutil.Pool[*call[V]]
-	// OnWait is called when a call for the same key is already in progress, and it's waiting for it to finish.
+	// OnWait is called when a call for the same key is already in progress, and the caller is waiting for it to finish.
 	OnWait func(ctx context.Context, key K)
 }
 

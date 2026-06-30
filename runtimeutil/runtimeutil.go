@@ -34,7 +34,7 @@ var callersPool = syncutil.Pool[*[]uintptr]{
 	},
 }
 
-// GetCallersFrames returns and [iter.Seq] of [runtime.Frame] for the given callers.
+// GetCallersFrames returns an [iter.Seq] of [runtime.Frame] for the given callers.
 func GetCallersFrames(callers []uintptr) iter.Seq[runtime.Frame] {
 	return func(yield func(runtime.Frame) bool) {
 		frames := runtime.CallersFrames(callers)

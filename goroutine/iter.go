@@ -11,7 +11,7 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
-// Iter runs a function for each values of an input [iter.Seq] with concurrent workers.
+// Iter runs a function for each value of an input [iter.Seq] with concurrent workers.
 // It returns an [iter.Seq] of unordered output values.
 // For an ordered version, see [IterOrdered].
 // The workers parameter is enforced to be at minimum 1.
@@ -28,7 +28,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 		inCh := make(chan In)
 		outCh := make(chan Out, workers)             // The buffer prevents blocking the workers if the output iterator is slow.
 		defer Start(ctx, func(ctx context.Context) { // Send values from the input iterator to the workers.
-			defer close(inCh)      // Notify the workers that there are no more value.
+			defer close(inCh)      // Notify the workers that there are no more values.
 			in(func(inV In) bool { // Read values from the input iterator.
 				inCh <- inV             // Send value to the workers.
 				return ctx.Err() == nil // Stop sending values if the context is canceled.
@@ -38,7 +38,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 		defer StartN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
 			defer func() { // When the workers are stopped.
 				if atomic.AddInt64(&runningWorkers, -1) == 0 { // Wait for all workers to finish.
-					close(outCh)            // Notify the consumer that there are no more value.
+					close(outCh)            // Notify the consumer that there are no more values.
 					drainChannel(inCh, nil) // Consume remaining values to avoid blocking the producer.
 				}
 			}()
@@ -69,8 +69,8 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the workers if one of the workers or the output iterator is slow.
 		defer Start(ctx, func(ctx context.Context) {              // Send values from the input iterator to the workers and the consumer.
 			defer func() {
-				close(inCh)  // Notify the workers that there are no more value.
-				close(outCh) // Notify the consumer that there are no more value.
+			close(inCh)  // Notify the workers that there are no more values.
+			close(outCh) // Notify the consumer that there are no more values.
 			}()
 			in(func(inV In) bool { // Read values from the input iterator.
 				v := pool.Get()         // Get a value from the pool.

@@ -11,7 +11,7 @@ func ValueInterfaceFor[T any](v reflect.Value) T {
 	return v.Interface().(T) //nolint:forcetypeassert // It should be checked by the caller.
 }
 
-// ConvertValueCanInterface attempts to converts a [reflect.Value] so it can be used with [reflect.Value.Interface].
+// ConvertValueCanInterface attempts to convert a [reflect.Value] so it can be used with [reflect.Value.Interface].
 //
 // The returned boolean indicates if the conversion was successful.
 //
