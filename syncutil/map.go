@@ -5,7 +5,7 @@ import (
 )
 
 // Map is a typed wrapper around [sync.Map].
-type Map[K any, V any] struct {
+type Map[K comparable, V any] struct {
 	m sync.Map
 }
 
