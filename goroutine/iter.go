@@ -69,8 +69,8 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the workers if one of the workers or the output iterator is slow.
 		defer Start(ctx, func(ctx context.Context) {              // Send values from the input iterator to the workers and the consumer.
 			defer func() {
-			close(inCh)  // Notify the workers that there are no more values.
-			close(outCh) // Notify the consumer that there are no more values.
+				close(inCh)  // Notify the workers that there are no more values.
+				close(outCh) // Notify the consumer that there are no more values.
 			}()
 			in(func(inV In) bool { // Read values from the input iterator.
 				v := pool.Get()         // Get a value from the pool.
