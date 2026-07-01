@@ -58,7 +58,7 @@ func (w *Writer) AppendRune(r rune) {
 //
 // It returns the number of bytes written and a nil error.
 func (w *Writer) WriteRune(r rune) (n int, err error) {
-	if r < utf8.RuneSelf {
+	if uint32(r) < utf8.RuneSelf { // Compare as uint32 to correctly handle negative runes.
 		*w = append(*w, byte(r))
 		return 1, nil
 	}
