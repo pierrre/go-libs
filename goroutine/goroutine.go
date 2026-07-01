@@ -10,7 +10,10 @@ package goroutine
 import (
 	"context"
 	"errors"
+	"fmt"
+	"os"
 	"runtime"
+	"strconv"
 	"sync"
 	"sync/atomic"
 
@@ -180,14 +183,32 @@ func RunN(ctx context.Context, n int, f func(ctx context.Context, i int)) {
 }
 
 // TerminationPropagationEnabled controls whether termination propagation is enabled globally (true by default).
+//
 // When enabled, abnormal termination ([panic] or [runtime.Goexit]) in goroutines is propagated to the caller.
 // If true, the caller of [Waiter.Wait] will experience the same termination as the goroutine (panic or goexit).
 // If false, [runtime.Goexit] will simply terminate the goroutine without affecting the caller, and unhandled panics will crash the program.
+//
+// The default value can be overridden with the GOROUTINE_TERMINATION_PROPAGATION_ENABLED environment variable (true or false).
 // It can be overridden for individual goroutines with [WithTerminationPropagation].
 var TerminationPropagationEnabled atomic.Bool
 
+const terminationPropagationEnabledEnv = "GOROUTINE_TERMINATION_PROPAGATION_ENABLED"
+
 func init() {
-	TerminationPropagationEnabled.Store(true)
+	TerminationPropagationEnabled.Store(initTerminationPropagationEnabled())
+}
+
+func initTerminationPropagationEnabled() bool {
+	enabled := true
+	env, ok := os.LookupEnv(terminationPropagationEnabledEnv)
+	if ok {
+		var err error
+		enabled, err = strconv.ParseBool(env)
+		if err != nil {
+			panic(fmt.Errorf("parse env var %s: %w", terminationPropagationEnabledEnv, err))
+		}
+	}
+	return enabled
 }
 
 type terminationPropagationContextKey struct{}

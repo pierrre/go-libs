@@ -346,3 +346,27 @@ func BenchmarkRunN(b *testing.B) {
 		RunN(ctx, 10, func(ctx context.Context, _ int) {})
 	}
 }
+
+func TestInitTerminationPropagationEnabledDefault(t *testing.T) {
+	enabled := initTerminationPropagationEnabled()
+	assert.True(t, enabled)
+}
+
+func TestInitTerminationPropagationEnabledEnvTrue(t *testing.T) {
+	t.Setenv(terminationPropagationEnabledEnv, "true")
+	enabled := initTerminationPropagationEnabled()
+	assert.True(t, enabled)
+}
+
+func TestInitTerminationPropagationEnabledEnvFalse(t *testing.T) {
+	t.Setenv(terminationPropagationEnabledEnv, "false")
+	enabled := initTerminationPropagationEnabled()
+	assert.False(t, enabled)
+}
+
+func TestInitTerminationPropagationEnabledEnvPanic(t *testing.T) {
+	t.Setenv(terminationPropagationEnabledEnv, "invalid")
+	assert.Panics(t, func() {
+		initTerminationPropagationEnabled()
+	})
+}
