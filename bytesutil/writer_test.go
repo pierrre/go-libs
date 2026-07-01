@@ -116,6 +116,12 @@ func TestWriterAppendRune(t *testing.T) {
 	assert.BytesEqual(t, w, []byte("é"))
 }
 
+func TestWriterAppendRuneNegative(t *testing.T) {
+	var w Writer
+	w.AppendRune(-1)
+	assert.BytesEqual(t, w, []byte("\uFFFD"))
+}
+
 func BenchmarkWriterAppendRune(b *testing.B) {
 	var w Writer
 	for b.Loop() {
@@ -138,6 +144,14 @@ func TestWriterWriteRuneMulti(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Equal(t, n, 2)
 	assert.BytesEqual(t, w, []byte("é"))
+}
+
+func TestWriterWriteRuneNegative(t *testing.T) {
+	var w Writer
+	n, err := w.WriteRune(-1)
+	assert.NoError(t, err)
+	assert.Equal(t, n, 3)
+	assert.BytesEqual(t, w, []byte("\uFFFD"))
 }
 
 func BenchmarkWriterWriteRuneSimple(b *testing.B) {
