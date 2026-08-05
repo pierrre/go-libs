@@ -40,6 +40,10 @@ func TryValueInterface(v reflect.Value) (any, bool) {
 }
 
 // TryValueInterfaceFor calls [ConvertValueCanInterface] and [ValueInterfaceFor].
+//
+// The bool result indicates whether the value can be interfaced (see [ConvertValueCanInterface]).
+// It does not indicate whether the value's type is assignable to T.
+// The caller must ensure that the value's type is assignable to T, otherwise it panics.
 func TryValueInterfaceFor[T any](v reflect.Value) (T, bool) {
 	v, ok := ConvertValueCanInterface(v)
 	if !ok {

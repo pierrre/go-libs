@@ -29,6 +29,10 @@ var testStructFieldTypes = []struct {
 			return reflect.TypeFor[CustomStruct]()
 		}(),
 	},
+	{
+		name: "Nil",
+		typ:  nil,
+	},
 }
 
 func TestGetStructFields(t *testing.T) {

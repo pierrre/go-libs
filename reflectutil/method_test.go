@@ -27,6 +27,10 @@ var testMethodCases = []struct {
 		name: "BytesBuffer",
 		typ:  reflect.TypeFor[*bytes.Buffer](),
 	},
+	{
+		name: "Nil",
+		typ:  nil,
+	},
 }
 
 func TestGetMethods(t *testing.T) {
