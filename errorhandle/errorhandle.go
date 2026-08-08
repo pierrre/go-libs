@@ -5,10 +5,16 @@ import (
 	"context"
 	"fmt"
 	"os"
+
+	"github.com/pierrre/go-libs/syncutil/atomicutil"
 )
 
 // DefaultHandler is the default [Handler].
-var DefaultHandler Handler = StderrHandler
+var DefaultHandler atomicutil.Value[Handler]
+
+func init() {
+	DefaultHandler.Store(Handler(StderrHandler))
+}
 
 // Handler is a function that handles an error.
 type Handler func(ctx context.Context, err error)
@@ -34,7 +40,7 @@ func GetHandler(ctx context.Context) Handler {
 	if h != nil {
 		return h
 	}
-	return DefaultHandler
+	return DefaultHandler.Load()
 }
 
 // Handle calls the [Handler] returned by [GetHandler].

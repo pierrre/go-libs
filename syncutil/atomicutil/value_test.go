@@ -24,11 +24,6 @@ func TestValue(t *testing.T) {
 	assert.Equal(t, v.Load(), 3)
 }
 
-func TestNewValue(t *testing.T) {
-	v := NewValue(1)
-	assert.Equal(t, v.Load(), 1)
-}
-
 func TestValueCompareAndSwapPanicNonComparable(t *testing.T) {
 	var v Value[map[string]int]
 	v.Store(map[string]int{"a": 1})

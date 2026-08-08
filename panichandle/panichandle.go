@@ -3,12 +3,14 @@ package panichandle
 
 import (
 	"context"
+
+	"github.com/pierrre/go-libs/syncutil/atomicutil"
 )
 
 // DefaultHandler is the default [Handler].
 //
-// By default, there is no [Handler].
-var DefaultHandler Handler
+// By default, there is no [Handler] (the zero [atomicutil.Value] returns nil).
+var DefaultHandler atomicutil.Value[Handler]
 
 // Recover recovers panic and calls the [Handler] returned by [GetHandler].
 //
@@ -51,7 +53,7 @@ func GetHandler(ctx context.Context) Handler {
 	if h != nil {
 		return h
 	}
-	return DefaultHandler
+	return DefaultHandler.Load()
 }
 
 // ErrorHandler is a [Handler] that converts the recovered value to an error with Convert, and calls Handler.

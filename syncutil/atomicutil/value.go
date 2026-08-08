@@ -18,16 +18,9 @@ type Value[T any] struct {
 	v atomic.Value
 }
 
-// NewValue returns a new [Value] with the given initial value.
-func NewValue[T any](v T) *Value[T] {
-	nv := &Value[T]{}
-	nv.v.Store(v)
-	return nv
-}
-
 // CompareAndSwap is a wrapper around [atomic.Value.CompareAndSwap].
 // It panics if T is not comparable (e.g. slice, map, func).
-// Unlike [atomic.Value.CompareAndSwap], it returns false if the Value is empty: the first value must be set with [Value.Store], [Value.Swap], or [NewValue].
+// Unlike [atomic.Value.CompareAndSwap], it returns false if the Value is empty: the first value must be set with [Value.Store] or [Value.Swap].
 func (v *Value[T]) CompareAndSwap(oldValue, newValue T) (swapped bool) {
 	return v.v.CompareAndSwap(oldValue, newValue)
 }

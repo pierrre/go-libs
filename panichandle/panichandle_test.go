@@ -27,12 +27,12 @@ func TestRecoverNoPanicWithoutHandler(t *testing.T) {
 func TestRecoverNoPanicWitHandler(t *testing.T) {
 	ctx := t.Context()
 	defer func() {
-		DefaultHandler = nil
+		DefaultHandler.Store(nil)
 	}()
 	called := false
-	DefaultHandler = func(ctx context.Context, r any) {
+	DefaultHandler.Store(func(ctx context.Context, r any) {
 		called = true
-	}
+	})
 	defer func() {
 		assert.False(t, called)
 	}()
@@ -52,13 +52,13 @@ func TestRecoverPanicWithoutHandler(t *testing.T) {
 func TestRecoverPanicWithHandler(t *testing.T) {
 	ctx := t.Context()
 	defer func() {
-		DefaultHandler = nil
+		DefaultHandler.Store(nil)
 	}()
 	called := false
-	DefaultHandler = func(ctx context.Context, r any) {
+	DefaultHandler.Store(func(ctx context.Context, r any) {
 		called = true
 		assert.NotZero(t, r)
-	}
+	})
 	defer func() {
 		assert.True(t, called)
 	}()
