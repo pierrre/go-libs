@@ -10,6 +10,8 @@ import (
 )
 
 // DefaultHandler is the default [Handler].
+//
+// By default it uses [StderrHandler].
 var DefaultHandler atomicutil.Value[Handler]
 
 func init() {
