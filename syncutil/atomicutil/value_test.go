@@ -99,3 +99,37 @@ func BenchmarkSyncAtomicValueLoadParallel(b *testing.B) {
 		}
 	})
 }
+
+func BenchmarkValueStoreString(b *testing.B) {
+	var v Value[string]
+	for b.Loop() {
+		v.Store("hello world")
+	}
+}
+
+func BenchmarkValueStoreStringParallel(b *testing.B) {
+	var v Value[string]
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			v.Store("hello world")
+		}
+	})
+}
+
+func BenchmarkValueLoadString(b *testing.B) {
+	var v Value[string]
+	v.Store("hello world")
+	for b.Loop() {
+		v.Load()
+	}
+}
+
+func BenchmarkValueLoadStringParallel(b *testing.B) {
+	var v Value[string]
+	v.Store("hello world")
+	b.RunParallel(func(p *testing.PB) {
+		for p.Next() {
+			v.Load()
+		}
+	})
+}
