@@ -78,12 +78,10 @@ func (g *Group[K, A, V]) waitCall(ctx context.Context, key K, c *call[V]) (v V, 
 	if g.OnWait != nil {
 		g.OnWait(ctx, key)
 	}
-	if c.done != nil {
-		select {
-		case <-c.done:
-		case <-ctx.Done():
-			return v, context.Cause(ctx) //nolint:wrapcheck // Not needed.
-		}
+	select {
+	case <-c.done:
+	case <-ctx.Done():
+		return v, context.Cause(ctx) //nolint:wrapcheck // Not needed.
 	}
 	c.checkGoexit()
 	c.checkPanic()
