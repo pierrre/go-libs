@@ -102,9 +102,6 @@ func (g *Group[K, A, V]) doCall(ctx context.Context, key K, arg A, c *call[V], f
 			if g.m[key] == c {
 				delete(g.m, key)
 			}
-			if !c.doneInitialized {
-				c.doneInitialized = true
-			}
 			g.mu.Unlock()
 			if c.done != nil {
 				close(c.done)
