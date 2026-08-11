@@ -2,5 +2,5 @@ github.com/pierrre/assert v0.15.4 h1:ONvKjzv5eqMqYIeLZw9oFoR9kV6vCzpzdCNQB/mPlQo
 github.com/pierrre/assert v0.15.4/go.mod h1:VPnk0AgSPWHIuBNb21kn4tjrNJCEr1UdXXPFKxkPdnE=
 github.com/pierrre/compare v1.5.0 h1:t+QADhk3WbkMAljPAb07mpYSs5kl+N1iUEJyKntIsWY=
 github.com/pierrre/compare v1.5.0/go.mod h1:ftjRfyE24SAsG3vNwZpcqy5lw9pD+JoMDul0tfyL7TI=
-github.com/pierrre/pretty v0.26.3 h1:SGMw0pzkwydFFcJNGNqUogsTsfR0dXu0ewCjU7YANGg=
-github.com/pierrre/pretty v0.26.3/go.mod h1:EQ/1+xdxqUNrLufKLLJup++HOY8+Lu/aXHRO3ZOuHQU=
+github.com/pierrre/pretty v0.26.4 h1:T28vHoW+6dpt6w0bIkpDpMdhosR9NPaOi2x/xCBnAzg=
+github.com/pierrre/pretty v0.26.4/go.mod h1:+A/ZvzjmDkWGBHE+8QvAvHj25XcEFEkBevWkqdCAvVk=
