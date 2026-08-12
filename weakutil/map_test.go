@@ -78,7 +78,7 @@ func BenchmarkMapStoreNewRandomKey(b *testing.B) {
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
-			m.Store(rand.Int64(), &[64]byte{}) //nolint:gosec // This rand package is OK, it's a test.
+			m.Store(rand.Int64(), &[64]byte{})
 		}
 	})
 }
