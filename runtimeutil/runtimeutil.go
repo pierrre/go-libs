@@ -129,6 +129,4 @@ func StringFrame(f runtime.Frame) string { //nolint:gocritic // runtime.Frame is
 	return bw.String()
 }
 
-var bytesWriterPool = &bytesutil.WriterPool{
-	MaxCap: -1,
-}
+var bytesWriterPool = bytesutil.WriterPool{}

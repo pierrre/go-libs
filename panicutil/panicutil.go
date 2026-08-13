@@ -46,6 +46,4 @@ func (p *Error) StackFrames() []uintptr {
 	return p.Callers
 }
 
-var bytesWriterPool = &bytesutil.WriterPool{
-	MaxCap: -1,
-}
+var bytesWriterPool = &bytesutil.WriterPool{}
