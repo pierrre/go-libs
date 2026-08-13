@@ -143,9 +143,9 @@ func TestIterStop(t *testing.T) {
 			ctx := t.Context()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := Iter(ctx, in, workers, f)
@@ -156,7 +156,7 @@ func TestIterStop(t *testing.T) {
 				}
 				iterCount++
 			}
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 			assert.Equal(t, iterCount, 1)
 		})
 	})
@@ -170,9 +170,9 @@ func TestIterContextCancel(t *testing.T) {
 			defer cancel()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := Iter(ctx, in, workers, f)
@@ -181,9 +181,9 @@ func TestIterContextCancel(t *testing.T) {
 				cancel()
 				iterCount++
 			}
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 			assert.LessOrEqual(t, iterCount, int64(len(testIterInputInts)))
-			assert.Equal(t, iterCount, workerCallcount)
+			assert.Equal(t, iterCount, workerCallCount)
 		})
 	})
 }
@@ -239,9 +239,9 @@ func TestIterPanicOutput(t *testing.T) {
 			ctx := t.Context()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := Iter(ctx, in, workers, f)
@@ -250,7 +250,7 @@ func TestIterPanicOutput(t *testing.T) {
 					panic("panic")
 				}
 			})
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 		})
 	})
 }
@@ -302,9 +302,9 @@ func TestIterOrderedStop(t *testing.T) {
 			ctx := t.Context()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := IterOrdered(ctx, in, workers, f)
@@ -315,7 +315,7 @@ func TestIterOrderedStop(t *testing.T) {
 				}
 				iterCount++
 			}
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 			assert.Equal(t, iterCount, 1)
 		})
 	})
@@ -329,9 +329,9 @@ func TestIterOrderedContextCancel(t *testing.T) {
 			defer cancel()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := IterOrdered(ctx, in, workers, f)
@@ -340,9 +340,9 @@ func TestIterOrderedContextCancel(t *testing.T) {
 				cancel()
 				iterCount++
 			}
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 			assert.LessOrEqual(t, iterCount, int64(len(testIterInputInts)))
-			assert.Equal(t, iterCount, workerCallcount)
+			assert.Equal(t, iterCount, workerCallCount)
 		})
 	})
 }
@@ -398,9 +398,9 @@ func TestIterOrderedPanicOutput(t *testing.T) {
 			ctx := t.Context()
 			in := slices.Values(testIterInputInts)
 			workers := 2
-			workerCallcount := int64(0)
+			workerCallCount := int64(0)
 			f := func(ctx context.Context, v int) int {
-				atomic.AddInt64(&workerCallcount, 1)
+				atomic.AddInt64(&workerCallCount, 1)
 				return v * 2
 			}
 			out := IterOrdered(ctx, in, workers, f)
@@ -409,7 +409,7 @@ func TestIterOrderedPanicOutput(t *testing.T) {
 					panic("panic")
 				}
 			})
-			assert.LessOrEqual(t, workerCallcount, int64(len(testIterInputInts)))
+			assert.LessOrEqual(t, workerCallCount, int64(len(testIterInputInts)))
 		})
 	})
 }

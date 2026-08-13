@@ -15,6 +15,7 @@ import (
 //
 // If a service returns an error, it cancels the context of all services.
 // All errors are joined and returned.
+// If the termination propagation is enabled (default) and a service panics or calls [runtime.Goexit], the termination is propagated to the caller of [Services].
 func Services(ctx context.Context, services map[string]func(context.Context) error) error {
 	ctx, cancel := context.WithCancelCause(ctx)
 	defer cancel(nil)

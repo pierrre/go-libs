@@ -19,7 +19,7 @@ import (
 // If the [context.Context] is canceled, iteration stops as soon as possible.
 // A value already yielded by the input iterator may still be processed, and work already started by workers may still complete and be yielded.
 // This avoids silently discarding a value already consumed from a single-use iterator.
-// If the caller stops iterating the output, the [context.Context] is canceled.
+// If the caller stops iterating the output, the derived context (the one passed to f) is canceled; the caller's own context is left untouched.
 func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1) // We need at least 1 worker.
 	return func(yield func(Out) bool) {
@@ -59,6 +59,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 }
 
 // IterOrdered is like [Iter] but it preserves the order of values.
+// The workers parameter is enforced to be at minimum 1.
 func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1)                  // We need at least 1 worker.
 	pool := getIterOrderedValuePool[In, Out]() // Recycle values to avoid allocations.
@@ -66,7 +67,7 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadowing is expected here.
 		defer cancel()
 		inCh := make(chan *iterOrderedValue[In, Out])
-		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the workers if one of the workers or the output iterator is slow.
+		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the producer if the output iterator is slow.
 		defer Start(ctx, func(ctx context.Context) {              // Send values from the input iterator to the workers and the consumer.
 			defer func() {
 				close(inCh)  // Notify the workers that there are no more values.
@@ -169,11 +170,13 @@ func drainChannel[T any](ch <-chan T, f func(v T)) {
 }
 
 // Iter2 is like [Iter] for [iter.Seq2].
+// The workers parameter is enforced to be at minimum 1.
 func Iter2[K, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) iter.Seq2[K, Out] {
 	return iter2(ctx, in, workers, f, Iter)
 }
 
 // Iter2Ordered is like [IterOrdered] for [iter.Seq2].
+// The workers parameter is enforced to be at minimum 1.
 func Iter2Ordered[K, In, Out any](ctx context.Context, in iter.Seq2[K, In], workers int, f func(context.Context, iterutil.KeyVal[K, In]) Out) iter.Seq2[K, Out] {
 	return iter2(ctx, in, workers, f, IterOrdered)
 }
