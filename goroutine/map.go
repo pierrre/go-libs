@@ -12,14 +12,19 @@ import (
 // The output map contains the same keys as the input map.
 // The workers parameter is capped to the length of the input map.
 func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) Out) MOut {
-	res := Iter2(ctx, maps.All(in), min(workers, len(in)), func(ctx context.Context, kv iterutil.KeyVal[K, In]) Out {
-		return f(ctx, kv.Key, kv.Val)
-	})
-	out := make(MOut, len(in))
-	res(func(k K, v Out) bool {
-		out[k] = v
-		return true
-	})
+	var out MOut
+	if in != nil {
+		out = make(MOut, len(in))
+		if len(in) > 0 {
+			res := Iter2(ctx, maps.All(in), min(workers, len(in)), func(ctx context.Context, kv iterutil.KeyVal[K, In]) Out {
+				return f(ctx, kv.Key, kv.Val)
+			})
+			res(func(k K, v Out) bool {
+				out[k] = v
+				return true
+			})
+		}
+	}
 	return out
 }
 
@@ -27,20 +32,24 @@ func Map[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.C
 // The output map contains the same keys as the input map.
 // The workers parameter is capped to the length of the input map.
 func MapError[MIn ~map[K]In, MOut map[K]Out, K comparable, In, Out any](ctx context.Context, in MIn, workers int, f func(ctx context.Context, k K, v In) (Out, error)) (MOut, error) {
-	res := Iter2(ctx, maps.All(in), min(workers, len(in)), WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (Out, error) {
-		return f(ctx, kv.Key, kv.Val)
-	}))
-	out := make(MOut, len(in))
+	var out MOut
 	var errs []error
-	res(func(k K, ve ValErr[Out]) bool {
-		out[k] = ve.Val
-		if ve.Err != nil {
-			errs = append(errs, ve.Err)
+	if in != nil {
+		out = make(MOut, len(in))
+		if len(in) > 0 {
+			res := Iter2(ctx, maps.All(in), min(workers, len(in)), WithError(func(ctx context.Context, kv iterutil.KeyVal[K, In]) (Out, error) {
+				return f(ctx, kv.Key, kv.Val)
+			}))
+			res(func(k K, ve ValErr[Out]) bool {
+				out[k] = ve.Val
+				if ve.Err != nil {
+					errs = append(errs, ve.Err)
+				}
+				return true
+			})
 		}
-		return true
-	})
-	err := errors.Join(errs...)
-	return out, err
+	}
+	return out, errors.Join(errs...)
 }
 
 // MapFunc processes a map of functions.

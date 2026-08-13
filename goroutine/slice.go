@@ -12,14 +12,19 @@ import (
 // The output slice has the same length as the input slice, and each output element corresponds to the input element at the same index.
 // The workers parameter is capped to the length of the input slice.
 func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) Out) SOut {
-	res := Iter2(ctx, slices.All(in), min(workers, len(in)), func(ctx context.Context, iv iterutil.KeyVal[int, In]) Out {
-		return f(ctx, iv.Key, iv.Val)
-	})
-	out := make(SOut, len(in))
-	res(func(i int, v Out) bool {
-		out[i] = v
-		return true
-	})
+	var out SOut
+	if in != nil {
+		out = make(SOut, len(in))
+		if len(in) > 0 {
+			res := Iter2(ctx, slices.All(in), min(workers, len(in)), func(ctx context.Context, iv iterutil.KeyVal[int, In]) Out {
+				return f(ctx, iv.Key, iv.Val)
+			})
+			res(func(i int, v Out) bool {
+				out[i] = v
+				return true
+			})
+		}
+	}
 	return out
 }
 
@@ -27,20 +32,24 @@ func Slice[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, work
 // The output slice has the same length as the input slice, and each output element corresponds to the input element at the same index.
 // The workers parameter is capped to the length of the input slice.
 func SliceError[SIn ~[]In, SOut []Out, In, Out any](ctx context.Context, in SIn, workers int, f func(ctx context.Context, i int, v In) (Out, error)) (SOut, error) {
-	res := Iter2(ctx, slices.All(in), min(workers, len(in)), WithError(func(ctx context.Context, iv iterutil.KeyVal[int, In]) (Out, error) {
-		return f(ctx, iv.Key, iv.Val)
-	}))
-	out := make(SOut, len(in))
+	var out SOut
 	var errs []error
-	res(func(i int, ve ValErr[Out]) bool {
-		out[i] = ve.Val
-		if ve.Err != nil {
-			errs = append(errs, ve.Err)
+	if in != nil {
+		out = make(SOut, len(in))
+		if len(in) > 0 {
+			res := Iter2(ctx, slices.All(in), min(workers, len(in)), WithError(func(ctx context.Context, iv iterutil.KeyVal[int, In]) (Out, error) {
+				return f(ctx, iv.Key, iv.Val)
+			}))
+			res(func(i int, ve ValErr[Out]) bool {
+				out[i] = ve.Val
+				if ve.Err != nil {
+					errs = append(errs, ve.Err)
+				}
+				return true
+			})
 		}
-		return true
-	})
-	err := errors.Join(errs...)
-	return out, err
+	}
+	return out, errors.Join(errs...)
 }
 
 // SliceFunc processes a slice of functions.

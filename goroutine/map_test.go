@@ -156,6 +156,27 @@ func TestMapError(t *testing.T) {
 	})
 }
 
+func TestMapNil(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		out := Map[map[int]int, map[int]int](ctx, nil, 2, func(ctx context.Context, k int, v int) int {
+			return v * 2
+		})
+		assert.MapNil(t, out)
+	})
+}
+
+func TestMapErrorNil(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		ctx := t.Context()
+		out, err := MapError[map[int]int, map[int]int](ctx, nil, 2, func(ctx context.Context, k int, v int) (int, error) {
+			return v * 2, nil
+		})
+		assert.MapNil(t, out)
+		assert.NoError(t, err)
+	})
+}
+
 func BenchmarkMapError(b *testing.B) {
 	ctx := b.Context()
 	in := make(map[int]int)
