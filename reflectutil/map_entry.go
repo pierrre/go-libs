@@ -31,7 +31,8 @@ func getMapEntriesExported(m reflect.Value) MapEntries {
 	typ := m.Type()
 	keyTyp := typ.Key()
 	elemTyp := typ.Elem()
-	es := getMapEntriesFromPool(typ)
+	poolTyp := reflect.MapOf(keyTyp, elemTyp)
+	es := getMapEntriesFromPool(poolTyp)
 	es = es[:0]
 	es = slices.Grow(es, m.Len())
 	es = es[:m.Len()]
