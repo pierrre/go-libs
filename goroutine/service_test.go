@@ -40,11 +40,11 @@ func TestServices(t *testing.T) {
 		ctx, cancel := context.WithCancel(ctx)
 		defer cancel()
 		err := Services(ctx, map[string]func(context.Context) error{
-			"a": func(_ context.Context) error { //nolint:unparam // It's a test.
+			"a": func(_ context.Context) error {
 				cancel()
 				return nil
 			},
-			"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
+			"b": func(ctx context.Context) error {
 				<-ctx.Done()
 				return nil
 			},
@@ -60,7 +60,7 @@ func TestServicesError(t *testing.T) {
 			"a": func(_ context.Context) error {
 				return errors.New("error")
 			},
-			"b": func(ctx context.Context) error { //nolint:unparam // It's a test.
+			"b": func(ctx context.Context) error {
 				<-ctx.Done()
 				return nil
 			},
