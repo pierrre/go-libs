@@ -6,5 +6,5 @@ require github.com/pierrre/assert v0.15.7
 
 require (
 	github.com/pierrre/compare v1.5.1 // indirect
-	github.com/pierrre/pretty v0.26.6 // indirect
+	github.com/pierrre/pretty v0.26.8 // indirect
 )
