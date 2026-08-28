@@ -121,7 +121,7 @@ func TestSliceError(t *testing.T) {
 func TestSliceNil(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
-		out := Slice[[]int, []int](ctx, nil, 2, func(ctx context.Context, i int, v int) int {
+		out := Slice(ctx, []int(nil), 2, func(ctx context.Context, i int, v int) int {
 			return v * 2
 		})
 		assert.SliceNil(t, out)
@@ -131,7 +131,7 @@ func TestSliceNil(t *testing.T) {
 func TestSliceErrorNil(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		ctx := t.Context()
-		out, err := SliceError[[]int, []int](ctx, nil, 2, func(ctx context.Context, i int, v int) (int, error) {
+		out, err := SliceError(ctx, []int(nil), 2, func(ctx context.Context, i int, v int) (int, error) {
 			return v * 2, nil
 		})
 		assert.SliceNil(t, out)
