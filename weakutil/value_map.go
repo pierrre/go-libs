@@ -8,13 +8,13 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
-// Map is a map that stores [weak.Pointer].
-// Values are automatically evicted when they are no longer reachable.
+// ValueMap is a map that automatically evicts entries when the value is no longer reachable.
 // It is safe for concurrent use.
 // The zero value is ready to use.
+// If a nil value is set, it is never evicted.
 //
-// It implements the same methods as [sync.Map].
-type Map[K comparable, V any] struct {
+// It implements the same methods as [sync.ValueMap].
+type ValueMap[K comparable, V any] struct {
 	m syncutil.Map[K, mapValue[V]]
 }
 
@@ -33,7 +33,7 @@ func (mv mapValue[T]) stopCleanup() {
 	}
 }
 
-func (m *Map[K, V]) newValue(key K, value *V) mapValue[V] {
+func (m *ValueMap[K, V]) newValue(key K, value *V) mapValue[V] {
 	var mv mapValue[V]
 	if value != nil {
 		mv.pointer = weak.Make(value)
@@ -50,7 +50,7 @@ type mapCleanup[K comparable, V any] struct {
 	pointer weak.Pointer[V]
 }
 
-func (m *Map[K, V]) cleanup(mc mapCleanup[K, V]) {
+func (m *ValueMap[K, V]) cleanup(mc mapCleanup[K, V]) {
 	mv, ok := m.m.Load(mc.key)
 	if ok && mv.pointer == mc.pointer {
 		m.m.CompareAndDelete(mc.key, mv)
@@ -58,7 +58,7 @@ func (m *Map[K, V]) cleanup(mc mapCleanup[K, V]) {
 }
 
 // Store is like [sync.Map.Store].
-func (m *Map[K, V]) Store(key K, value *V) {
+func (m *ValueMap[K, V]) Store(key K, value *V) {
 	v, ok := m.Load(key)
 	if ok && v == value {
 		return
@@ -71,7 +71,7 @@ func (m *Map[K, V]) Store(key K, value *V) {
 }
 
 // Load is like [sync.Map.Load].
-func (m *Map[K, V]) Load(key K) (value *V, ok bool) {
+func (m *ValueMap[K, V]) Load(key K) (value *V, ok bool) {
 	mv, ok := m.m.Load(key)
 	if !ok {
 		return nil, false
@@ -80,7 +80,7 @@ func (m *Map[K, V]) Load(key K) (value *V, ok bool) {
 }
 
 // Delete is like [sync.Map.Delete].
-func (m *Map[K, V]) Delete(key K) {
+func (m *ValueMap[K, V]) Delete(key K) {
 	mv, ok := m.m.LoadAndDelete(key)
 	if ok {
 		mv.stopCleanup()
@@ -88,7 +88,7 @@ func (m *Map[K, V]) Delete(key K) {
 }
 
 // Clear is like [sync.Map.Clear].
-func (m *Map[K, V]) Clear() {
+func (m *ValueMap[K, V]) Clear() {
 	m.m.Range(func(k K, mv mapValue[V]) bool {
 		m.m.CompareAndDelete(k, mv)
 		mv.stopCleanup()
@@ -97,7 +97,7 @@ func (m *Map[K, V]) Clear() {
 }
 
 // Swap is like [sync.Map.Swap].
-func (m *Map[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
+func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 	previous, loaded = m.Load(key)
 	if loaded && previous == value {
 		return previous, true
@@ -112,7 +112,7 @@ func (m *Map[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 }
 
 // LoadAndDelete is like [sync.Map.LoadAndDelete].
-func (m *Map[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
+func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 	mv, ok := m.m.LoadAndDelete(key)
 	if ok {
 		value, loaded = mv.get()
@@ -122,7 +122,7 @@ func (m *Map[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 }
 
 // LoadOrStore is like [sync.Map.LoadOrStore].
-func (m *Map[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
+func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 	var mv mapValue[V]
 	for {
 		mv.stopCleanup()
@@ -139,7 +139,7 @@ func (m *Map[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 }
 
 // CompareAndDelete is like [sync.Map.CompareAndDelete].
-func (m *Map[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
+func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 	for {
 		mv, ok := m.m.Load(key)
 		if !ok {
@@ -158,7 +158,7 @@ func (m *Map[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 }
 
 // CompareAndSwap is like [sync.Map.CompareAndSwap].
-func (m *Map[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) {
+func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) {
 	for {
 		mv, ok := m.m.Load(key)
 		if !ok {
@@ -181,7 +181,7 @@ func (m *Map[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) 
 }
 
 // Range is like [sync.Map.Range].
-func (m *Map[K, V]) Range(f func(key K, value *V) bool) {
+func (m *ValueMap[K, V]) Range(f func(key K, value *V) bool) {
 	m.m.Range(func(k K, mv mapValue[V]) bool {
 		v, ok := mv.get()
 		return !ok || f(k, v)
@@ -189,7 +189,7 @@ func (m *Map[K, V]) Range(f func(key K, value *V) bool) {
 }
 
 // All returns an iterator over all entries in the map.
-// See [Map.Range] for more details.
-func (m *Map[K, V]) All() iter.Seq2[K, *V] {
+// See [ValueMap.Range] for more details.
+func (m *ValueMap[K, V]) All() iter.Seq2[K, *V] {
 	return m.Range
 }

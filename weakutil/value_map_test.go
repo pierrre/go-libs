@@ -10,8 +10,8 @@ import (
 	. "github.com/pierrre/go-libs/weakutil"
 )
 
-func ExampleMap() {
-	m := new(Map[string, [64]byte])
+func ExampleValueMap() {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{} // Must use a large value in order to trigger garbage collection reliably.
 	m.Store("test", v)
 	runtime.GC()
@@ -24,20 +24,20 @@ func ExampleMap() {
 	// <nil> false
 }
 
-func TestMapStoreLoad(t *testing.T) {
-	m := new(Map[string, [64]byte]) // Must use a large value in order to trigger garbage collection reliably.
+func TestValueMapStoreLoad(t *testing.T) {
+	m := new(ValueMap[string, [64]byte]) // Must use a large value in order to trigger garbage collection reliably.
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	m.Store("test", v1)
 	v2, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapStoreReplace(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapStoreReplace(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
@@ -45,13 +45,13 @@ func TestMapStoreReplace(t *testing.T) {
 	v3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v2, v3)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func BenchmarkMapStoreSame(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapStoreSame(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -61,8 +61,8 @@ func BenchmarkMapStoreSame(b *testing.B) {
 	})
 }
 
-func BenchmarkMapStoreDifferent(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapStoreDifferent(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		var vs [2][64]byte
@@ -73,8 +73,8 @@ func BenchmarkMapStoreDifferent(b *testing.B) {
 	})
 }
 
-func BenchmarkMapStoreNewRandomKey(b *testing.B) {
-	m := new(Map[int64, [64]byte])
+func BenchmarkValueMapStoreNewRandomKey(b *testing.B) {
+	m := new(ValueMap[int64, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -83,36 +83,36 @@ func BenchmarkMapStoreNewRandomKey(b *testing.B) {
 	})
 }
 
-func TestMapLoadNil(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadNil(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	m.Store("test", nil)
 	v, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 }
 
-func TestMapLoadNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func TestMapLoadRemovedGC(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadRemovedGC(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	runtime.GC()
 	v2, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func BenchmarkMapLoad(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapLoad(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test", v)
 	b.ResetTimer()
@@ -123,8 +123,8 @@ func BenchmarkMapLoad(b *testing.B) {
 	})
 }
 
-func BenchmarkMapLoadNil(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapLoadNil(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	m.Store("test", nil)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -134,8 +134,8 @@ func BenchmarkMapLoadNil(b *testing.B) {
 	})
 }
 
-func BenchmarkMapLoadNotFound(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapLoadNotFound(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -144,26 +144,26 @@ func BenchmarkMapLoadNotFound(b *testing.B) {
 	})
 }
 
-func TestMapDelete(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapDelete(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	m.Delete("test")
 	v2, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapDeleteNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapDeleteNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	m.Delete("test")
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func BenchmarkMapDelete(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapDelete(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -172,26 +172,26 @@ func BenchmarkMapDelete(b *testing.B) {
 	})
 }
 
-func TestMapClear(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapClear(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	m.Clear()
 	v2, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapClearEmpty(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapClearEmpty(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	m.Clear()
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func BenchmarkMapClear(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapClear(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -200,8 +200,8 @@ func BenchmarkMapClear(b *testing.B) {
 	})
 }
 
-func TestMapSwap(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapSwap(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
@@ -211,13 +211,13 @@ func TestMapSwap(t *testing.T) {
 	v4, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v4, v2)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func TestMapSwapSame(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapSwapSame(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2, loaded := m.Swap("test", v1)
@@ -226,12 +226,12 @@ func TestMapSwapSame(t *testing.T) {
 	v3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapSwapNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapSwapNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	v2, loaded := m.Swap("test", v1)
 	assert.False(t, loaded)
@@ -239,12 +239,12 @@ func TestMapSwapNotFound(t *testing.T) {
 	v3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func BenchmarkMapSwapSame(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapSwapSame(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test", v)
 	b.ResetTimer()
@@ -255,8 +255,8 @@ func BenchmarkMapSwapSame(b *testing.B) {
 	})
 }
 
-func BenchmarkMapSwapDifferent(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapSwapDifferent(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		var vs [2][64]byte
@@ -267,26 +267,26 @@ func BenchmarkMapSwapDifferent(b *testing.B) {
 	})
 }
 
-func TestMapLoadAndDelete(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadAndDelete(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2, loaded := m.LoadAndDelete("test")
 	assert.True(t, loaded)
 	assert.Equal(t, v1, v2)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func TestMapLoadAndDeleteNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadAndDeleteNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v, loaded := m.LoadAndDelete("test")
 	assert.False(t, loaded)
 	assert.Zero(t, v)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func BenchmarkMapLoadAndDelete(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapLoadAndDelete(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -295,30 +295,30 @@ func BenchmarkMapLoadAndDelete(b *testing.B) {
 	})
 }
 
-func TestMapLoadOrStore(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadOrStore(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
 	v3, loaded := m.LoadOrStore("test", v2)
 	assert.True(t, loaded)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapLoadOrStoreNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapLoadOrStoreNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	v2, loaded := m.LoadOrStore("test", v1)
 	assert.False(t, loaded)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func BenchmarkMapLoadOrStore(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapLoadOrStore(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -329,38 +329,38 @@ func BenchmarkMapLoadOrStore(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func TestMapCompareAndDelete(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndDelete(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test", v)
 	deleted := m.CompareAndDelete("test", v)
 	assert.True(t, deleted)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 }
 
-func TestMapCompareAndDeleteNotEqual(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndDeleteNotEqual(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
 	deleted := m.CompareAndDelete("test", v2)
 	assert.False(t, deleted)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func TestMapCompareAndDeleteNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndDeleteNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	deleted := m.CompareAndDelete("test", v)
 	assert.False(t, deleted)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 	runtime.KeepAlive(v)
 }
 
-func BenchmarkMapCompareAndDelete(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapCompareAndDelete(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test", v)
 	b.ResetTimer()
@@ -372,8 +372,8 @@ func BenchmarkMapCompareAndDelete(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func TestMapCompareAndSwap(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndSwap(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
@@ -382,26 +382,26 @@ func TestMapCompareAndSwap(t *testing.T) {
 	v3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v3, v2)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func TestMapCompareAndSwapNotFound(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndSwapNotFound(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	v2 := &[64]byte{}
 	swapped := m.CompareAndSwap("test", v2, v1)
 	assert.False(t, swapped)
 	_, ok := m.Load("test")
 	assert.False(t, ok)
-	assert.Equal(t, getMapLen(m), 0)
+	assert.Equal(t, getValueMapLen(m), 0)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func TestMapCompareAndSwapNotEqual(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndSwapNotEqual(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
@@ -410,13 +410,13 @@ func TestMapCompareAndSwapNotEqual(t *testing.T) {
 	v3, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
 }
 
-func TestMapCompareAndSwapSame(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapCompareAndSwapSame(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	swapped := m.CompareAndSwap("test", v1, v1)
@@ -424,12 +424,12 @@ func TestMapCompareAndSwapSame(t *testing.T) {
 	v2, ok := m.Load("test")
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func BenchmarkMapCompareAndSwapNotEqual(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapCompareAndSwapNotEqual(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	v2 := &[64]byte{}
@@ -442,8 +442,8 @@ func BenchmarkMapCompareAndSwapNotEqual(b *testing.B) {
 	runtime.KeepAlive(v1)
 }
 
-func BenchmarkMapCompareAndSwapSame(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapCompareAndSwapSame(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test", v)
 	b.ResetTimer()
@@ -455,8 +455,8 @@ func BenchmarkMapCompareAndSwapSame(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func TestMapRange(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapRange(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
 	m.Store("test", v1)
 	found := false
@@ -466,12 +466,12 @@ func TestMapRange(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found)
-	assert.Equal(t, getMapLen(m), 1)
+	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
-func TestMapRangeInterrupt(t *testing.T) {
-	m := new(Map[string, [64]byte])
+func TestValueMapRangeInterrupt(t *testing.T) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	m.Store("test1", v)
 	m.Store("test2", v)
@@ -481,8 +481,8 @@ func TestMapRangeInterrupt(t *testing.T) {
 	runtime.KeepAlive(v)
 }
 
-func BenchmarkMapRange(b *testing.B) {
-	m := new(Map[string, [64]byte])
+func BenchmarkValueMapRange(b *testing.B) {
+	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	for i := range 10 {
 		m.Store(fmt.Sprintf("test%d", i), v)
@@ -497,7 +497,7 @@ func BenchmarkMapRange(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func getMapLen[K comparable, V any](m *Map[K, V]) int {
+func getValueMapLen[K comparable, V any](m *ValueMap[K, V]) int {
 	count := 0
 	for range m.Range {
 		count++
