@@ -17,6 +17,9 @@ func TestMap(t *testing.T) {
 	m.Range(func(key string, value int) bool {
 		return true
 	})
+	m.All()(func(key string, value int) bool {
+		return true
+	})
 	m.Swap("key", 1)
 	m.LoadAndDelete("key")
 	m.Delete("key")

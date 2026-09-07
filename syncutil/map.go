@@ -1,12 +1,19 @@
 package syncutil
 
 import (
+	"iter"
 	"sync"
 )
 
 // Map is a typed wrapper around [sync.Map].
 type Map[K comparable, V any] struct {
 	m sync.Map
+}
+
+// All returns an iterator over all entries in the map.
+// See [Map.Range] for more details.
+func (m *Map[K, V]) All() iter.Seq2[K, V] {
+	return m.Range
 }
 
 // Clear is a wrapper around [sync.Map.Clear].
