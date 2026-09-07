@@ -24,11 +24,7 @@ type mapValue[T any] struct {
 }
 
 func (mv mapValue[T]) get() (*T, bool) {
-	if mv.pointer == (weak.Pointer[T]{}) {
-		return nil, true
-	}
-	v := mv.pointer.Value()
-	return v, v != nil
+	return loadPointer(mv.pointer)
 }
 
 func (mv mapValue[T]) stopCleanup() {

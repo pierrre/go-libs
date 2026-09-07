@@ -31,7 +31,7 @@ func TestMapStoreLoad(t *testing.T) {
 	m.Store("test", v1)
 	v2, ok := m.Load("test")
 	assert.True(t, ok)
-	assert.Equal(t, v1, v2)
+	assert.Equal(t, v2, v1)
 	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
@@ -287,15 +287,12 @@ func TestMapLoadAndDeleteNotFound(t *testing.T) {
 
 func BenchmarkMapLoadAndDelete(b *testing.B) {
 	m := new(Map[string, [64]byte])
-	v := &[64]byte{}
-	m.Store("test", v)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			m.LoadAndDelete("test")
 		}
 	})
-	runtime.KeepAlive(v)
 }
 
 func TestMapLoadOrStore(t *testing.T) {
