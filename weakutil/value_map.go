@@ -3,6 +3,7 @@ package weakutil
 import (
 	"iter"
 	"runtime"
+	"sync"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -15,7 +16,9 @@ import (
 //
 // It implements the same methods as [sync.ValueMap].
 type ValueMap[K comparable, V any] struct {
-	m syncutil.Map[K, mapValue[V]]
+	m               syncutil.Map[K, mapValue[V]]
+	cleanupFunc     func(mapCleanup[K, V])
+	cleanupFuncOnce sync.Once
 }
 
 type mapValue[T any] struct {
@@ -33,11 +36,18 @@ func (mv mapValue[T]) stopCleanup() {
 	}
 }
 
+func (m *ValueMap[K, V]) getCleanupFunc() func(mapCleanup[K, V]) {
+	m.cleanupFuncOnce.Do(func() {
+		m.cleanupFunc = m.cleanup
+	})
+	return m.cleanupFunc
+}
+
 func (m *ValueMap[K, V]) newValue(key K, value *V) mapValue[V] {
 	var mv mapValue[V]
 	if value != nil {
 		mv.pointer = weak.Make(value)
-		mv.cleanup = runtime.AddCleanup(value, m.cleanup, mapCleanup[K, V]{
+		mv.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), mapCleanup[K, V]{
 			key:     key,
 			pointer: mv.pointer,
 		})
@@ -167,6 +177,9 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 		v, ok := mv.get()
 		if !ok || v != oldValue {
 			return false
+		}
+		if oldValue == newValue {
+			return true
 		}
 		newMv := m.newValue(key, newValue)
 		swapped = m.m.CompareAndSwap(key, mv, newMv)

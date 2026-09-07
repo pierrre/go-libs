@@ -64,7 +64,19 @@ func TestKeyMapStoreNil(t *testing.T) {
 	assert.Equal(t, getKeyMapLen(m), 1)
 }
 
-func BenchmarkKeyMapStore(b *testing.B) {
+func TestKeyMapStoreNonComparable(t *testing.T) {
+	m := new(KeyMap[[64]byte, []byte])
+	k := &[64]byte{}
+	v1 := []byte("test")
+	m.Store(k, v1)
+	m.Store(k, v1) // Must not panic.
+	_, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
+func BenchmarkKeyMapStoreSame(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
 	v := "test"
@@ -76,7 +88,19 @@ func BenchmarkKeyMapStore(b *testing.B) {
 	})
 }
 
-func BenchmarkKeyMapStoreNewKey(b *testing.B) {
+func BenchmarkKeyMapStoreDifferent(b *testing.B) {
+	m := new(KeyMap[[64]byte, string])
+	k := &[64]byte{}
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		vs := [2]string{"test1", "test2"}
+		for i := 0; pb.Next(); i++ {
+			m.Store(k, vs[i%2])
+		}
+	})
+}
+
+func BenchmarkKeyMapStoreNewRandomKey(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	v := "test"
 	b.ResetTimer()
@@ -223,6 +247,21 @@ func TestKeyMapSwap(t *testing.T) {
 	runtime.KeepAlive(k)
 }
 
+func TestKeyMapSwapSame(t *testing.T) {
+	m := new(KeyMap[[64]byte, string])
+	k := &[64]byte{}
+	v1 := "test"
+	m.Store(k, v1)
+	v2, loaded := m.Swap(k, v1)
+	assert.True(t, loaded)
+	assert.Equal(t, v2, v1)
+	v3, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.Equal(t, v3, v1)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
 func TestKeyMapSwapNotFound(t *testing.T) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
@@ -237,7 +276,18 @@ func TestKeyMapSwapNotFound(t *testing.T) {
 	runtime.KeepAlive(k)
 }
 
-func BenchmarkKeyMapSwap(b *testing.B) {
+func TestKeyMapSwapNonComparable(t *testing.T) {
+	m := new(KeyMap[[64]byte, []byte])
+	k := &[64]byte{}
+	v1 := []byte("test")
+	m.Store(k, v1)
+	_, loaded := m.Swap(k, v1) // Must not panic.
+	assert.True(t, loaded)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
+func BenchmarkKeyMapSwapSame(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
 	v := "test"
@@ -246,6 +296,19 @@ func BenchmarkKeyMapSwap(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			m.Swap(k, v)
+		}
+	})
+	runtime.KeepAlive(k)
+}
+
+func BenchmarkKeyMapSwapDifferent(b *testing.B) {
+	m := new(KeyMap[[64]byte, string])
+	k := &[64]byte{}
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		vs := [2]string{"test1", "test2"}
+		for i := 0; pb.Next(); i++ {
+			m.Swap(k, vs[i%2])
 		}
 	})
 	runtime.KeepAlive(k)

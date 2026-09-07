@@ -2,7 +2,9 @@ package weakutil
 
 import (
 	"iter"
+	"reflect"
 	"runtime"
+	"sync"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -15,7 +17,11 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type KeyMap[K comparable, V any] struct {
-	m syncutil.Map[weak.Pointer[K], keyMapValue[V]]
+	m                   syncutil.Map[weak.Pointer[K], keyMapValue[V]]
+	cleanupFunc         func(weak.Pointer[K])
+	cleanupFuncOnce     sync.Once
+	valueComparable     bool
+	valueComparableOnce sync.Once
 }
 
 type keyMapValue[V any] struct {
@@ -23,11 +29,26 @@ type keyMapValue[V any] struct {
 	cleanup runtime.Cleanup
 }
 
+func (m *KeyMap[K, V]) getCleanupFunc() func(weak.Pointer[K]) {
+	m.cleanupFuncOnce.Do(func() {
+		m.cleanupFunc = m.cleanup
+	})
+	return m.cleanupFunc
+}
+
+func (m *KeyMap[K, V]) isValueComparable() bool {
+	m.valueComparableOnce.Do(func() {
+		t := reflect.TypeFor[V]()
+		m.valueComparable = t.Kind() != reflect.Interface && t.Comparable()
+	})
+	return m.valueComparable
+}
+
 func (m *KeyMap[K, V]) newValue(key *K, value V) (kp weak.Pointer[K], mv keyMapValue[V]) {
 	mv.value = value
 	if key != nil {
 		kp = weak.Make(key)
-		mv.cleanup = runtime.AddCleanup(key, m.cleanup, kp)
+		mv.cleanup = runtime.AddCleanup(key, m.getCleanupFunc(), kp)
 	}
 	return kp, mv
 }
@@ -38,6 +59,12 @@ func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
 
 // Store is like [sync.Map.Store].
 func (m *KeyMap[K, V]) Store(key *K, value V) {
+	if m.isValueComparable() {
+		v, ok := m.Load(key)
+		if ok && any(v) == any(value) {
+			return
+		}
+	}
 	kp, mv := m.newValue(key, value)
 	mv, ok := m.m.Swap(kp, mv)
 	if ok {
@@ -72,6 +99,12 @@ func (m *KeyMap[K, V]) Clear() {
 
 // Swap is like [sync.Map.Swap].
 func (m *KeyMap[K, V]) Swap(key *K, value V) (previous V, loaded bool) {
+	if m.isValueComparable() {
+		previous, loaded = m.Load(key)
+		if loaded && any(previous) == any(value) {
+			return previous, true
+		}
+	}
 	kp, mv := m.newValue(key, value)
 	mv, loaded = m.m.Swap(kp, mv)
 	if loaded {
@@ -137,6 +170,9 @@ func (m *KeyMap[K, V]) CompareAndSwap(key *K, oldValue, newValue V) (swapped boo
 		}
 		if any(mv.value) != any(oldValue) {
 			return false
+		}
+		if any(oldValue) == any(newValue) {
+			return true
 		}
 		_, newMv := m.newValue(key, newValue)
 		swapped = m.m.CompareAndSwap(kp, mv, newMv)
