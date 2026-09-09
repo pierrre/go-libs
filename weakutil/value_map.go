@@ -16,53 +16,43 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type ValueMap[K comparable, V any] struct {
-	m               syncutil.Map[K, mapValue[V]]
-	cleanupFunc     func(mapCleanup[K, V])
+	m               syncutil.Map[K, valueMapValue[V]]
+	cleanupFunc     func(valueMapCleanupArg[K, V])
 	cleanupFuncOnce sync.Once
 }
 
-type mapValue[T any] struct {
-	pointer weak.Pointer[T]
+type valueMapValue[T any] struct {
+	value   weak.Pointer[T]
 	cleanup runtime.Cleanup
 }
 
-func (mv mapValue[T]) get() (*T, bool) {
-	return loadPointer(mv.pointer)
-}
-
-func (mv mapValue[T]) stopCleanup() {
-	if mv.pointer != (weak.Pointer[T]{}) {
-		mv.cleanup.Stop()
-	}
-}
-
-func (m *ValueMap[K, V]) getCleanupFunc() func(mapCleanup[K, V]) {
+func (m *ValueMap[K, V]) getCleanupFunc() func(valueMapCleanupArg[K, V]) {
 	m.cleanupFuncOnce.Do(func() {
 		m.cleanupFunc = m.cleanup
 	})
 	return m.cleanupFunc
 }
 
-func (m *ValueMap[K, V]) newValue(key K, value *V) mapValue[V] {
-	var mv mapValue[V]
+func (m *ValueMap[K, V]) newValue(key K, value *V) valueMapValue[V] {
+	var mv valueMapValue[V]
 	if value != nil {
-		mv.pointer = weak.Make(value)
-		mv.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), mapCleanup[K, V]{
+		mv.value = weak.Make(value)
+		mv.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
 			key:     key,
-			pointer: mv.pointer,
+			pointer: mv.value,
 		})
 	}
 	return mv
 }
 
-type mapCleanup[K comparable, V any] struct {
+type valueMapCleanupArg[K comparable, V any] struct {
 	key     K
 	pointer weak.Pointer[V]
 }
 
-func (m *ValueMap[K, V]) cleanup(mc mapCleanup[K, V]) {
+func (m *ValueMap[K, V]) cleanup(mc valueMapCleanupArg[K, V]) {
 	mv, ok := m.m.Load(mc.key)
-	if ok && mv.pointer == mc.pointer {
+	if ok && mv.value == mc.pointer {
 		m.m.CompareAndDelete(mc.key, mv)
 	}
 }
@@ -76,7 +66,7 @@ func (m *ValueMap[K, V]) Store(key K, value *V) {
 	mv := m.newValue(key, value)
 	mv, ok = m.m.Swap(key, mv)
 	if ok {
-		mv.stopCleanup()
+		mv.cleanup.Stop()
 	}
 }
 
@@ -86,21 +76,21 @@ func (m *ValueMap[K, V]) Load(key K) (value *V, ok bool) {
 	if !ok {
 		return nil, false
 	}
-	return mv.get()
+	return loadPointer(mv.value)
 }
 
 // Delete is like [sync.Map.Delete].
 func (m *ValueMap[K, V]) Delete(key K) {
 	mv, ok := m.m.LoadAndDelete(key)
 	if ok {
-		mv.stopCleanup()
+		mv.cleanup.Stop()
 	}
 }
 
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
-	m.m.Range(func(k K, mv mapValue[V]) bool {
-		mv.stopCleanup()
+	m.m.Range(func(k K, mv valueMapValue[V]) bool {
+		mv.cleanup.Stop()
 		return true
 	})
 	m.m.Clear()
@@ -115,8 +105,8 @@ func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 	mv := m.newValue(key, value)
 	mv, ok := m.m.Swap(key, mv)
 	if ok {
-		previous, loaded = mv.get()
-		mv.stopCleanup()
+		previous, loaded = loadPointer(mv.value)
+		mv.cleanup.Stop()
 	}
 	return previous, loaded
 }
@@ -125,8 +115,8 @@ func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 	mv, ok := m.m.LoadAndDelete(key)
 	if ok {
-		value, loaded = mv.get()
-		mv.stopCleanup()
+		value, loaded = loadPointer(mv.value)
+		mv.cleanup.Stop()
 	}
 	return value, loaded
 }
@@ -143,11 +133,11 @@ func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 		if !loaded {
 			return value, false
 		}
-		mv.stopCleanup()
-		_, ok := prev.get()
+		mv.cleanup.Stop()
+		_, ok := loadPointer(prev.value)
 		if !ok {
 			if m.m.CompareAndDelete(key, prev) {
-				prev.stopCleanup()
+				prev.cleanup.Stop()
 			}
 		}
 	}
@@ -160,13 +150,13 @@ func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 		if !ok {
 			return false
 		}
-		v, ok := mv.get()
+		v, ok := loadPointer(mv.value)
 		if !ok || v != old {
 			return false
 		}
 		deleted = m.m.CompareAndDelete(key, mv)
 		if deleted {
-			mv.stopCleanup()
+			mv.cleanup.Stop()
 			return true
 		}
 	}
@@ -179,7 +169,7 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 		if !ok {
 			return false
 		}
-		v, ok := mv.get()
+		v, ok := loadPointer(mv.value)
 		if !ok || v != oldValue {
 			return false
 		}
@@ -191,7 +181,7 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 		if swapped {
 			newMv = mv
 		}
-		newMv.stopCleanup()
+		newMv.cleanup.Stop()
 		if swapped {
 			return true
 		}
@@ -200,8 +190,8 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 
 // Range is like [sync.Map.Range].
 func (m *ValueMap[K, V]) Range(f func(key K, value *V) bool) {
-	m.m.Range(func(k K, mv mapValue[V]) bool {
-		v, ok := mv.get()
+	m.m.Range(func(k K, mv valueMapValue[V]) bool {
+		v, ok := loadPointer(mv.value)
 		return !ok || f(k, v)
 	})
 }
