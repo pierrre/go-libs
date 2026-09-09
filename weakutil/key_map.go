@@ -43,13 +43,12 @@ func (m *KeyMap[K, V]) isValueComparable() bool {
 	return m.valueComparable
 }
 
-func (m *KeyMap[K, V]) newValue(key *K, value V) (mv keyMapValue[V], kp weak.Pointer[K]) {
+func (m *KeyMap[K, V]) newValue(key *K, kp weak.Pointer[K], value V) (mv keyMapValue[V]) {
 	mv.value = value
 	if key != nil {
-		kp = weak.Make(key)
 		mv.cleanup = runtime.AddCleanup(key, m.getCleanupFunc(), kp)
 	}
-	return mv, kp
+	return mv
 }
 
 func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
@@ -58,13 +57,14 @@ func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
 
 // Store is like [sync.Map.Store].
 func (m *KeyMap[K, V]) Store(key *K, value V) {
+	kp := weak.Make(key)
 	if m.isValueComparable() {
-		v, ok := m.Load(key)
-		if ok && any(v) == any(value) {
+		mv, ok := m.m.Load(kp)
+		if ok && any(mv.value) == any(value) {
 			return
 		}
 	}
-	mv, kp := m.newValue(key, value)
+	mv := m.newValue(key, kp, value)
 	mv, ok := m.m.Swap(kp, mv)
 	if ok {
 		mv.cleanup.Stop()
@@ -98,13 +98,14 @@ func (m *KeyMap[K, V]) Clear() {
 
 // Swap is like [sync.Map.Swap].
 func (m *KeyMap[K, V]) Swap(key *K, value V) (previous V, loaded bool) {
+	kp := weak.Make(key)
 	if m.isValueComparable() {
-		previous, loaded = m.Load(key)
-		if loaded && any(previous) == any(value) {
-			return previous, true
+		mv, ok := m.m.Load(kp)
+		if ok && any(mv.value) == any(value) {
+			return mv.value, true
 		}
 	}
-	mv, kp := m.newValue(key, value)
+	mv := m.newValue(key, kp, value)
 	mv, loaded = m.m.Swap(kp, mv)
 	if loaded {
 		mv.cleanup.Stop()
@@ -124,15 +125,15 @@ func (m *KeyMap[K, V]) LoadAndDelete(key *K) (value V, loaded bool) {
 
 // LoadOrStore is like [sync.Map.LoadOrStore].
 func (m *KeyMap[K, V]) LoadOrStore(key *K, value V) (actual V, loaded bool) {
-	var kp weak.Pointer[K]
+	kp := weak.Make(key)
 	var mv keyMapValue[V]
 	for {
 		mv.cleanup.Stop()
-		actual, loaded = m.Load(key)
-		if loaded {
-			return actual, true
+		mv, ok := m.m.Load(kp)
+		if ok {
+			return mv.value, true
 		}
-		mv, kp = m.newValue(key, value)
+		mv = m.newValue(key, kp, value)
 		_, loaded = m.m.LoadOrStore(kp, mv)
 		if !loaded {
 			return value, false
@@ -173,7 +174,7 @@ func (m *KeyMap[K, V]) CompareAndSwap(key *K, oldValue, newValue V) (swapped boo
 		if any(oldValue) == any(newValue) {
 			return true
 		}
-		newMv, _ := m.newValue(key, newValue)
+		newMv := m.newValue(key, kp, newValue)
 		swapped = m.m.CompareAndSwap(kp, mv, newMv)
 		if swapped {
 			newMv = mv
