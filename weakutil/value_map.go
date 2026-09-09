@@ -100,10 +100,10 @@ func (m *ValueMap[K, V]) Delete(key K) {
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
 	m.m.Range(func(k K, mv mapValue[V]) bool {
-		m.m.CompareAndDelete(k, mv)
 		mv.stopCleanup()
 		return true
 	})
+	m.m.Clear()
 }
 
 // Swap is like [sync.Map.Swap].

@@ -90,10 +90,10 @@ func (m *KeyMap[K, V]) Delete(key *K) {
 // Clear is like [sync.Map.Clear].
 func (m *KeyMap[K, V]) Clear() {
 	m.m.Range(func(kp weak.Pointer[K], mv keyMapValue[V]) bool {
-		m.m.CompareAndDelete(kp, mv)
 		mv.cleanup.Stop()
 		return true
 	})
+	m.m.Clear()
 }
 
 // Swap is like [sync.Map.Swap].
