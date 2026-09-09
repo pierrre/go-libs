@@ -43,13 +43,13 @@ func (m *KeyMap[K, V]) isValueComparable() bool {
 	return m.valueComparable
 }
 
-func (m *KeyMap[K, V]) newValue(key *K, value V) (kp weak.Pointer[K], mv keyMapValue[V]) {
+func (m *KeyMap[K, V]) newValue(key *K, value V) (mv keyMapValue[V], kp weak.Pointer[K]) {
 	mv.value = value
 	if key != nil {
 		kp = weak.Make(key)
 		mv.cleanup = runtime.AddCleanup(key, m.getCleanupFunc(), kp)
 	}
-	return kp, mv
+	return mv, kp
 }
 
 func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
@@ -64,7 +64,7 @@ func (m *KeyMap[K, V]) Store(key *K, value V) {
 			return
 		}
 	}
-	kp, mv := m.newValue(key, value)
+	mv, kp := m.newValue(key, value)
 	mv, ok := m.m.Swap(kp, mv)
 	if ok {
 		mv.cleanup.Stop()
@@ -104,7 +104,7 @@ func (m *KeyMap[K, V]) Swap(key *K, value V) (previous V, loaded bool) {
 			return previous, true
 		}
 	}
-	kp, mv := m.newValue(key, value)
+	mv, kp := m.newValue(key, value)
 	mv, loaded = m.m.Swap(kp, mv)
 	if loaded {
 		mv.cleanup.Stop()
@@ -132,7 +132,7 @@ func (m *KeyMap[K, V]) LoadOrStore(key *K, value V) (actual V, loaded bool) {
 		if loaded {
 			return actual, true
 		}
-		kp, mv = m.newValue(key, value)
+		mv, kp = m.newValue(key, value)
 		_, loaded = m.m.LoadOrStore(kp, mv)
 		if !loaded {
 			return value, false
@@ -173,7 +173,7 @@ func (m *KeyMap[K, V]) CompareAndSwap(key *K, oldValue, newValue V) (swapped boo
 		if any(oldValue) == any(newValue) {
 			return true
 		}
-		_, newMv := m.newValue(key, newValue)
+		newMv, _ := m.newValue(key, newValue)
 		swapped = m.m.CompareAndSwap(kp, mv, newMv)
 		if swapped {
 			newMv = mv
