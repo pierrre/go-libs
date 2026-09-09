@@ -14,7 +14,7 @@ import (
 // The zero value is ready to use.
 // If a nil value is set, it is never evicted.
 //
-// It implements the same methods as [sync.ValueMap].
+// It implements the same methods as [sync.Map].
 type ValueMap[K comparable, V any] struct {
 	m               syncutil.Map[K, mapValue[V]]
 	cleanupFunc     func(mapCleanup[K, V])
