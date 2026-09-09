@@ -16,7 +16,7 @@ import (
 // If a value is set with a nil key, it is never evicted.
 //
 // It implements the same methods as [sync.Map].
-type KeyMap[K comparable, V any] struct {
+type KeyMap[K any, V any] struct {
 	m                   syncutil.Map[weak.Pointer[K], keyMapValue[V]]
 	cleanupFunc         func(weak.Pointer[K])
 	cleanupFuncOnce     sync.Once
