@@ -15,6 +15,7 @@ import (
 // If a nil value is set, it is never evicted.
 //
 // It implements the same methods as [sync.Map].
+// An entry whose value has been collected by the garbage collector is treated as absent until its cleanup evicts it.
 type ValueMap[K comparable, V any] struct {
 	m               syncutil.Map[K, valueMapValue[V]]
 	cleanupFunc     func(valueMapCleanupArg[K, V])
