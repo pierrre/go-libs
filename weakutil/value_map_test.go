@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"runtime"
+	"runtime/debug"
 	"testing"
+	"time"
 
 	"github.com/pierrre/assert"
 	. "github.com/pierrre/go-libs/weakutil"
@@ -315,6 +317,27 @@ func TestValueMapLoadOrStoreNotFound(t *testing.T) {
 	assert.Equal(t, v2, v1)
 	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
+}
+
+func TestValueMapLoadOrStoreDeadEntry(t *testing.T) {
+	oldGCPercent := debug.SetGCPercent(-1) // Makes the test more deterministic.
+	defer debug.SetGCPercent(oldGCPercent)
+	m := new(ValueMap[string, [64]byte])
+	v := &[64]byte{}
+	runtime.SetFinalizer(v, func(*[64]byte) {}) // keeps the cleanup from running until a second GC
+	m.Store("test", v)
+	runtime.KeepAlive(v) // keep v alive through Store
+	runtime.GC()         // v is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
+	done := make(chan struct{})
+	go func() {
+		m.LoadOrStore("test", &[64]byte{})
+		close(done)
+	}()
+	select {
+	case <-done:
+	case <-time.After(time.Second):
+		t.Fatal("ValueMap.LoadOrStore hung on an entry whose value was collected but not yet cleaned up")
+	}
 }
 
 func BenchmarkValueMapLoadOrStore(b *testing.B) {

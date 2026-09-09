@@ -133,17 +133,22 @@ func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 
 // LoadOrStore is like [sync.Map.LoadOrStore].
 func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
-	var mv mapValue[V]
 	for {
-		mv.stopCleanup()
 		actual, loaded = m.Load(key)
 		if loaded {
 			return actual, true
 		}
-		mv = m.newValue(key, value)
-		_, loaded = m.m.LoadOrStore(key, mv)
+		mv := m.newValue(key, value)
+		prev, loaded := m.m.LoadOrStore(key, mv)
 		if !loaded {
 			return value, false
+		}
+		mv.stopCleanup()
+		_, ok := prev.get()
+		if !ok {
+			if m.m.CompareAndDelete(key, prev) {
+				prev.stopCleanup()
+			}
 		}
 	}
 }
