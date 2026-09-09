@@ -76,6 +76,60 @@ func TestKeyMapStoreNonComparable(t *testing.T) {
 	runtime.KeepAlive(k)
 }
 
+type testStructWithAny struct {
+	X any
+}
+
+func TestKeyMapStoreStructWithAny(t *testing.T) {
+	m := new(KeyMap[[64]byte, testStructWithAny])
+	k := &[64]byte{}
+	v1 := testStructWithAny{X: []int{1, 2}}
+	m.Store(k, v1)
+	m.Store(k, v1) // Must not panic.
+	v2, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.DeepEqual(t, v2, v1)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	v3 := testStructWithAny{X: []int{3}}
+	m.Store(k, v3)
+	v4, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.DeepEqual(t, v4, v3)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
+func TestKeyMapStoreArrayOfAny(t *testing.T) {
+	m := new(KeyMap[[64]byte, [1]any])
+	k := &[64]byte{}
+	v1 := [1]any{[]int{1, 2}}
+	m.Store(k, v1)
+	m.Store(k, v1) // Must not panic.
+	_, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
+func TestKeyMapSwapStructWithAny(t *testing.T) {
+	m := new(KeyMap[[64]byte, testStructWithAny])
+	k := &[64]byte{}
+	v1 := testStructWithAny{X: []int{1, 2}}
+	m.Store(k, v1)
+	v2, loaded := m.Swap(k, v1) // Must not panic.
+	assert.True(t, loaded)
+	assert.DeepEqual(t, v2, v1)
+	v3 := testStructWithAny{X: []int{3}}
+	v4, loaded := m.Swap(k, v3)
+	assert.True(t, loaded)
+	assert.DeepEqual(t, v4, v1)
+	v5, ok := m.Load(k)
+	assert.True(t, ok)
+	assert.DeepEqual(t, v5, v3)
+	assert.Equal(t, getKeyMapLen(m), 1)
+	runtime.KeepAlive(k)
+}
+
 func BenchmarkKeyMapStoreSame(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}

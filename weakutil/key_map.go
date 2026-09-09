@@ -38,8 +38,7 @@ func (m *KeyMap[K, V]) getCleanupFunc() func(weak.Pointer[K]) {
 
 func (m *KeyMap[K, V]) isValueComparable() bool {
 	m.valueComparableOnce.Do(func() {
-		t := reflect.TypeFor[V]()
-		m.valueComparable = t.Kind() != reflect.Interface && t.Comparable()
+		m.valueComparable = isTypeSafelyComparable(reflect.TypeFor[V]())
 	})
 	return m.valueComparable
 }
