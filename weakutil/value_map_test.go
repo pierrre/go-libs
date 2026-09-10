@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"math/rand/v2"
 	"runtime"
-	"runtime/debug"
 	"testing"
 	"time"
 
@@ -320,8 +319,7 @@ func TestValueMapLoadOrStoreNotFound(t *testing.T) {
 }
 
 func TestValueMapLoadOrStoreDeadEntry(t *testing.T) {
-	oldGCPercent := debug.SetGCPercent(-1) // Makes the test more deterministic.
-	defer debug.SetGCPercent(oldGCPercent)
+	disableGC(t)
 	m := new(ValueMap[string, [64]byte])
 	v := &[64]byte{}
 	runtime.SetFinalizer(v, func(*[64]byte) {}) // keeps the cleanup from running until a second GC
@@ -502,6 +500,72 @@ func TestValueMapRangeInterrupt(t *testing.T) {
 		break
 	}
 	runtime.KeepAlive(v)
+}
+
+func valueMapStoreDeadValue[K comparable, V any](m *ValueMap[K, V], key K) {
+	v := new(V)
+	runtime.SetFinalizer(v, func(*V) {}) // keeps the cleanup from running until a second GC
+	m.Store(key, v)
+	runtime.KeepAlive(v) // keep v alive through Store
+}
+
+func assertValueMapDeadEntry[K comparable, V any](tb testing.TB, m *ValueMap[K, V], key K) {
+	tb.Helper()
+	present, alive := ValueMapRawEntry(m, key)
+	assert.True(tb, present)
+	assert.False(tb, alive)
+}
+
+func assertValueMapNoEntry[K comparable, V any](tb testing.TB, m *ValueMap[K, V], key K) {
+	tb.Helper()
+	present, _ := ValueMapRawEntry(m, key)
+	assert.False(tb, present)
+}
+
+func TestValueMapLoadEvictsDeadEntry(t *testing.T) {
+	disableGC(t)
+	m := new(ValueMap[string, [64]byte])
+	valueMapStoreDeadValue(m, "test")
+	runtime.GC() // v is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
+	assertValueMapDeadEntry(t, m, "test")
+	val, ok := m.Load("test")
+	assert.False(t, ok)
+	assert.Zero(t, val)
+	assertValueMapNoEntry(t, m, "test")
+}
+
+func TestValueMapRangeEvictsDeadEntry(t *testing.T) {
+	disableGC(t)
+	m := new(ValueMap[string, [64]byte])
+	valueMapStoreDeadValue(m, "test")
+	runtime.GC() // v is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
+	assertValueMapDeadEntry(t, m, "test")
+	seen := false
+	for range m.All() {
+		seen = true
+	}
+	assert.False(t, seen)
+	assertValueMapNoEntry(t, m, "test")
+}
+
+func TestValueMapCompareAndDeleteEvictsDeadEntry(t *testing.T) {
+	disableGC(t)
+	m := new(ValueMap[string, [64]byte])
+	valueMapStoreDeadValue(m, "test")
+	runtime.GC() // v is unreachable: dead entry, cleanup kept until a second GC
+	assertValueMapDeadEntry(t, m, "test")
+	assert.False(t, m.CompareAndDelete("test", &[64]byte{}))
+	assertValueMapNoEntry(t, m, "test")
+}
+
+func TestValueMapCompareAndSwapEvictsDeadEntry(t *testing.T) {
+	disableGC(t)
+	m := new(ValueMap[string, [64]byte])
+	valueMapStoreDeadValue(m, "test")
+	runtime.GC() // v is unreachable: dead entry, cleanup kept until a second GC
+	assertValueMapDeadEntry(t, m, "test")
+	assert.False(t, m.CompareAndSwap("test", &[64]byte{}, &[64]byte{}))
+	assertValueMapNoEntry(t, m, "test")
 }
 
 func BenchmarkValueMapRange(b *testing.B) {

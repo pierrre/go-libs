@@ -613,6 +613,26 @@ func TestKeyMapRangeInterrupt(t *testing.T) {
 	runtime.KeepAlive(k2)
 }
 
+func TestKeyMapRangeEvictsDeadKey(t *testing.T) {
+	disableGC(t)
+	m := new(KeyMap[[64]byte, int]) // must use a large key in order to trigger garbage collection reliably
+	k := &[64]byte{}
+	runtime.SetFinalizer(k, func(*[64]byte) {}) // keeps the cleanup from running until a second GC
+	m.Store(k, 123)
+	runtime.KeepAlive(k) // keep k alive through Store
+	runtime.GC()         // k is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
+	total, dead := KeyMapRawEntries(m)
+	assert.Equal(t, total, 1)
+	assert.Equal(t, dead, 1)
+	seen := false
+	for range m.All() {
+		seen = true
+	}
+	assert.False(t, seen)
+	total, _ = KeyMapRawEntries(m)
+	assert.Equal(t, total, 0)
+}
+
 func BenchmarkKeyMapRange(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	var ks [10]*[64]byte

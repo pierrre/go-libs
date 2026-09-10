@@ -51,6 +51,24 @@ func (m *KeyMap[K, V]) newValue(key *K, kp weak.Pointer[K], value V) (mv keyMapV
 	return mv
 }
 
+func (m *KeyMap[K, V]) deleteValue(kp weak.Pointer[K], mv keyMapValue[V]) (deleted bool) {
+	mv.cleanup.Stop()
+	return m.m.CompareAndDelete(kp, mv)
+}
+
+func (m *KeyMap[K, V]) deleteKey(kp weak.Pointer[K], mv keyMapValue[V]) {
+	mv.cleanup.Stop()
+	m.m.Delete(kp)
+}
+
+func (m *KeyMap[K, V]) loadKey(kp weak.Pointer[K], mv keyMapValue[V]) (key *K, alive bool) {
+	key, alive = loadPointer(kp)
+	if !alive {
+		m.deleteKey(kp, mv)
+	}
+	return key, alive
+}
+
 func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
 	m.m.Delete(kp)
 }
@@ -78,8 +96,7 @@ func (m *KeyMap[K, V]) Clear() {
 		var count int64
 		m.m.Range(func(kp weak.Pointer[K], mv keyMapValue[V]) bool {
 			count++
-			m.m.CompareAndDelete(kp, mv)
-			mv.cleanup.Stop()
+			m.deleteKey(kp, mv)
 			return true
 		})
 		if count == 0 {
@@ -98,11 +115,11 @@ func (m *KeyMap[K, V]) Swap(key *K, value V) (previous V, loaded bool) {
 		}
 	}
 	mv := m.newValue(key, kp, value)
-	mv, loaded = m.m.Swap(kp, mv)
-	if loaded {
+	mv, ok := m.m.Swap(kp, mv)
+	if ok {
 		mv.cleanup.Stop()
 	}
-	return mv.value, loaded
+	return mv.value, ok
 }
 
 // LoadAndDelete is like [sync.Map.LoadAndDelete].
@@ -144,9 +161,7 @@ func (m *KeyMap[K, V]) CompareAndDelete(key *K, old V) (deleted bool) {
 		if any(mv.value) != any(old) {
 			return false
 		}
-		deleted = m.m.CompareAndDelete(kp, mv)
-		if deleted {
-			mv.cleanup.Stop()
+		if m.deleteValue(kp, mv) {
 			return true
 		}
 	}
@@ -181,8 +196,11 @@ func (m *KeyMap[K, V]) CompareAndSwap(key *K, oldValue, newValue V) (swapped boo
 // Range is like [sync.Map.Range].
 func (m *KeyMap[K, V]) Range(f func(key *K, value V) bool) {
 	m.m.Range(func(kp weak.Pointer[K], mv keyMapValue[V]) bool {
-		key, ok := loadPointer(kp)
-		return !ok || f(key, mv.value)
+		key, alive := m.loadKey(kp, mv)
+		if !alive {
+			return true
+		}
+		return f(key, mv.value)
 	})
 }
 

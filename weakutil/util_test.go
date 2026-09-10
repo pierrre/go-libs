@@ -2,12 +2,19 @@ package weakutil_test
 
 import (
 	"reflect"
+	"runtime/debug"
 	"testing"
 	"unsafe" //nolint:depguard // needed to test the UnsafePointer kind
 
 	"github.com/pierrre/assert"
 	. "github.com/pierrre/go-libs/weakutil"
 )
+
+func disableGC(tb testing.TB) {
+	tb.Helper()
+	old := debug.SetGCPercent(-1)
+	tb.Cleanup(func() { debug.SetGCPercent(old) })
+}
 
 func TestIsTypeSafelyComparable(t *testing.T) {
 	type namedInt int

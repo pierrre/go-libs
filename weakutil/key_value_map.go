@@ -18,7 +18,6 @@ import (
 // If both are nil, the entry is never evicted.
 //
 // It implements the same methods as [sync.Map].
-// An entry whose value has been collected by the garbage collector is treated as absent until its cleanup evicts it.
 type KeyValueMap[K any, V any] struct {
 	m                    syncutil.Map[weak.Pointer[K], keyValueMapValue[K, V]]
 	keyCleanupFunc       func(weak.Pointer[K])
@@ -72,11 +71,32 @@ func (m *KeyValueMap[K, V]) newValue(key *K, kp weak.Pointer[K], value *V) (mv k
 	return mv
 }
 
+func (m *KeyValueMap[K, V]) deleteValue(kp weak.Pointer[K], mv keyValueMapValue[K, V]) (deleted bool) {
+	mv.stopCleanup()
+	return m.m.CompareAndDelete(kp, mv)
+}
+
+func (m *KeyValueMap[K, V]) loadValue(kp weak.Pointer[K], mv keyValueMapValue[K, V]) (value *V, alive bool) {
+	value, alive = loadPointer(mv.value)
+	if !alive {
+		m.deleteValue(kp, mv)
+	}
+	return value, alive
+}
+
+func (m *KeyValueMap[K, V]) loadKey(kp weak.Pointer[K], mv keyValueMapValue[K, V]) (key *K, alive bool) {
+	key, alive = loadPointer(kp)
+	if !alive {
+		m.deleteValue(kp, mv)
+	}
+	return key, alive
+}
+
 func (m *KeyValueMap[K, V]) keyCleanup(kp weak.Pointer[K]) {
 	mv, ok := m.m.LoadAndDelete(kp)
 	if ok {
-		_, ok = loadPointer(mv.value)
-		if ok {
+		_, alive := loadPointer(mv.value)
+		if alive {
 			mv.valueCleanup.Stop()
 		}
 	}
@@ -86,8 +106,8 @@ func (m *KeyValueMap[K, V]) valueCleanup(mc keyValueMapCleanupArg[K, V]) {
 	mv, ok := m.m.Load(mc.key)
 	if ok && mv.value == mc.value {
 		m.m.CompareAndDelete(mc.key, mv)
-		_, ok = loadPointer(mc.key)
-		if ok {
+		_, alive := loadPointer(mc.key)
+		if alive {
 			mv.keyCleanup.Stop()
 		}
 	}
@@ -105,7 +125,8 @@ func (m *KeyValueMap[K, V]) Load(key *K) (value *V, ok bool) {
 	if !ok {
 		return nil, false
 	}
-	return loadPointer(mv.value)
+	value, ok = m.loadValue(kp, mv)
+	return value, ok
 }
 
 // Delete is like [sync.Map.Delete].
@@ -119,8 +140,7 @@ func (m *KeyValueMap[K, V]) Clear() {
 		var count int64
 		m.m.Range(func(kp weak.Pointer[K], mv keyValueMapValue[K, V]) bool {
 			count++
-			m.m.CompareAndDelete(kp, mv)
-			mv.stopCleanup()
+			m.deleteValue(kp, mv)
 			return true
 		})
 		if count == 0 {
@@ -132,14 +152,14 @@ func (m *KeyValueMap[K, V]) Clear() {
 // Swap is like [sync.Map.Swap].
 func (m *KeyValueMap[K, V]) Swap(key *K, value *V) (previous *V, loaded bool) {
 	kp := weak.Make(key)
-	old, ok := m.m.Load(kp)
+	mv, ok := m.m.Load(kp)
 	if ok {
-		v, alive := loadPointer(old.value)
+		v, alive := loadPointer(mv.value)
 		if alive && v == value {
 			return v, true
 		}
 	}
-	mv := m.newValue(key, kp, value)
+	mv = m.newValue(key, kp, value)
 	mv, ok = m.m.Swap(kp, mv)
 	if ok {
 		previous, loaded = loadPointer(mv.value)
@@ -163,25 +183,20 @@ func (m *KeyValueMap[K, V]) LoadAndDelete(key *K) (value *V, loaded bool) {
 func (m *KeyValueMap[K, V]) LoadOrStore(key *K, value *V) (actual *V, loaded bool) {
 	kp := weak.Make(key)
 	for {
-		old, ok := m.m.Load(kp)
+		mv, ok := m.m.Load(kp)
 		if ok {
-			v, alive := loadPointer(old.value)
-			if alive {
-				return v, true
+			actual, loaded = loadPointer(mv.value)
+			if loaded {
+				return actual, true
 			}
 		}
-		mv := m.newValue(key, kp, value)
-		prev, loaded := m.m.LoadOrStore(kp, mv)
+		newMv := m.newValue(key, kp, value)
+		prev, loaded := m.m.LoadOrStore(kp, newMv)
 		if !loaded {
 			return value, false
 		}
-		mv.stopCleanup()
-		_, ok = loadPointer(prev.value)
-		if !ok {
-			if m.m.CompareAndDelete(kp, prev) {
-				prev.stopCleanup()
-			}
-		}
+		newMv.stopCleanup()
+		m.loadValue(kp, prev)
 	}
 }
 
@@ -193,13 +208,14 @@ func (m *KeyValueMap[K, V]) CompareAndDelete(key *K, old *V) (deleted bool) {
 		if !ok {
 			return false
 		}
-		v, ok := loadPointer(mv.value)
-		if !ok || v != old {
+		v, alive := m.loadValue(kp, mv)
+		if !alive {
 			return false
 		}
-		deleted = m.m.CompareAndDelete(kp, mv)
-		if deleted {
-			mv.stopCleanup()
+		if v != old {
+			return false
+		}
+		if m.deleteValue(kp, mv) {
 			return true
 		}
 	}
@@ -213,8 +229,11 @@ func (m *KeyValueMap[K, V]) CompareAndSwap(key *K, oldValue, newValue *V) (swapp
 		if !ok {
 			return false
 		}
-		v, ok := loadPointer(mv.value)
-		if !ok || v != oldValue {
+		v, alive := m.loadValue(kp, mv)
+		if !alive {
+			return false
+		}
+		if v != oldValue {
 			return false
 		}
 		if oldValue == newValue {
@@ -235,12 +254,12 @@ func (m *KeyValueMap[K, V]) CompareAndSwap(key *K, oldValue, newValue *V) (swapp
 // Range is like [sync.Map.Range].
 func (m *KeyValueMap[K, V]) Range(f func(key *K, value *V) bool) {
 	m.m.Range(func(kp weak.Pointer[K], mv keyValueMapValue[K, V]) bool {
-		key, ok := loadPointer(kp)
-		if !ok {
+		key, alive := m.loadKey(kp, mv)
+		if !alive {
 			return true
 		}
-		value, ok := loadPointer(mv.value)
-		if !ok {
+		value, alive := m.loadValue(kp, mv)
+		if !alive {
 			return true
 		}
 		return f(key, value)

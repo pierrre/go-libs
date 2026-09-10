@@ -3,9 +3,9 @@ package weakutil_test
 import (
 	"fmt"
 	"runtime"
-	"runtime/debug"
 	"testing"
 	"time"
+	"weak"
 
 	"github.com/pierrre/assert"
 	. "github.com/pierrre/go-libs/weakutil"
@@ -419,8 +419,7 @@ func TestKeyValueMapLoadOrStoreNotFound(t *testing.T) {
 }
 
 func TestKeyValueMapLoadOrStoreDeadEntry(t *testing.T) {
-	oldGCPercent := debug.SetGCPercent(-1) // Makes the test more deterministic.
-	defer debug.SetGCPercent(oldGCPercent)
+	disableGC(t)
 	m := new(KeyValueMap[[64]byte, [64]byte])
 	k := &[64]byte{}
 	v := &[64]byte{}
@@ -645,6 +644,80 @@ func TestKeyValueMapRangeInterrupt(t *testing.T) {
 	runtime.KeepAlive(k1)
 	runtime.KeepAlive(k2)
 	runtime.KeepAlive(v1)
+}
+
+func keyValueMapStoreDeadValue[K any, V any](m *KeyValueMap[K, V], key *K) (kp weak.Pointer[K]) {
+	kp = weak.Make(key)
+	v := new(V)
+	runtime.SetFinalizer(v, func(*V) {}) // keeps the cleanup from running until a second GC
+	m.Store(key, v)
+	runtime.KeepAlive(key) // keep key alive through Store
+	runtime.KeepAlive(v)   // keep v alive through Store
+	return kp
+}
+
+func assertKeyValueMapDeadEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
+	tb.Helper()
+	present, alive := KeyValueMapRawEntry(m, kp)
+	assert.True(tb, present)
+	assert.False(tb, alive)
+}
+
+func assertKeyValueMapNoEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
+	tb.Helper()
+	present, _ := KeyValueMapRawEntry(m, kp)
+	assert.False(tb, present)
+}
+
+func TestKeyValueMapLoadEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(KeyValueMap[int, [64]byte])
+	k := new(int)
+	kp := keyValueMapStoreDeadValue(m, k)
+	runtime.GC() // v is unreachable: dead value, cleanups kept until a second GC
+	assertKeyValueMapDeadEntry(t, m, kp)
+	val, ok := m.Load(k)
+	assert.False(t, ok)
+	assert.Zero(t, val)
+	assertKeyValueMapNoEntry(t, m, kp)
+}
+
+func TestKeyValueMapRangeEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(KeyValueMap[int, [64]byte])
+	k := new(int)
+	kp := keyValueMapStoreDeadValue(m, k)
+	runtime.GC() // v is unreachable: dead value, cleanups kept until a second GC
+	assertKeyValueMapDeadEntry(t, m, kp)
+	runtime.KeepAlive(k) // k must stay alive through the GCs, or its own cleanup removes the entry
+	seen := false
+	for range m.All() {
+		seen = true
+	}
+	assert.False(t, seen)
+	assertKeyValueMapNoEntry(t, m, kp)
+}
+
+func TestKeyValueMapCompareAndDeleteEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(KeyValueMap[int, [64]byte])
+	k := new(int)
+	kp := keyValueMapStoreDeadValue(m, k)
+	runtime.GC() // v is unreachable: dead value, cleanups kept until a second GC
+	assertKeyValueMapDeadEntry(t, m, kp)
+	assert.False(t, m.CompareAndDelete(k, &[64]byte{}))
+	assertKeyValueMapNoEntry(t, m, kp)
+}
+
+func TestKeyValueMapCompareAndSwapEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(KeyValueMap[int, [64]byte])
+	k := new(int)
+	kp := keyValueMapStoreDeadValue(m, k)
+	runtime.GC() // v is unreachable: dead value, cleanups kept until a second GC
+	assertKeyValueMapDeadEntry(t, m, kp)
+	assert.False(t, m.CompareAndSwap(k, &[64]byte{}, &[64]byte{}))
+	assertKeyValueMapNoEntry(t, m, kp)
 }
 
 func BenchmarkKeyValueMapRange(b *testing.B) {
