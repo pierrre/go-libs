@@ -92,7 +92,7 @@ func (m *ValueMap[K, V]) Delete(key K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
-	for {
+	for range 10 {
 		var count int64
 		m.m.Range(func(k K, e valueMapEntry[V]) bool {
 			count++

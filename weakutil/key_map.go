@@ -92,7 +92,7 @@ func (m *KeyMap[K, V]) Delete(key *K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *KeyMap[K, V]) Clear() {
-	for {
+	for range 10 {
 		var count int64
 		m.m.Range(func(kp weak.Pointer[K], e keyMapEntry[V]) bool {
 			count++
