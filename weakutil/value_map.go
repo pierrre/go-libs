@@ -79,11 +79,18 @@ func (m *ValueMap[K, V]) Delete(key K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
-	m.m.Range(func(k K, mv valueMapValue[V]) bool {
-		mv.cleanup.Stop()
-		return true
-	})
-	m.m.Clear()
+	for {
+		var count int64
+		m.m.Range(func(k K, mv valueMapValue[V]) bool {
+			count++
+			m.m.CompareAndDelete(k, mv)
+			mv.cleanup.Stop()
+			return true
+		})
+		if count == 0 {
+			return
+		}
+	}
 }
 
 // Swap is like [sync.Map.Swap].

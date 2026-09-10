@@ -115,11 +115,18 @@ func (m *KeyValueMap[K, V]) Delete(key *K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *KeyValueMap[K, V]) Clear() {
-	m.m.Range(func(kp weak.Pointer[K], mv keyValueMapValue[K, V]) bool {
-		mv.stopCleanup()
-		return true
-	})
-	m.m.Clear()
+	for {
+		var count int64
+		m.m.Range(func(kp weak.Pointer[K], mv keyValueMapValue[K, V]) bool {
+			count++
+			m.m.CompareAndDelete(kp, mv)
+			mv.stopCleanup()
+			return true
+		})
+		if count == 0 {
+			return
+		}
+	}
 }
 
 // Swap is like [sync.Map.Swap].
