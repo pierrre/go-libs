@@ -5,7 +5,7 @@ import (
 )
 
 func KeyMapRawEntries[K any, V any](m *KeyMap[K, V]) (total, dead int) {
-	m.m.Range(func(kp weak.Pointer[K], _ keyMapValue[V]) bool {
+	m.m.Range(func(kp weak.Pointer[K], _ keyMapEntry[V]) bool {
 		total++
 		_, alive := loadPointer(kp)
 		if !alive {

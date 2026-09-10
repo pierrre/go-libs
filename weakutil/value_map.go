@@ -16,12 +16,12 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type ValueMap[K comparable, V any] struct {
-	m               syncutil.Map[K, valueMapValue[V]]
+	m               syncutil.Map[K, valueMapEntry[V]]
 	cleanupFunc     func(valueMapCleanupArg[K, V])
 	cleanupFuncOnce sync.Once
 }
 
-type valueMapValue[T any] struct {
+type valueMapEntry[T any] struct {
 	value   weak.Pointer[T]
 	cleanup runtime.Cleanup
 }
@@ -33,27 +33,27 @@ func (m *ValueMap[K, V]) getCleanupFunc() func(valueMapCleanupArg[K, V]) {
 	return m.cleanupFunc
 }
 
-func (m *ValueMap[K, V]) newValue(key K, value *V) valueMapValue[V] {
-	var mv valueMapValue[V]
+func (m *ValueMap[K, V]) newEntry(key K, value *V) valueMapEntry[V] {
+	var e valueMapEntry[V]
 	if value != nil {
-		mv.value = weak.Make(value)
-		mv.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
+		e.value = weak.Make(value)
+		e.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
 			key:   key,
-			value: mv.value,
+			value: e.value,
 		})
 	}
-	return mv
+	return e
 }
 
-func (m *ValueMap[K, V]) deleteValue(key K, mv valueMapValue[V]) (deleted bool) {
-	mv.cleanup.Stop()
-	return m.m.CompareAndDelete(key, mv)
+func (m *ValueMap[K, V]) deleteEntry(key K, e valueMapEntry[V]) (deleted bool) {
+	e.cleanup.Stop()
+	return m.m.CompareAndDelete(key, e)
 }
 
-func (m *ValueMap[K, V]) loadValue(key K, mv valueMapValue[V]) (value *V, alive bool) {
-	value, alive = loadPointer(mv.value)
+func (m *ValueMap[K, V]) loadValue(key K, e valueMapEntry[V]) (value *V, alive bool) {
+	value, alive = loadPointer(e.value)
 	if !alive {
-		m.deleteValue(key, mv)
+		m.deleteEntry(key, e)
 	}
 	return value, alive
 }
@@ -64,9 +64,9 @@ type valueMapCleanupArg[K comparable, V any] struct {
 }
 
 func (m *ValueMap[K, V]) cleanup(mc valueMapCleanupArg[K, V]) {
-	mv, ok := m.m.Load(mc.key)
-	if ok && mv.value == mc.value {
-		m.m.CompareAndDelete(mc.key, mv)
+	e, ok := m.m.Load(mc.key)
+	if ok && e.value == mc.value {
+		m.m.CompareAndDelete(mc.key, e)
 	}
 }
 
@@ -77,11 +77,11 @@ func (m *ValueMap[K, V]) Store(key K, value *V) {
 
 // Load is like [sync.Map.Load].
 func (m *ValueMap[K, V]) Load(key K) (value *V, ok bool) {
-	mv, ok := m.m.Load(key)
+	e, ok := m.m.Load(key)
 	if !ok {
 		return nil, false
 	}
-	value, ok = m.loadValue(key, mv)
+	value, ok = m.loadValue(key, e)
 	return value, ok
 }
 
@@ -94,9 +94,9 @@ func (m *ValueMap[K, V]) Delete(key K) {
 func (m *ValueMap[K, V]) Clear() {
 	for {
 		var count int64
-		m.m.Range(func(k K, mv valueMapValue[V]) bool {
+		m.m.Range(func(k K, e valueMapEntry[V]) bool {
 			count++
-			m.deleteValue(k, mv)
+			m.deleteEntry(k, e)
 			return true
 		})
 		if count == 0 {
@@ -111,21 +111,21 @@ func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 	if loaded && previous == value {
 		return previous, true
 	}
-	mv := m.newValue(key, value)
-	mv, ok := m.m.Swap(key, mv)
+	e := m.newEntry(key, value)
+	e, ok := m.m.Swap(key, e)
 	if ok {
-		previous, loaded = loadPointer(mv.value)
-		mv.cleanup.Stop()
+		previous, loaded = loadPointer(e.value)
+		e.cleanup.Stop()
 	}
 	return previous, loaded
 }
 
 // LoadAndDelete is like [sync.Map.LoadAndDelete].
 func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
-	mv, ok := m.m.LoadAndDelete(key)
+	e, ok := m.m.LoadAndDelete(key)
 	if ok {
-		value, loaded = loadPointer(mv.value)
-		mv.cleanup.Stop()
+		value, loaded = loadPointer(e.value)
+		e.cleanup.Stop()
 	}
 	return value, loaded
 }
@@ -133,19 +133,19 @@ func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 // LoadOrStore is like [sync.Map.LoadOrStore].
 func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 	for {
-		mv, ok := m.m.Load(key)
+		e, ok := m.m.Load(key)
 		if ok {
-			actual, loaded = loadPointer(mv.value)
+			actual, loaded = loadPointer(e.value)
 			if loaded {
 				return actual, true
 			}
 		}
-		newMv := m.newValue(key, value)
-		prev, loaded := m.m.LoadOrStore(key, newMv)
+		ne := m.newEntry(key, value)
+		prev, loaded := m.m.LoadOrStore(key, ne)
 		if !loaded {
 			return value, false
 		}
-		newMv.cleanup.Stop()
+		ne.cleanup.Stop()
 		m.loadValue(key, prev)
 	}
 }
@@ -153,18 +153,18 @@ func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 // CompareAndDelete is like [sync.Map.CompareAndDelete].
 func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 	for {
-		mv, ok := m.m.Load(key)
+		e, ok := m.m.Load(key)
 		if !ok {
 			return false
 		}
-		v, alive := m.loadValue(key, mv)
+		v, alive := m.loadValue(key, e)
 		if !alive {
 			return false
 		}
 		if v != old {
 			return false
 		}
-		if m.deleteValue(key, mv) {
+		if m.deleteEntry(key, e) {
 			return true
 		}
 	}
@@ -173,11 +173,11 @@ func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 // CompareAndSwap is like [sync.Map.CompareAndSwap].
 func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) {
 	for {
-		mv, ok := m.m.Load(key)
+		e, ok := m.m.Load(key)
 		if !ok {
 			return false
 		}
-		v, alive := m.loadValue(key, mv)
+		v, alive := m.loadValue(key, e)
 		if !alive {
 			return false
 		}
@@ -187,12 +187,12 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 		if oldValue == newValue {
 			return true
 		}
-		newMv := m.newValue(key, newValue)
-		swapped = m.m.CompareAndSwap(key, mv, newMv)
+		ne := m.newEntry(key, newValue)
+		swapped = m.m.CompareAndSwap(key, e, ne)
 		if swapped {
-			newMv = mv
+			ne = e
 		}
-		newMv.cleanup.Stop()
+		ne.cleanup.Stop()
 		if swapped {
 			return true
 		}
@@ -201,8 +201,8 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 
 // Range is like [sync.Map.Range].
 func (m *ValueMap[K, V]) Range(f func(key K, value *V) bool) {
-	m.m.Range(func(key K, mv valueMapValue[V]) bool {
-		value, alive := m.loadValue(key, mv)
+	m.m.Range(func(key K, e valueMapEntry[V]) bool {
+		value, alive := m.loadValue(key, e)
 		if !alive {
 			return true
 		}
