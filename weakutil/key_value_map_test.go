@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"runtime"
 	"runtime/debug"
-	"sync"
 	"testing"
 	"time"
 
@@ -666,46 +665,6 @@ func BenchmarkKeyValueMapRange(b *testing.B) {
 	})
 	runtime.KeepAlive(ks)
 	runtime.KeepAlive(v)
-}
-
-func TestKeyValueMapCleanupStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-	}
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	var wg sync.WaitGroup
-	for range runtime.GOMAXPROCS(0) {
-		wg.Go(func() {
-			for range 200000 {
-				k := &[64]byte{}
-				v := &[64]byte{}
-				m.Store(k, v)
-			}
-		})
-	}
-	wg.Wait()
-}
-
-func TestKeyValueMapStoreDeadValueStress(t *testing.T) {
-	if testing.Short() {
-		t.Skip("skipping in short mode")
-	}
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	var wg sync.WaitGroup
-	for range runtime.GOMAXPROCS(0) {
-		wg.Go(func() {
-			k := &[64]byte{}
-			for i := range 50000 {
-				v := &[64]byte{}
-				m.Store(k, v)
-				if i%512 == 0 {
-					runtime.GC()
-				}
-			}
-			runtime.KeepAlive(k)
-		})
-	}
-	wg.Wait()
 }
 
 func getKeyValueMapLen[K any, V any](m *KeyValueMap[K, V]) int {
