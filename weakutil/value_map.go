@@ -60,15 +60,7 @@ func (m *ValueMap[K, V]) cleanup(mc valueMapCleanupArg[K, V]) {
 
 // Store is like [sync.Map.Store].
 func (m *ValueMap[K, V]) Store(key K, value *V) {
-	v, ok := m.Load(key)
-	if ok && v == value {
-		return
-	}
-	mv := m.newValue(key, value)
-	mv, ok = m.m.Swap(key, mv)
-	if ok {
-		mv.cleanup.Stop()
-	}
+	_, _ = m.Swap(key, value)
 }
 
 // Load is like [sync.Map.Load].
@@ -82,10 +74,7 @@ func (m *ValueMap[K, V]) Load(key K) (value *V, ok bool) {
 
 // Delete is like [sync.Map.Delete].
 func (m *ValueMap[K, V]) Delete(key K) {
-	mv, ok := m.m.LoadAndDelete(key)
-	if ok {
-		mv.cleanup.Stop()
-	}
+	_, _ = m.LoadAndDelete(key)
 }
 
 // Clear is like [sync.Map.Clear].

@@ -95,19 +95,7 @@ func (m *KeyValueMap[K, V]) valueCleanup(mc keyValueMapCleanupArg[K, V]) {
 
 // Store is like [sync.Map.Store].
 func (m *KeyValueMap[K, V]) Store(key *K, value *V) {
-	kp := weak.Make(key)
-	mv, ok := m.m.Load(kp)
-	if ok {
-		v, alive := loadPointer(mv.value)
-		if alive && v == value {
-			return
-		}
-	}
-	mv = m.newValue(key, kp, value)
-	mv, ok = m.m.Swap(kp, mv)
-	if ok {
-		mv.stopCleanup()
-	}
+	_, _ = m.Swap(key, value)
 }
 
 // Load is like [sync.Map.Load].
@@ -122,11 +110,7 @@ func (m *KeyValueMap[K, V]) Load(key *K) (value *V, ok bool) {
 
 // Delete is like [sync.Map.Delete].
 func (m *KeyValueMap[K, V]) Delete(key *K) {
-	kp := weak.Make(key)
-	mv, ok := m.m.LoadAndDelete(kp)
-	if ok {
-		mv.stopCleanup()
-	}
+	_, _ = m.LoadAndDelete(key)
 }
 
 // Clear is like [sync.Map.Clear].

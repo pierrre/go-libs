@@ -57,18 +57,7 @@ func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
 
 // Store is like [sync.Map.Store].
 func (m *KeyMap[K, V]) Store(key *K, value V) {
-	kp := weak.Make(key)
-	if m.isValueComparable() {
-		mv, ok := m.m.Load(kp)
-		if ok && any(mv.value) == any(value) {
-			return
-		}
-	}
-	mv := m.newValue(key, kp, value)
-	mv, ok := m.m.Swap(kp, mv)
-	if ok {
-		mv.cleanup.Stop()
-	}
+	_, _ = m.Swap(key, value)
 }
 
 // Load is like [sync.Map.Load].
@@ -80,11 +69,7 @@ func (m *KeyMap[K, V]) Load(key *K) (value V, ok bool) {
 
 // Delete is like [sync.Map.Delete].
 func (m *KeyMap[K, V]) Delete(key *K) {
-	kp := weak.Make(key)
-	mv, ok := m.m.LoadAndDelete(kp)
-	if ok {
-		mv.cleanup.Stop()
-	}
+	_, _ = m.LoadAndDelete(key)
 }
 
 // Clear is like [sync.Map.Clear].
