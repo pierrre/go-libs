@@ -275,6 +275,19 @@ func TestKeyMapClearEmpty(t *testing.T) {
 	assert.Equal(t, getKeyMapLen(m), 0)
 }
 
+func TestKeyMapClearNonComparable(t *testing.T) {
+	m := new(KeyMap[[64]byte, []byte])
+	k := &[64]byte{}
+	v := []byte("test")
+	m.Store(k, v)
+	m.Clear()
+	v2, ok := m.Load(k)
+	assert.False(t, ok)
+	assert.SliceEmpty(t, v2)
+	assert.Equal(t, getKeyMapLen(m), 0)
+	runtime.KeepAlive(k)
+}
+
 func BenchmarkKeyMapClear(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	b.ResetTimer()
@@ -619,6 +632,26 @@ func TestKeyMapRangeEvictsDeadKey(t *testing.T) {
 	k := &[64]byte{}
 	runtime.SetFinalizer(k, func(*[64]byte) {}) // keeps the cleanup from running until a second GC
 	m.Store(k, 123)
+	runtime.KeepAlive(k) // keep k alive through Store
+	runtime.GC()         // k is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
+	total, dead := KeyMapRawEntries(m)
+	assert.Equal(t, total, 1)
+	assert.Equal(t, dead, 1)
+	seen := false
+	for range m.All() {
+		seen = true
+	}
+	assert.False(t, seen)
+	total, _ = KeyMapRawEntries(m)
+	assert.Equal(t, total, 0)
+}
+
+func TestKeyMapRangeEvictsDeadKeyNonComparable(t *testing.T) {
+	disableGC(t)
+	m := new(KeyMap[[64]byte, []byte]) // must use a large key in order to trigger garbage collection reliably
+	k := &[64]byte{}
+	runtime.SetFinalizer(k, func(*[64]byte) {}) // keeps the cleanup from running until a second GC
+	m.Store(k, []byte("test"))
 	runtime.KeepAlive(k) // keep k alive through Store
 	runtime.GC()         // k is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
 	total, dead := KeyMapRawEntries(m)

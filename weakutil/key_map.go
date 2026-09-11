@@ -53,18 +53,17 @@ func (m *KeyMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value V) (e keyMapEn
 
 func (m *KeyMap[K, V]) deleteEntry(kp weak.Pointer[K], e keyMapEntry[V]) (deleted bool) {
 	e.cleanup.Stop()
-	return m.m.CompareAndDelete(kp, e)
-}
-
-func (m *KeyMap[K, V]) deleteKey(kp weak.Pointer[K], e keyMapEntry[V]) {
-	e.cleanup.Stop()
+	if m.isValueComparable() {
+		return m.m.CompareAndDelete(kp, e)
+	}
 	m.m.Delete(kp)
+	return true
 }
 
 func (m *KeyMap[K, V]) loadKey(kp weak.Pointer[K], e keyMapEntry[V]) (key *K, alive bool) {
 	key, alive = loadPointer(kp)
 	if !alive {
-		m.deleteKey(kp, e)
+		m.deleteEntry(kp, e)
 	}
 	return key, alive
 }
@@ -96,7 +95,7 @@ func (m *KeyMap[K, V]) Clear() {
 		var count int64
 		m.m.Range(func(kp weak.Pointer[K], e keyMapEntry[V]) bool {
 			count++
-			m.deleteKey(kp, e)
+			m.deleteEntry(kp, e)
 			return true
 		})
 		if count == 0 {
