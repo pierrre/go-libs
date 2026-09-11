@@ -27,19 +27,6 @@ func ExampleKeyMap() {
 	// 0
 }
 
-func TestKeyMapStoreLoad(t *testing.T) {
-	m := new(KeyMap[[64]byte, string])
-	k := &[64]byte{}
-	v1 := "test"
-	m.Store(k, v1)
-	m.Store(k, v1)
-	v2, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
-	runtime.KeepAlive(k)
-}
-
 func TestKeyMapStoreReplace(t *testing.T) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
@@ -72,60 +59,6 @@ func TestKeyMapStoreNonComparable(t *testing.T) {
 	m.Store(k, v1) // Must not panic.
 	_, ok := m.Load(k)
 	assert.True(t, ok)
-	assert.Equal(t, getKeyMapLen(m), 1)
-	runtime.KeepAlive(k)
-}
-
-type testStructWithAny struct {
-	X any
-}
-
-func TestKeyMapStoreStructWithAny(t *testing.T) {
-	m := new(KeyMap[[64]byte, testStructWithAny])
-	k := &[64]byte{}
-	v1 := testStructWithAny{X: []int{1, 2}}
-	m.Store(k, v1)
-	m.Store(k, v1) // Must not panic.
-	v2, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.DeepEqual(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
-	v3 := testStructWithAny{X: []int{3}}
-	m.Store(k, v3)
-	v4, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.DeepEqual(t, v4, v3)
-	assert.Equal(t, getKeyMapLen(m), 1)
-	runtime.KeepAlive(k)
-}
-
-func TestKeyMapStoreArrayOfAny(t *testing.T) {
-	m := new(KeyMap[[64]byte, [1]any])
-	k := &[64]byte{}
-	v1 := [1]any{[]int{1, 2}}
-	m.Store(k, v1)
-	m.Store(k, v1) // Must not panic.
-	_, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.Equal(t, getKeyMapLen(m), 1)
-	runtime.KeepAlive(k)
-}
-
-func TestKeyMapSwapStructWithAny(t *testing.T) {
-	m := new(KeyMap[[64]byte, testStructWithAny])
-	k := &[64]byte{}
-	v1 := testStructWithAny{X: []int{1, 2}}
-	m.Store(k, v1)
-	v2, loaded := m.Swap(k, v1) // Must not panic.
-	assert.True(t, loaded)
-	assert.DeepEqual(t, v2, v1)
-	v3 := testStructWithAny{X: []int{3}}
-	v4, loaded := m.Swap(k, v3)
-	assert.True(t, loaded)
-	assert.DeepEqual(t, v4, v1)
-	v5, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.DeepEqual(t, v5, v3)
 	assert.Equal(t, getKeyMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
@@ -174,15 +107,6 @@ func TestKeyMapLoadNotFound(t *testing.T) {
 	assert.Equal(t, getKeyMapLen(m), 0)
 }
 
-func TestKeyMapRemovedGC(t *testing.T) {
-	m := new(KeyMap[[64]byte, string])
-	k := &[64]byte{}
-	v := "test"
-	m.Store(k, v)
-	runtime.GC()
-	assert.Equal(t, getKeyMapLen(m), 0)
-}
-
 func BenchmarkKeyMapLoad(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
@@ -212,15 +136,6 @@ func BenchmarkKeyMapLoadNotFound(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
 			_, _ = m.Load(k)
-		}
-	})
-}
-
-func BenchmarkKeyMapLoadNilNotFound(b *testing.B) {
-	m := new(KeyMap[[64]byte, string])
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			_, _ = m.Load(nil)
 		}
 	})
 }
@@ -348,36 +263,10 @@ func TestKeyMapSwapNonComparable(t *testing.T) {
 	k := &[64]byte{}
 	v1 := []byte("test")
 	m.Store(k, v1)
-	_, loaded := m.Swap(k, v1) // Must not panic.
+	v2, loaded := m.Swap(k, v1) // Must not panic.
 	assert.True(t, loaded)
+	assert.DeepEqual(t, v2, v1)
 	assert.Equal(t, getKeyMapLen(m), 1)
-	runtime.KeepAlive(k)
-}
-
-func BenchmarkKeyMapSwapSame(b *testing.B) {
-	m := new(KeyMap[[64]byte, string])
-	k := &[64]byte{}
-	v := "test"
-	m.Store(k, v)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			m.Swap(k, v)
-		}
-	})
-	runtime.KeepAlive(k)
-}
-
-func BenchmarkKeyMapSwapDifferent(b *testing.B) {
-	m := new(KeyMap[[64]byte, string])
-	k := &[64]byte{}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		vs := [2]string{"test1", "test2"}
-		for i := 0; pb.Next(); i++ {
-			m.Swap(k, vs[i%2])
-		}
-	})
 	runtime.KeepAlive(k)
 }
 

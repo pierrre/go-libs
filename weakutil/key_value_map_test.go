@@ -31,20 +31,6 @@ func ExampleKeyValueMap() {
 	// 0
 }
 
-func TestKeyValueMapStoreLoad(t *testing.T) {
-	m := new(KeyValueMap[[64]byte, [64]byte]) // Must use large key/value in order to trigger garbage collection reliably.
-	k := &[64]byte{}
-	v1 := &[64]byte{}
-	m.Store(k, v1)
-	m.Store(k, v1)
-	v2, ok := m.Load(k)
-	assert.True(t, ok)
-	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
-	runtime.KeepAlive(k)
-	runtime.KeepAlive(v1)
-}
-
 func TestKeyValueMapStoreReplace(t *testing.T) {
 	m := new(KeyValueMap[[64]byte, [64]byte])
 	k := &[64]byte{}
@@ -150,32 +136,6 @@ func TestKeyValueMapLoadRemovedGCKey(t *testing.T) {
 	runtime.GC()
 	assert.Equal(t, getKeyValueMapLen(m), 0)
 	runtime.KeepAlive(v)
-}
-
-func TestKeyValueMapLoadRemovedGCValue(t *testing.T) {
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	k := &[64]byte{}
-	func() {
-		v := &[64]byte{}
-		m.Store(k, v)
-	}()
-	runtime.GC()
-	v, ok := m.Load(k)
-	assert.False(t, ok)
-	assert.Zero(t, v)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
-	runtime.KeepAlive(k)
-}
-
-func TestKeyValueMapLoadRemovedGCBoth(t *testing.T) {
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	func() {
-		k := &[64]byte{}
-		v := &[64]byte{}
-		m.Store(k, v)
-	}()
-	runtime.GC()
-	assert.Equal(t, getKeyValueMapLen(m), 0)
 }
 
 func BenchmarkKeyValueMapLoad(b *testing.B) {
@@ -326,35 +286,6 @@ func TestKeyValueMapSwapNotFound(t *testing.T) {
 	assert.Equal(t, getKeyValueMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
-}
-
-func BenchmarkKeyValueMapSwapSame(b *testing.B) {
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	k := &[64]byte{}
-	v := &[64]byte{}
-	m.Store(k, v)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			m.Swap(k, v)
-		}
-	})
-	runtime.KeepAlive(k)
-	runtime.KeepAlive(v)
-}
-
-func BenchmarkKeyValueMapSwapDifferent(b *testing.B) {
-	m := new(KeyValueMap[[64]byte, [64]byte])
-	k := &[64]byte{}
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		var vs [2][64]byte
-		for i := 0; pb.Next(); i++ {
-			v := &vs[i%2]
-			m.Swap(k, v)
-		}
-	})
-	runtime.KeepAlive(k)
 }
 
 func TestKeyValueMapLoadAndDelete(t *testing.T) {

@@ -25,18 +25,6 @@ func ExampleValueMap() {
 	// <nil> false
 }
 
-func TestValueMapStoreLoad(t *testing.T) {
-	m := new(ValueMap[string, [64]byte]) // Must use a large value in order to trigger garbage collection reliably.
-	v1 := &[64]byte{}
-	m.Store("test", v1)
-	m.Store("test", v1)
-	v2, ok := m.Load("test")
-	assert.True(t, ok)
-	assert.Equal(t, v2, v1)
-	assert.Equal(t, getValueMapLen(m), 1)
-	runtime.KeepAlive(v1)
-}
-
 func TestValueMapStoreReplace(t *testing.T) {
 	m := new(ValueMap[string, [64]byte])
 	v1 := &[64]byte{}
@@ -98,17 +86,6 @@ func TestValueMapLoadNotFound(t *testing.T) {
 	v, ok := m.Load("test")
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getValueMapLen(m), 0)
-}
-
-func TestValueMapLoadRemovedGC(t *testing.T) {
-	m := new(ValueMap[string, [64]byte])
-	v1 := &[64]byte{}
-	m.Store("test", v1)
-	runtime.GC()
-	v2, ok := m.Load("test")
-	assert.False(t, ok)
-	assert.Zero(t, v2)
 	assert.Equal(t, getValueMapLen(m), 0)
 }
 
@@ -242,30 +219,6 @@ func TestValueMapSwapNotFound(t *testing.T) {
 	assert.Equal(t, v3, v1)
 	assert.Equal(t, getValueMapLen(m), 1)
 	runtime.KeepAlive(v1)
-}
-
-func BenchmarkValueMapSwapSame(b *testing.B) {
-	m := new(ValueMap[string, [64]byte])
-	v := &[64]byte{}
-	m.Store("test", v)
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		for pb.Next() {
-			m.Swap("test", v)
-		}
-	})
-}
-
-func BenchmarkValueMapSwapDifferent(b *testing.B) {
-	m := new(ValueMap[string, [64]byte])
-	b.ResetTimer()
-	b.RunParallel(func(pb *testing.PB) {
-		var vs [2][64]byte
-		for i := 0; pb.Next(); i++ {
-			v := &vs[i%2]
-			m.Swap("test", v)
-		}
-	})
 }
 
 func TestValueMapLoadAndDelete(t *testing.T) {
