@@ -3,7 +3,6 @@ package weakutil
 import (
 	"iter"
 	"runtime"
-	"sync"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -19,11 +18,9 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type KeyValueMap[K any, V any] struct {
-	m                    syncutil.Map[weak.Pointer[K], keyValueMapEntry[K, V]]
-	keyCleanupFunc       func(weak.Pointer[K])
-	keyCleanupFuncOnce   sync.Once
-	valueCleanupFunc     func(keyValueMapCleanupArg[K, V])
-	valueCleanupFuncOnce sync.Once
+	m                syncutil.Map[weak.Pointer[K], keyValueMapEntry[K, V]]
+	keyCleanupFunc   lazyValue[func(weak.Pointer[K])]
+	valueCleanupFunc lazyValue[func(keyValueMapCleanupArg[K, V])]
 }
 
 type keyValueMapEntry[K any, V any] struct {
@@ -43,17 +40,15 @@ type keyValueMapCleanupArg[K any, V any] struct {
 }
 
 func (m *KeyValueMap[K, V]) getKeyCleanupFunc() func(weak.Pointer[K]) {
-	m.keyCleanupFuncOnce.Do(func() {
-		m.keyCleanupFunc = m.keyCleanup
+	return m.keyCleanupFunc.get(func() func(weak.Pointer[K]) {
+		return m.keyCleanup
 	})
-	return m.keyCleanupFunc
 }
 
 func (m *KeyValueMap[K, V]) getValueCleanupFunc() func(keyValueMapCleanupArg[K, V]) {
-	m.valueCleanupFuncOnce.Do(func() {
-		m.valueCleanupFunc = m.valueCleanup
+	return m.valueCleanupFunc.get(func() func(keyValueMapCleanupArg[K, V]) {
+		return m.valueCleanup
 	})
-	return m.valueCleanupFunc
 }
 
 func (m *KeyValueMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value *V) (e keyValueMapEntry[K, V]) {
@@ -136,17 +131,7 @@ func (m *KeyValueMap[K, V]) Delete(key *K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *KeyValueMap[K, V]) Clear() {
-	for range 10 {
-		var count int64
-		m.m.Range(func(kp weak.Pointer[K], e keyValueMapEntry[K, V]) bool {
-			count++
-			m.deleteEntry(kp, e)
-			return true
-		})
-		if count == 0 {
-			return
-		}
-	}
+	clearMap(&m.m, m.deleteEntry)
 }
 
 // Swap is like [sync.Map.Swap].

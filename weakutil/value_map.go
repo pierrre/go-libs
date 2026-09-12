@@ -3,7 +3,6 @@ package weakutil
 import (
 	"iter"
 	"runtime"
-	"sync"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -16,9 +15,8 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type ValueMap[K comparable, V any] struct {
-	m               syncutil.Map[K, valueMapEntry[V]]
-	cleanupFunc     func(valueMapCleanupArg[K, V])
-	cleanupFuncOnce sync.Once
+	m           syncutil.Map[K, valueMapEntry[V]]
+	cleanupFunc lazyValue[func(valueMapCleanupArg[K, V])]
 }
 
 type valueMapEntry[T any] struct {
@@ -27,10 +25,9 @@ type valueMapEntry[T any] struct {
 }
 
 func (m *ValueMap[K, V]) getCleanupFunc() func(valueMapCleanupArg[K, V]) {
-	m.cleanupFuncOnce.Do(func() {
-		m.cleanupFunc = m.cleanup
+	return m.cleanupFunc.get(func() func(valueMapCleanupArg[K, V]) {
+		return m.cleanup
 	})
-	return m.cleanupFunc
 }
 
 func (m *ValueMap[K, V]) newEntry(key K, value *V) valueMapEntry[V] {
@@ -92,17 +89,7 @@ func (m *ValueMap[K, V]) Delete(key K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
-	for range 10 {
-		var count int64
-		m.m.Range(func(k K, e valueMapEntry[V]) bool {
-			count++
-			m.deleteEntry(k, e)
-			return true
-		})
-		if count == 0 {
-			return
-		}
-	}
+	clearMap(&m.m, m.deleteEntry)
 }
 
 // Swap is like [sync.Map.Swap].

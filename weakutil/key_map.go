@@ -4,7 +4,6 @@ import (
 	"iter"
 	"reflect"
 	"runtime"
-	"sync"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
@@ -17,11 +16,9 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type KeyMap[K any, V any] struct {
-	m                   syncutil.Map[weak.Pointer[K], keyMapEntry[V]]
-	cleanupFunc         func(weak.Pointer[K])
-	cleanupFuncOnce     sync.Once
-	valueComparable     bool
-	valueComparableOnce sync.Once
+	m               syncutil.Map[weak.Pointer[K], keyMapEntry[V]]
+	cleanupFunc     lazyValue[func(weak.Pointer[K])]
+	valueComparable lazyValue[bool]
 }
 
 type keyMapEntry[V any] struct {
@@ -30,17 +27,15 @@ type keyMapEntry[V any] struct {
 }
 
 func (m *KeyMap[K, V]) getCleanupFunc() func(weak.Pointer[K]) {
-	m.cleanupFuncOnce.Do(func() {
-		m.cleanupFunc = m.cleanup
+	return m.cleanupFunc.get(func() func(weak.Pointer[K]) {
+		return m.cleanup
 	})
-	return m.cleanupFunc
 }
 
 func (m *KeyMap[K, V]) isValueComparable() bool {
-	m.valueComparableOnce.Do(func() {
-		m.valueComparable = isTypeSafelyComparable(reflect.TypeFor[V]())
+	return m.valueComparable.get(func() bool {
+		return isTypeSafelyComparable(reflect.TypeFor[V]())
 	})
-	return m.valueComparable
 }
 
 func (m *KeyMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value V) (e keyMapEntry[V]) {
@@ -91,17 +86,7 @@ func (m *KeyMap[K, V]) Delete(key *K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *KeyMap[K, V]) Clear() {
-	for range 10 {
-		var count int64
-		m.m.Range(func(kp weak.Pointer[K], e keyMapEntry[V]) bool {
-			count++
-			m.deleteEntry(kp, e)
-			return true
-		})
-		if count == 0 {
-			return
-		}
-	}
+	clearMap(&m.m, m.deleteEntry)
 }
 
 // Swap is like [sync.Map.Swap].
