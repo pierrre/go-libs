@@ -22,7 +22,7 @@ func (m *commonMap[K, V]) initialize() {
 	m.cleanupEnabled.Store(DefaultMapCleanupEnabled.Load())
 }
 
-// DefaultMapCleanupEnabled configures the default value of [commonMap.IsCleanupEnabled] for new maps.
+// DefaultMapCleanupEnabled configures the default value of IsCleanupEnabled() for new maps.
 // Default: true.
 var DefaultMapCleanupEnabled atomic.Bool
 
