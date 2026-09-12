@@ -39,7 +39,9 @@ func (m *KeyMap[K, V]) isValueComparable() bool {
 func (m *KeyMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value V) (e keyMapEntry[V]) {
 	e.value = value
 	if key != nil {
-		e.cleanup = runtime.AddCleanup(key, m.getCleanupFunc(), kp)
+		if m.IsCleanupEnabled() {
+			e.cleanup = runtime.AddCleanup(key, m.getCleanupFunc(), kp)
+		}
 	}
 	return e
 }

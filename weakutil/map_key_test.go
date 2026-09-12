@@ -1,12 +1,12 @@
-package weakutil_test
+package weakutil
 
 import (
 	"fmt"
 	"runtime"
 	"testing"
+	"weak"
 
 	"github.com/pierrre/assert"
-	. "github.com/pierrre/go-libs/weakutil"
 )
 
 func ExampleKeyMap() {
@@ -89,6 +89,19 @@ func BenchmarkKeyMapStoreDifferent(b *testing.B) {
 
 func BenchmarkKeyMapStoreNewRandomKey(b *testing.B) {
 	m := new(KeyMap[[64]byte, string])
+	v := "test"
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			k := &[64]byte{}
+			m.Store(k, v)
+		}
+	})
+}
+
+func BenchmarkKeyMapStoreNewRandomKeyNoCleanup(b *testing.B) {
+	m := new(KeyMap[[64]byte, string])
+	m.SetCleanupEnabled(false)
 	v := "test"
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
@@ -571,4 +584,16 @@ func BenchmarkKeyMapRange(b *testing.B) {
 		}
 	})
 	runtime.KeepAlive(ks)
+}
+
+func KeyMapRawEntries[K any, V any](m *KeyMap[K, V]) (total, dead int) {
+	m.m.Range(func(kp weak.Pointer[K], _ keyMapEntry[V]) bool {
+		total++
+		_, alive := loadPointer(kp)
+		if !alive {
+			dead++
+		}
+		return true
+	})
+	return total, dead
 }

@@ -50,16 +50,21 @@ func (m *KeyValueMap[K, V]) getValueCleanupFunc() func(keyValueMapCleanupArg[K, 
 }
 
 func (m *KeyValueMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value *V) (e keyValueMapEntry[K, V]) {
+	cleanupEnabled := m.IsCleanupEnabled()
 	if key != nil {
-		e.keyCleanup = runtime.AddCleanup(key, m.getKeyCleanupFunc(), kp)
+		if cleanupEnabled {
+			e.keyCleanup = runtime.AddCleanup(key, m.getKeyCleanupFunc(), kp)
+		}
 	}
 	if value != nil {
 		vp := weak.Make(value)
 		e.value = vp
-		e.valueCleanup = runtime.AddCleanup(value, m.getValueCleanupFunc(), keyValueMapCleanupArg[K, V]{
-			key:   kp,
-			value: vp,
-		})
+		if cleanupEnabled {
+			e.valueCleanup = runtime.AddCleanup(value, m.getValueCleanupFunc(), keyValueMapCleanupArg[K, V]{
+				key:   kp,
+				value: vp,
+			})
+		}
 	}
 	return e
 }

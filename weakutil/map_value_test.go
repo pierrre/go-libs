@@ -1,4 +1,4 @@
-package weakutil_test
+package weakutil
 
 import (
 	"fmt"
@@ -8,7 +8,6 @@ import (
 	"time"
 
 	"github.com/pierrre/assert"
-	. "github.com/pierrre/go-libs/weakutil"
 )
 
 func ExampleValueMap() {
@@ -64,6 +63,17 @@ func BenchmarkValueMapStoreDifferent(b *testing.B) {
 
 func BenchmarkValueMapStoreNewRandomKey(b *testing.B) {
 	m := new(ValueMap[int64, [64]byte])
+	b.ResetTimer()
+	b.RunParallel(func(pb *testing.PB) {
+		for pb.Next() {
+			m.Store(rand.Int64(), &[64]byte{})
+		}
+	})
+}
+
+func BenchmarkValueMapStoreNewRandomKeyNoCleanup(b *testing.B) {
+	m := new(ValueMap[int64, [64]byte])
+	m.SetCleanupEnabled(false)
 	b.ResetTimer()
 	b.RunParallel(func(pb *testing.PB) {
 		for pb.Next() {
@@ -532,4 +542,13 @@ func BenchmarkValueMapRange(b *testing.B) {
 		}
 	})
 	runtime.KeepAlive(v)
+}
+
+func ValueMapRawEntry[K comparable, V any](m *ValueMap[K, V], key K) (present, alive bool) {
+	e, ok := m.m.Load(key)
+	if !ok {
+		return false, false
+	}
+	_, alive = loadPointer(e.value)
+	return true, alive
 }

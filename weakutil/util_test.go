@@ -1,4 +1,4 @@
-package weakutil_test
+package weakutil
 
 import (
 	"reflect"
@@ -7,7 +7,6 @@ import (
 	"unsafe" //nolint:depguard // needed to test the UnsafePointer kind
 
 	"github.com/pierrre/assert"
-	. "github.com/pierrre/go-libs/weakutil"
 )
 
 func disableGC(tb testing.TB) {

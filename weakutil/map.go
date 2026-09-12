@@ -2,13 +2,45 @@ package weakutil
 
 import (
 	"sync"
+	"sync/atomic"
 	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
 )
 
 type commonMap[K comparable, V any] struct {
-	m syncutil.Map[K, V]
+	m              syncutil.Map[K, V]
+	initialized    sync.Once
+	cleanupEnabled atomic.Bool
+}
+
+func (m *commonMap[K, V]) ensureInit() {
+	m.initialized.Do(m.initialize)
+}
+
+func (m *commonMap[K, V]) initialize() {
+	m.cleanupEnabled.Store(DefaultMapCleanupEnabled.Load())
+}
+
+// DefaultMapCleanupEnabled configures the default value of [commonMap.IsCleanupEnabled] for new maps.
+// Default: true.
+var DefaultMapCleanupEnabled atomic.Bool
+
+func init() {
+	DefaultMapCleanupEnabled.Store(true)
+}
+
+// IsCleanupEnabled indicates whether the cleanup with [runtime.Cleanup] is enabled.
+// The default value is controlled by [DefaultMapCleanupEnabled].
+func (m *commonMap[K, V]) IsCleanupEnabled() bool {
+	m.ensureInit()
+	return m.cleanupEnabled.Load()
+}
+
+// SetCleanupEnabled configures whether the cleanup with [runtime.Cleanup] is enabled.
+func (m *commonMap[K, V]) SetCleanupEnabled(enabled bool) {
+	m.ensureInit()
+	m.cleanupEnabled.Store(enabled)
 }
 
 type lazyValue[T any] struct {

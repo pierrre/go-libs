@@ -1,10 +1,17 @@
-package weakutil_test
+package weakutil
 
 import (
 	"testing"
 
 	"github.com/pierrre/assert"
 )
+
+func TestCommonMapCleanupEnabled(t *testing.T) {
+	m := new(commonMap[int, int])
+	assert.True(t, m.IsCleanupEnabled())
+	m.SetCleanupEnabled(false)
+	assert.False(t, m.IsCleanupEnabled())
+}
 
 func getMapLen[M interface{ Range(f func(K, V) bool) }, K any, V any](m M) int {
 	count := 0

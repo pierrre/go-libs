@@ -32,10 +32,12 @@ func (m *ValueMap[K, V]) newEntry(key K, value *V) valueMapEntry[V] {
 	var e valueMapEntry[V]
 	if value != nil {
 		e.value = weak.Make(value)
-		e.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
-			key:   key,
-			value: e.value,
-		})
+		if m.IsCleanupEnabled() {
+			e.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
+				key:   key,
+				value: e.value,
+			})
+		}
 	}
 	return e
 }
