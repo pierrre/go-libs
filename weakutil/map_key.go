@@ -5,8 +5,6 @@ import (
 	"reflect"
 	"runtime"
 	"weak"
-
-	"github.com/pierrre/go-libs/syncutil"
 )
 
 // KeyMap is a map that automatically evicts entries when the key is no longer reachable.
@@ -16,7 +14,7 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type KeyMap[K any, V any] struct {
-	m               syncutil.Map[weak.Pointer[K], keyMapEntry[V]]
+	commonMap[weak.Pointer[K], keyMapEntry[V]]
 	cleanupFunc     lazyValue[func(weak.Pointer[K])]
 	valueComparable lazyValue[bool]
 }

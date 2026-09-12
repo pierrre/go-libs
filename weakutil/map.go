@@ -7,6 +7,10 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
+type commonMap[K comparable, V any] struct {
+	m syncutil.Map[K, V]
+}
+
 type lazyValue[T any] struct {
 	once  sync.Once
 	value T

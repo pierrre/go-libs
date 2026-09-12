@@ -4,8 +4,6 @@ import (
 	"iter"
 	"runtime"
 	"weak"
-
-	"github.com/pierrre/go-libs/syncutil"
 )
 
 // ValueMap is a map that automatically evicts entries when the value is no longer reachable.
@@ -15,7 +13,7 @@ import (
 //
 // It implements the same methods as [sync.Map].
 type ValueMap[K comparable, V any] struct {
-	m           syncutil.Map[K, valueMapEntry[V]]
+	commonMap[K, valueMapEntry[V]]
 	cleanupFunc lazyValue[func(valueMapCleanupArg[K, V])]
 }
 
