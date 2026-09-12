@@ -71,20 +71,12 @@ func (m *KeyValueMap[K, V]) deleteEntry(kp weak.Pointer[K], e keyValueMapEntry[K
 	return m.m.CompareAndDelete(kp, e)
 }
 
-func (m *KeyValueMap[K, V]) loadValue(kp weak.Pointer[K], e keyValueMapEntry[K, V]) (value *V, alive bool) {
-	value, alive = loadPointer(e.value)
-	if !alive {
-		m.deleteEntry(kp, e)
-	}
-	return value, alive
+func (m *KeyValueMap[K, V]) loadValue(kp weak.Pointer[K], e keyValueMapEntry[K, V]) (*V, bool) {
+	return loadWeak(m, kp, e, e.value)
 }
 
-func (m *KeyValueMap[K, V]) loadKey(kp weak.Pointer[K], e keyValueMapEntry[K, V]) (key *K, alive bool) {
-	key, alive = loadPointer(kp)
-	if !alive {
-		m.deleteEntry(kp, e)
-	}
-	return key, alive
+func (m *KeyValueMap[K, V]) loadKey(kp weak.Pointer[K], e keyValueMapEntry[K, V]) (*K, bool) {
+	return loadWeak(m, kp, e, kp)
 }
 
 func (m *KeyValueMap[K, V]) keyCleanup(kp weak.Pointer[K]) {

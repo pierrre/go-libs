@@ -2,6 +2,7 @@ package weakutil
 
 import (
 	"sync"
+	"weak"
 
 	"github.com/pierrre/go-libs/syncutil"
 )
@@ -30,4 +31,13 @@ func clearMap[K comparable, V any](m *syncutil.Map[K, V], del func(K, V) bool) {
 			return
 		}
 	}
+}
+
+func loadWeak[M interface{ deleteEntry(key K, e E) bool }, T any, K comparable, E any](m M, key K, e E, wp weak.Pointer[T],
+) (*T, bool) {
+	value, alive := loadPointer(wp)
+	if !alive {
+		m.deleteEntry(key, e)
+	}
+	return value, alive
 }

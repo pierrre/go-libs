@@ -47,12 +47,8 @@ func (m *ValueMap[K, V]) deleteEntry(key K, e valueMapEntry[V]) (deleted bool) {
 	return m.m.CompareAndDelete(key, e)
 }
 
-func (m *ValueMap[K, V]) loadValue(key K, e valueMapEntry[V]) (value *V, alive bool) {
-	value, alive = loadPointer(e.value)
-	if !alive {
-		m.deleteEntry(key, e)
-	}
-	return value, alive
+func (m *ValueMap[K, V]) loadValue(key K, e valueMapEntry[V]) (*V, bool) {
+	return loadWeak(m, key, e, e.value)
 }
 
 type valueMapCleanupArg[K comparable, V any] struct {

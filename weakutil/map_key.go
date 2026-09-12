@@ -55,12 +55,8 @@ func (m *KeyMap[K, V]) deleteEntry(kp weak.Pointer[K], e keyMapEntry[V]) (delete
 	return true
 }
 
-func (m *KeyMap[K, V]) loadKey(kp weak.Pointer[K], e keyMapEntry[V]) (key *K, alive bool) {
-	key, alive = loadPointer(kp)
-	if !alive {
-		m.deleteEntry(kp, e)
-	}
-	return key, alive
+func (m *KeyMap[K, V]) loadKey(kp weak.Pointer[K], e keyMapEntry[V]) (*K, bool) {
+	return loadWeak(m, kp, e, kp)
 }
 
 func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
