@@ -11,6 +11,7 @@ import (
 // It is safe for concurrent use.
 // The zero value is ready to use.
 // If a value is set with a nil key, it is never evicted.
+// Additionally, when cleanup is disabled, dead entries are removed from the map every [KeyMap.GetSweepWriteCount] writes.
 //
 // It implements the same methods as [sync.Map].
 type KeyMap[K any, V any] struct {
@@ -63,6 +64,12 @@ func (m *KeyMap[K, V]) cleanup(kp weak.Pointer[K]) {
 	m.m.Delete(kp)
 }
 
+func (m *KeyMap[K, V]) sweep() {
+	m.Range(func(_ *K, _ V) bool {
+		return true
+	})
+}
+
 // Store is like [sync.Map.Store].
 func (m *KeyMap[K, V]) Store(key *K, value V) {
 	_, _ = m.Swap(key, value)
@@ -99,6 +106,7 @@ func (m *KeyMap[K, V]) Swap(key *K, value V) (previous V, loaded bool) {
 	if ok {
 		e.cleanup.Stop()
 	}
+	m.maybeSweep(m.sweep)
 	return e.value, ok
 }
 
@@ -108,6 +116,7 @@ func (m *KeyMap[K, V]) LoadAndDelete(key *K) (value V, loaded bool) {
 	e, loaded := m.m.LoadAndDelete(kp)
 	if loaded {
 		e.cleanup.Stop()
+		m.maybeSweep(m.sweep)
 	}
 	return e.value, loaded
 }
@@ -125,6 +134,7 @@ func (m *KeyMap[K, V]) LoadOrStore(key *K, value V) (actual V, loaded bool) {
 		e = m.newEntry(key, kp, value)
 		_, loaded = m.m.LoadOrStore(kp, e)
 		if !loaded {
+			m.maybeSweep(m.sweep)
 			return value, false
 		}
 	}
@@ -142,6 +152,7 @@ func (m *KeyMap[K, V]) CompareAndDelete(key *K, old V) (deleted bool) {
 			return false
 		}
 		if m.deleteEntry(kp, e) {
+			m.maybeSweep(m.sweep)
 			return true
 		}
 	}
@@ -168,6 +179,7 @@ func (m *KeyMap[K, V]) CompareAndSwap(key *K, oldValue, newValue V) (swapped boo
 		}
 		ne.cleanup.Stop()
 		if swapped {
+			m.maybeSweep(m.sweep)
 			return true
 		}
 	}

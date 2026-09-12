@@ -474,12 +474,12 @@ func valueMapStoreDeadValue[K comparable, V any](m *ValueMap[K, V], key K) {
 
 func assertValueMapDeadEntry[K comparable, V any](tb testing.TB, m *ValueMap[K, V], key K) {
 	tb.Helper()
-	assertDeadEntry(tb, func(k K) (present, alive bool) { return ValueMapRawEntry(m, k) }, key)
+	assertDeadEntry(tb, func(k K) (present, alive bool) { return valueMapRawEntry(m, k) }, key)
 }
 
 func assertValueMapNoEntry[K comparable, V any](tb testing.TB, m *ValueMap[K, V], key K) {
 	tb.Helper()
-	assertNoEntry(tb, func(k K) (present, alive bool) { return ValueMapRawEntry(m, k) }, key)
+	assertNoEntry(tb, func(k K) (present, alive bool) { return valueMapRawEntry(m, k) }, key)
 }
 
 func TestValueMapLoadEvictsDeadEntry(t *testing.T) {
@@ -544,7 +544,21 @@ func BenchmarkValueMapRange(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func ValueMapRawEntry[K comparable, V any](m *ValueMap[K, V], key K) (present, alive bool) {
+func TestValueMapSweepEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(ValueMap[string, [64]byte])
+	m.SetCleanupEnabled(false)
+	m.SetSweepWriteCount(1)
+	valueMapStoreDeadValue(m, "test")
+	runtime.GC() // v is unreachable: weak handle cleared (dead entry)
+	assertValueMapDeadEntry(t, m, "test")
+	v2 := &[64]byte{}
+	m.Store("test2", v2) // triggers the sweep, which removes the dead entry
+	assertValueMapNoEntry(t, m, "test")
+	runtime.KeepAlive(v2)
+}
+
+func valueMapRawEntry[K comparable, V any](m *ValueMap[K, V], key K) (present, alive bool) {
 	e, ok := m.m.Load(key)
 	if !ok {
 		return false, false

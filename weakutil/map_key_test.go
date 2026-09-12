@@ -536,7 +536,7 @@ func TestKeyMapRangeEvictsDeadKey(t *testing.T) {
 	m.Store(k, 123)
 	runtime.KeepAlive(k) // keep k alive through Store
 	runtime.GC()         // k is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
-	total, dead := KeyMapRawEntries(m)
+	total, dead := keyMapRawEntries(m)
 	assert.Equal(t, total, 1)
 	assert.Equal(t, dead, 1)
 	seen := false
@@ -544,7 +544,7 @@ func TestKeyMapRangeEvictsDeadKey(t *testing.T) {
 		seen = true
 	}
 	assert.False(t, seen)
-	total, _ = KeyMapRawEntries(m)
+	total, _ = keyMapRawEntries(m)
 	assert.Equal(t, total, 0)
 }
 
@@ -556,7 +556,7 @@ func TestKeyMapRangeEvictsDeadKeyNonComparable(t *testing.T) {
 	m.Store(k, []byte("test"))
 	runtime.KeepAlive(k) // keep k alive through Store
 	runtime.GC()         // k is unreachable: weak handle cleared (dead entry), cleanup kept until a second GC
-	total, dead := KeyMapRawEntries(m)
+	total, dead := keyMapRawEntries(m)
 	assert.Equal(t, total, 1)
 	assert.Equal(t, dead, 1)
 	seen := false
@@ -564,7 +564,7 @@ func TestKeyMapRangeEvictsDeadKeyNonComparable(t *testing.T) {
 		seen = true
 	}
 	assert.False(t, seen)
-	total, _ = KeyMapRawEntries(m)
+	total, _ = keyMapRawEntries(m)
 	assert.Equal(t, total, 0)
 }
 
@@ -586,7 +586,27 @@ func BenchmarkKeyMapRange(b *testing.B) {
 	runtime.KeepAlive(ks)
 }
 
-func KeyMapRawEntries[K any, V any](m *KeyMap[K, V]) (total, dead int) {
+func TestKeyMapSweepEvictsDeadKey(t *testing.T) {
+	disableGC(t)
+	m := new(KeyMap[[64]byte, int])
+	m.SetCleanupEnabled(false)
+	m.SetSweepWriteCount(1)
+	k := &[64]byte{}
+	m.Store(k, 123)
+	runtime.KeepAlive(k) // keep k alive through Store
+	runtime.GC()         // k is unreachable: weak handle cleared (dead entry)
+	total, dead := keyMapRawEntries(m)
+	assert.Equal(t, total, 1)
+	assert.Equal(t, dead, 1)
+	k2 := &[64]byte{}
+	m.Store(k2, 456) // triggers the sweep, which removes the dead entry
+	total, dead = keyMapRawEntries(m)
+	assert.Equal(t, total, 1)
+	assert.Equal(t, dead, 0)
+	runtime.KeepAlive(k2)
+}
+
+func keyMapRawEntries[K any, V any](m *KeyMap[K, V]) (total, dead int) {
 	m.m.Range(func(kp weak.Pointer[K], _ keyMapEntry[V]) bool {
 		total++
 		_, alive := loadPointer(kp)

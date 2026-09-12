@@ -601,12 +601,12 @@ func keyValueMapStoreDeadValue[K any, V any](m *KeyValueMap[K, V], key *K) (kp w
 
 func assertKeyValueMapDeadEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
 	tb.Helper()
-	assertDeadEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return KeyValueMapRawEntry(m, k) }, kp)
+	assertDeadEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return keyValueMapRawEntry(m, k) }, kp)
 }
 
 func assertKeyValueMapNoEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
 	tb.Helper()
-	assertNoEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return KeyValueMapRawEntry(m, k) }, kp)
+	assertNoEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return keyValueMapRawEntry(m, k) }, kp)
 }
 
 func TestKeyValueMapLoadEvictsDeadValue(t *testing.T) {
@@ -680,7 +680,25 @@ func BenchmarkKeyValueMapRange(b *testing.B) {
 	runtime.KeepAlive(v)
 }
 
-func KeyValueMapRawEntry[K any, V any](m *KeyValueMap[K, V], kp weak.Pointer[K]) (present, alive bool) {
+func TestKeyValueMapSweepEvictsDeadValue(t *testing.T) {
+	disableGC(t)
+	m := new(KeyValueMap[int, [64]byte])
+	m.SetCleanupEnabled(false)
+	m.SetSweepWriteCount(1)
+	k := new(int)
+	kp := keyValueMapStoreDeadValue(m, k)
+	runtime.GC() // v is unreachable: weak handle cleared (dead entry)
+	assertKeyValueMapDeadEntry(t, m, kp)
+	runtime.KeepAlive(k) // k must stay alive through the GCs
+	k2 := new(int)
+	v2 := &[64]byte{}
+	m.Store(k2, v2) // triggers the sweep, which removes the dead entry
+	assertKeyValueMapNoEntry(t, m, kp)
+	runtime.KeepAlive(k2)
+	runtime.KeepAlive(v2)
+}
+
+func keyValueMapRawEntry[K any, V any](m *KeyValueMap[K, V], kp weak.Pointer[K]) (present, alive bool) {
 	e, ok := m.m.Load(kp)
 	if !ok {
 		return false, false

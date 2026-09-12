@@ -9,9 +9,12 @@ import (
 )
 
 type commonMap[K comparable, V any] struct {
-	m              syncutil.Map[K, V]
-	initialized    sync.Once
-	cleanupEnabled atomic.Bool
+	m               syncutil.Map[K, V]
+	initialized     sync.Once
+	cleanupEnabled  atomic.Bool
+	sweepWriteCount atomic.Uint64
+	writeCount      atomic.Uint64
+	sweeping        atomic.Bool
 }
 
 func (m *commonMap[K, V]) ensureInit() {
@@ -20,14 +23,20 @@ func (m *commonMap[K, V]) ensureInit() {
 
 func (m *commonMap[K, V]) initialize() {
 	m.cleanupEnabled.Store(DefaultMapCleanupEnabled.Load())
+	m.sweepWriteCount.Store(DefaultMapSweepWriteCount.Load())
 }
 
 // DefaultMapCleanupEnabled configures the default value of IsCleanupEnabled() for new maps.
 // Default: true.
 var DefaultMapCleanupEnabled atomic.Bool
 
+// DefaultMapSweepWriteCount configures the default value of GetSweepWriteCount() for new maps.
+// Default: 10000.
+var DefaultMapSweepWriteCount atomic.Uint64
+
 func init() {
 	DefaultMapCleanupEnabled.Store(true)
+	DefaultMapSweepWriteCount.Store(10000)
 }
 
 // IsCleanupEnabled indicates whether the cleanup with [runtime.Cleanup] is enabled.
@@ -41,6 +50,41 @@ func (m *commonMap[K, V]) IsCleanupEnabled() bool {
 func (m *commonMap[K, V]) SetCleanupEnabled(enabled bool) {
 	m.ensureInit()
 	m.cleanupEnabled.Store(enabled)
+}
+
+// GetSweepWriteCount returns the number of writes between two sweeps.
+// The sweep only runs when cleanup is disabled with [SetCleanupEnabled].
+// A value of 0 disables the sweep.
+func (m *commonMap[K, V]) GetSweepWriteCount() uint64 {
+	m.ensureInit()
+	return m.sweepWriteCount.Load()
+}
+
+// SetSweepWriteCount configures the number of writes between two sweeps.
+// The sweep only runs when cleanup is disabled with [SetCleanupEnabled].
+// A value of 0 disables the sweep.
+func (m *commonMap[K, V]) SetSweepWriteCount(count uint64) {
+	m.ensureInit()
+	m.sweepWriteCount.Store(count)
+}
+
+func (m *commonMap[K, V]) maybeSweep(sweep func()) {
+	if m.IsCleanupEnabled() {
+		return
+	}
+	threshold := m.GetSweepWriteCount()
+	if threshold == 0 {
+		return
+	}
+	if m.writeCount.Add(1) < threshold {
+		return
+	}
+	if !m.sweeping.CompareAndSwap(false, true) {
+		return // another goroutine is already sweeping
+	}
+	m.writeCount.Store(0)
+	defer m.sweeping.Store(false)
+	sweep()
 }
 
 type lazyValue[T any] struct {
