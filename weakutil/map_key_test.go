@@ -37,7 +37,7 @@ func TestKeyMapStoreReplace(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v2)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -48,7 +48,7 @@ func TestKeyMapStoreNil(t *testing.T) {
 	v2, ok := m.Load(nil)
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 }
 
 func TestKeyMapStoreNonComparable(t *testing.T) {
@@ -59,7 +59,7 @@ func TestKeyMapStoreNonComparable(t *testing.T) {
 	m.Store(k, v1) // Must not panic.
 	_, ok := m.Load(k)
 	assert.True(t, ok)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -104,7 +104,7 @@ func TestKeyMapLoadNotFound(t *testing.T) {
 	v, ok := m.Load(nil)
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func BenchmarkKeyMapLoad(b *testing.B) {
@@ -149,7 +149,7 @@ func TestKeyMapDelete(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -157,7 +157,7 @@ func TestKeyMapDeleteNotFound(t *testing.T) {
 	m := new(KeyMap[[64]byte, string])
 	k := &[64]byte{}
 	m.Delete(k)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -180,14 +180,14 @@ func TestKeyMapClear(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(v1)
 }
 
 func TestKeyMapClearEmpty(t *testing.T) {
 	m := new(KeyMap[[64]byte, string])
 	m.Clear()
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestKeyMapClearNonComparable(t *testing.T) {
@@ -199,7 +199,7 @@ func TestKeyMapClearNonComparable(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.False(t, ok)
 	assert.SliceEmpty(t, v2)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -225,7 +225,7 @@ func TestKeyMapSwap(t *testing.T) {
 	v4, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v4, v2)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -240,7 +240,7 @@ func TestKeyMapSwapSame(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -254,7 +254,7 @@ func TestKeyMapSwapNotFound(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -266,7 +266,7 @@ func TestKeyMapSwapNonComparable(t *testing.T) {
 	v2, loaded := m.Swap(k, v1) // Must not panic.
 	assert.True(t, loaded)
 	assert.DeepEqual(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -278,7 +278,7 @@ func TestKeyMapLoadAndDelete(t *testing.T) {
 	v2, loaded := m.LoadAndDelete(k)
 	assert.True(t, loaded)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -288,7 +288,7 @@ func TestKeyMapLoadAndDeleteNotFound(t *testing.T) {
 	v, loaded := m.LoadAndDelete(k)
 	assert.False(t, loaded)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -313,7 +313,7 @@ func TestKeyMapLoadOrStore(t *testing.T) {
 	v3, loaded := m.LoadOrStore(k, v2)
 	assert.True(t, loaded)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -324,7 +324,7 @@ func TestKeyMapLoadOrStoreNotFound(t *testing.T) {
 	v2, loaded := m.LoadOrStore(k, v1)
 	assert.False(t, loaded)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -348,7 +348,7 @@ func TestKeyMapCompareAndDelete(t *testing.T) {
 	m.Store(k, v)
 	deleted := m.CompareAndDelete(k, v)
 	assert.True(t, deleted)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -360,7 +360,7 @@ func TestKeyMapCompareAndDeleteNotEqual(t *testing.T) {
 	v2 := "test2"
 	deleted := m.CompareAndDelete(k, v2)
 	assert.False(t, deleted)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -370,7 +370,7 @@ func TestKeyMapCompareAndDeleteNotFound(t *testing.T) {
 	v := "test"
 	deleted := m.CompareAndDelete(k, v)
 	assert.False(t, deleted)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -399,7 +399,7 @@ func TestKeyMapCompareAndSwap(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v2)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -412,7 +412,7 @@ func TestKeyMapCompareAndSwapNotFound(t *testing.T) {
 	assert.False(t, swapped)
 	_, ok := m.Load(k)
 	assert.False(t, ok)
-	assert.Equal(t, getKeyMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -427,7 +427,7 @@ func TestKeyMapCompareAndSwapNotEqual(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -441,7 +441,7 @@ func TestKeyMapCompareAndSwapEqual(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -486,7 +486,7 @@ func TestKeyMapRange(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found)
-	assert.Equal(t, getKeyMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -571,12 +571,4 @@ func BenchmarkKeyMapRange(b *testing.B) {
 		}
 	})
 	runtime.KeepAlive(ks)
-}
-
-func getKeyMapLen[K comparable, V any](m *KeyMap[K, V]) int {
-	count := 0
-	for range m.Range {
-		count++
-	}
-	return count
 }

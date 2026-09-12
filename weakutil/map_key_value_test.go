@@ -41,7 +41,7 @@ func TestKeyValueMapStoreReplace(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v2)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -54,7 +54,7 @@ func TestKeyValueMapStoreNilKey(t *testing.T) {
 	v2, ok := m.Load(nil)
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(v1)
 }
 
@@ -65,7 +65,7 @@ func TestKeyValueMapStoreNilValue(t *testing.T) {
 	v, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 }
 
@@ -75,7 +75,7 @@ func TestKeyValueMapStoreNilBoth(t *testing.T) {
 	v, ok := m.Load(nil)
 	assert.True(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 }
 
 func BenchmarkKeyValueMapStoreSame(b *testing.B) {
@@ -123,7 +123,7 @@ func TestKeyValueMapLoadNotFound(t *testing.T) {
 	v, ok := m.Load(nil)
 	assert.False(t, ok)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func TestKeyValueMapLoadRemovedGCKey(t *testing.T) {
@@ -134,7 +134,7 @@ func TestKeyValueMapLoadRemovedGCKey(t *testing.T) {
 		m.Store(k, v)
 	}()
 	runtime.GC()
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(v)
 }
 
@@ -184,7 +184,7 @@ func TestKeyValueMapDelete(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -193,7 +193,7 @@ func TestKeyValueMapDeleteNotFound(t *testing.T) {
 	m := new(KeyValueMap[[64]byte, [64]byte])
 	k := &[64]byte{}
 	m.Delete(k)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -218,7 +218,7 @@ func TestKeyValueMapClear(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.False(t, ok)
 	assert.Zero(t, v2)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -226,7 +226,7 @@ func TestKeyValueMapClear(t *testing.T) {
 func TestKeyValueMapClearEmpty(t *testing.T) {
 	m := new(KeyValueMap[[64]byte, [64]byte])
 	m.Clear()
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 }
 
 func BenchmarkKeyValueMapClear(b *testing.B) {
@@ -251,7 +251,7 @@ func TestKeyValueMapSwap(t *testing.T) {
 	v4, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v4, v2)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -268,7 +268,7 @@ func TestKeyValueMapSwapSame(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -283,7 +283,7 @@ func TestKeyValueMapSwapNotFound(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -296,7 +296,7 @@ func TestKeyValueMapLoadAndDelete(t *testing.T) {
 	v2, loaded := m.LoadAndDelete(k)
 	assert.True(t, loaded)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -307,7 +307,7 @@ func TestKeyValueMapLoadAndDeleteNotFound(t *testing.T) {
 	v, loaded := m.LoadAndDelete(k)
 	assert.False(t, loaded)
 	assert.Zero(t, v)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 }
 
@@ -332,7 +332,7 @@ func TestKeyValueMapLoadOrStore(t *testing.T) {
 	v3, loaded := m.LoadOrStore(k, v2)
 	assert.True(t, loaded)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -344,7 +344,7 @@ func TestKeyValueMapLoadOrStoreNotFound(t *testing.T) {
 	v2, loaded := m.LoadOrStore(k, v1)
 	assert.False(t, loaded)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -393,7 +393,7 @@ func TestKeyValueMapCompareAndDelete(t *testing.T) {
 	m.Store(k, v)
 	deleted := m.CompareAndDelete(k, v)
 	assert.True(t, deleted)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v)
 }
@@ -406,7 +406,7 @@ func TestKeyValueMapCompareAndDeleteNotEqual(t *testing.T) {
 	v2 := &[64]byte{}
 	deleted := m.CompareAndDelete(k, v2)
 	assert.False(t, deleted)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -418,7 +418,7 @@ func TestKeyValueMapCompareAndDeleteNotFound(t *testing.T) {
 	v := &[64]byte{}
 	deleted := m.CompareAndDelete(k, v)
 	assert.False(t, deleted)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v)
 }
@@ -449,7 +449,7 @@ func TestKeyValueMapCompareAndSwap(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v2)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -464,7 +464,7 @@ func TestKeyValueMapCompareAndSwapNotFound(t *testing.T) {
 	assert.False(t, swapped)
 	_, ok := m.Load(k)
 	assert.False(t, ok)
-	assert.Equal(t, getKeyValueMapLen(m), 0)
+	assert.Equal(t, getMapLen(m), 0)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -481,7 +481,7 @@ func TestKeyValueMapCompareAndSwapNotEqual(t *testing.T) {
 	v3, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v3, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 	runtime.KeepAlive(v2)
@@ -497,7 +497,7 @@ func TestKeyValueMapCompareAndSwapSame(t *testing.T) {
 	v2, ok := m.Load(k)
 	assert.True(t, ok)
 	assert.Equal(t, v2, v1)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -545,7 +545,7 @@ func TestKeyValueMapRange(t *testing.T) {
 		found = true
 	}
 	assert.True(t, found)
-	assert.Equal(t, getKeyValueMapLen(m), 1)
+	assert.Equal(t, getMapLen(m), 1)
 	runtime.KeepAlive(k)
 	runtime.KeepAlive(v1)
 }
@@ -589,15 +589,12 @@ func keyValueMapStoreDeadValue[K any, V any](m *KeyValueMap[K, V], key *K) (kp w
 
 func assertKeyValueMapDeadEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
 	tb.Helper()
-	present, alive := KeyValueMapRawEntry(m, kp)
-	assert.True(tb, present)
-	assert.False(tb, alive)
+	assertDeadEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return KeyValueMapRawEntry(m, k) }, kp)
 }
 
 func assertKeyValueMapNoEntry[K any, V any](tb testing.TB, m *KeyValueMap[K, V], kp weak.Pointer[K]) {
 	tb.Helper()
-	present, _ := KeyValueMapRawEntry(m, kp)
-	assert.False(tb, present)
+	assertNoEntry(tb, func(k weak.Pointer[K]) (present, alive bool) { return KeyValueMapRawEntry(m, k) }, kp)
 }
 
 func TestKeyValueMapLoadEvictsDeadValue(t *testing.T) {
@@ -669,12 +666,4 @@ func BenchmarkKeyValueMapRange(b *testing.B) {
 	})
 	runtime.KeepAlive(ks)
 	runtime.KeepAlive(v)
-}
-
-func getKeyValueMapLen[K any, V any](m *KeyValueMap[K, V]) int {
-	count := 0
-	for range m.Range {
-		count++
-	}
-	return count
 }
