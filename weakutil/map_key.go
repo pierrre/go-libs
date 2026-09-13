@@ -5,6 +5,8 @@ import (
 	"reflect"
 	"runtime"
 	"weak"
+
+	"github.com/pierrre/go-libs/reflectutil"
 )
 
 // KeyMap is a map that automatically evicts entries when the key is no longer reachable.
@@ -33,7 +35,7 @@ func (m *KeyMap[K, V]) getCleanupFunc() func(weak.Pointer[K]) {
 
 func (m *KeyMap[K, V]) isValueComparable() bool {
 	return m.valueComparable.get(func() bool {
-		return isTypeSafelyComparable(reflect.TypeFor[V]())
+		return reflectutil.IsTypeSafelyComparable(reflect.TypeFor[V]())
 	})
 }
 
