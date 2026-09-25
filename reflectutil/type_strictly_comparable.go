@@ -2,6 +2,8 @@ package reflectutil
 
 import (
 	"reflect"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 // IsTypeStrictlyComparable reports whether values of type t can always be compared with == without panicking at runtime.
@@ -19,15 +21,27 @@ func IsTypeStrictlyComparable(t reflect.Type) bool {
 	case reflect.Array:
 		return IsTypeStrictlyComparable(t.Elem())
 	case reflect.Struct:
-		fs := GetStructFields(t)
-		for i := range fs.Len() {
-			if !IsTypeStrictlyComparable(fs.Get(i).Type) {
-				return false
-			}
-		}
-		return true
+		return isStructStrictlyComparable(t)
 	default:
 		// Interface (any), Slice, Map, Func, Invalid: not provably safe.
 		return false
 	}
+}
+
+var comparableTypeCache syncutil.Map[reflect.Type, bool]
+
+func isStructStrictlyComparable(t reflect.Type) bool {
+	if v, ok := comparableTypeCache.Load(t); ok {
+		return v
+	}
+	fs := GetStructFields(t)
+	result := true
+	for i := range fs.Len() {
+		if !IsTypeStrictlyComparable(fs.Get(i).Type) {
+			result = false
+			break
+		}
+	}
+	comparableTypeCache.LoadOrStore(t, result)
+	return result
 }
