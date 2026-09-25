@@ -27,7 +27,7 @@ type nestedAny struct {
 	A structWithAny
 }
 
-var testIsTypeSafelyComparableCases = []struct {
+var testIsTypeStrictlyComparableCases = []struct {
 	name string
 	typ  reflect.Type
 	want bool
@@ -76,22 +76,22 @@ var testIsTypeSafelyComparableCases = []struct {
 	{name: "NestedStructWithAny", typ: reflect.TypeFor[nestedAny](), want: false},
 }
 
-func TestIsTypeSafelyComparable(t *testing.T) {
-	for _, tc := range testIsTypeSafelyComparableCases {
+func TestIsTypeStrictlyComparable(t *testing.T) {
+	for _, tc := range testIsTypeStrictlyComparableCases {
 		t.Run(tc.name, func(t *testing.T) {
-			assert.Equal(t, IsTypeSafelyComparable(tc.typ), tc.want)
+			assert.Equal(t, IsTypeStrictlyComparable(tc.typ), tc.want)
 			assert.AllocsPerRun(t, 100, func() {
-				_ = IsTypeSafelyComparable(tc.typ)
+				_ = IsTypeStrictlyComparable(tc.typ)
 			}, 0)
 		})
 	}
 }
 
-func BenchmarkIsTypeSafelyComparable(b *testing.B) {
-	for _, tc := range testIsTypeSafelyComparableCases {
+func BenchmarkIsTypeStrictlyComparable(b *testing.B) {
+	for _, tc := range testIsTypeStrictlyComparableCases {
 		b.Run(tc.name, func(b *testing.B) {
 			for b.Loop() {
-				_ = IsTypeSafelyComparable(tc.typ)
+				_ = IsTypeStrictlyComparable(tc.typ)
 			}
 		})
 	}
