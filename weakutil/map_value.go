@@ -4,6 +4,8 @@ import (
 	"iter"
 	"runtime"
 	"weak"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 // ValueMap is a map that automatically evicts entries when the value is no longer reachable.
@@ -23,9 +25,13 @@ type valueMapEntry[T any] struct {
 	cleanup runtime.Cleanup
 }
 
+func (e valueMapEntry[T]) stopCleanup() {
+	e.cleanup.Stop()
+}
+
 func (m *ValueMap[K, V]) getCleanupFunc() func(valueMapCleanupArg[K, V]) {
 	return m.cleanupFunc.get(func() func(valueMapCleanupArg[K, V]) {
-		return m.cleanup
+		return valueMapCleanup
 	})
 }
 
@@ -35,6 +41,7 @@ func (m *ValueMap[K, V]) newEntry(key K, value *V) valueMapEntry[V] {
 		e.value = weak.Make(value)
 		if m.IsCleanupEnabled() {
 			e.cleanup = runtime.AddCleanup(value, m.getCleanupFunc(), valueMapCleanupArg[K, V]{
+				m:     m.m,
 				key:   key,
 				value: e.value,
 			})
@@ -53,14 +60,15 @@ func (m *ValueMap[K, V]) loadValue(key K, e valueMapEntry[V]) (*V, bool) {
 }
 
 type valueMapCleanupArg[K comparable, V any] struct {
+	m     *syncutil.Map[K, valueMapEntry[V]]
 	key   K
 	value weak.Pointer[V]
 }
 
-func (m *ValueMap[K, V]) cleanup(mc valueMapCleanupArg[K, V]) {
-	e, ok := m.m.Load(mc.key)
-	if ok && e.value == mc.value {
-		m.m.CompareAndDelete(mc.key, e)
+func valueMapCleanup[K comparable, V any](arg valueMapCleanupArg[K, V]) {
+	e, ok := arg.m.Load(arg.key)
+	if ok && e.value == arg.value {
+		arg.m.CompareAndDelete(arg.key, e)
 	}
 }
 
@@ -77,6 +85,7 @@ func (m *ValueMap[K, V]) Store(key K, value *V) {
 
 // Load is like [sync.Map.Load].
 func (m *ValueMap[K, V]) Load(key K) (value *V, ok bool) {
+	m.ensureInit()
 	e, ok := m.m.Load(key)
 	if !ok {
 		return nil, false
@@ -92,11 +101,13 @@ func (m *ValueMap[K, V]) Delete(key K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *ValueMap[K, V]) Clear() {
-	clearMap(&m.m, m.deleteEntry)
+	m.ensureInit()
+	clearMap(m.m, m.deleteEntry)
 }
 
 // Swap is like [sync.Map.Swap].
 func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
+	m.ensureInit()
 	previous, loaded = m.Load(key)
 	if loaded && previous == value {
 		return previous, true
@@ -113,6 +124,7 @@ func (m *ValueMap[K, V]) Swap(key K, value *V) (previous *V, loaded bool) {
 
 // LoadAndDelete is like [sync.Map.LoadAndDelete].
 func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
+	m.ensureInit()
 	e, ok := m.m.LoadAndDelete(key)
 	if ok {
 		value, loaded = loadPointer(e.value)
@@ -124,6 +136,7 @@ func (m *ValueMap[K, V]) LoadAndDelete(key K) (value *V, loaded bool) {
 
 // LoadOrStore is like [sync.Map.LoadOrStore].
 func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
+	m.ensureInit()
 	for {
 		e, ok := m.m.Load(key)
 		if ok {
@@ -145,6 +158,7 @@ func (m *ValueMap[K, V]) LoadOrStore(key K, value *V) (actual *V, loaded bool) {
 
 // CompareAndDelete is like [sync.Map.CompareAndDelete].
 func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
+	m.ensureInit()
 	for {
 		e, ok := m.m.Load(key)
 		if !ok {
@@ -166,6 +180,7 @@ func (m *ValueMap[K, V]) CompareAndDelete(key K, old *V) (deleted bool) {
 
 // CompareAndSwap is like [sync.Map.CompareAndSwap].
 func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped bool) {
+	m.ensureInit()
 	for {
 		e, ok := m.m.Load(key)
 		if !ok {
@@ -196,6 +211,7 @@ func (m *ValueMap[K, V]) CompareAndSwap(key K, oldValue, newValue *V) (swapped b
 
 // Range is like [sync.Map.Range].
 func (m *ValueMap[K, V]) Range(f func(key K, value *V) bool) {
+	m.ensureInit()
 	m.m.Range(func(key K, e valueMapEntry[V]) bool {
 		value, alive := m.loadValue(key, e)
 		if !alive {

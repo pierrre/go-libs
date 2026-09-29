@@ -706,3 +706,33 @@ func keyValueMapRawEntry[K any, V any](m *KeyValueMap[K, V], kp weak.Pointer[K])
 	_, alive = loadPointer(e.value)
 	return true, alive
 }
+
+func TestKeyValueMapCollectedAfterDrop(t *testing.T) {
+	const n = 100
+	k := &[64]byte{}
+	v := &[64]byte{}
+	dropped := make([]weak.Pointer[KeyValueMap[[64]byte, [64]byte]], n)
+	for i := range n {
+		m := &KeyValueMap[[64]byte, [64]byte]{}
+		m.Store(k, v)
+		dropped[i] = weak.Make(m)
+	}
+	for range 100 {
+		runtime.GC()
+		allCollected := true
+		for _, w := range dropped {
+			if w.Value() != nil {
+				allCollected = false
+				break
+			}
+		}
+		if allCollected {
+			break
+		}
+	}
+	for i, w := range dropped {
+		assert.True(t, w.Value() == nil, assert.Messagef("map %d still alive", i))
+	}
+	runtime.KeepAlive(k)
+	runtime.KeepAlive(v)
+}

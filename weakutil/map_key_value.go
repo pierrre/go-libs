@@ -4,6 +4,8 @@ import (
 	"iter"
 	"runtime"
 	"weak"
+
+	"github.com/pierrre/go-libs/syncutil"
 )
 
 // KeyValueMap is a map that automatically evicts entries when the key or the value is no longer reachable.
@@ -18,7 +20,7 @@ import (
 // It implements the same methods as [sync.Map].
 type KeyValueMap[K any, V any] struct {
 	commonMap[weak.Pointer[K], keyValueMapEntry[K, V]]
-	keyCleanupFunc   lazyValue[func(weak.Pointer[K])]
+	keyCleanupFunc   lazyValue[func(keyValueMapKeyCleanupArg[K, V])]
 	valueCleanupFunc lazyValue[func(keyValueMapCleanupArg[K, V])]
 }
 
@@ -28,25 +30,31 @@ type keyValueMapEntry[K any, V any] struct {
 	valueCleanup runtime.Cleanup
 }
 
-func (e *keyValueMapEntry[K, V]) stopCleanup() {
+func (e keyValueMapEntry[K, V]) stopCleanup() {
 	e.keyCleanup.Stop()
 	e.valueCleanup.Stop()
 }
 
+type keyValueMapKeyCleanupArg[K any, V any] struct {
+	m   *syncutil.Map[weak.Pointer[K], keyValueMapEntry[K, V]]
+	key weak.Pointer[K]
+}
+
 type keyValueMapCleanupArg[K any, V any] struct {
+	m     *syncutil.Map[weak.Pointer[K], keyValueMapEntry[K, V]]
 	key   weak.Pointer[K]
 	value weak.Pointer[V]
 }
 
-func (m *KeyValueMap[K, V]) getKeyCleanupFunc() func(weak.Pointer[K]) {
-	return m.keyCleanupFunc.get(func() func(weak.Pointer[K]) {
-		return m.keyCleanup
+func (m *KeyValueMap[K, V]) getKeyCleanupFunc() func(keyValueMapKeyCleanupArg[K, V]) {
+	return m.keyCleanupFunc.get(func() func(keyValueMapKeyCleanupArg[K, V]) {
+		return keyValueMapKeyCleanup
 	})
 }
 
 func (m *KeyValueMap[K, V]) getValueCleanupFunc() func(keyValueMapCleanupArg[K, V]) {
 	return m.valueCleanupFunc.get(func() func(keyValueMapCleanupArg[K, V]) {
-		return m.valueCleanup
+		return keyValueMapValueCleanup
 	})
 }
 
@@ -54,7 +62,10 @@ func (m *KeyValueMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value *V) (e ke
 	cleanupEnabled := m.IsCleanupEnabled()
 	if key != nil {
 		if cleanupEnabled {
-			e.keyCleanup = runtime.AddCleanup(key, m.getKeyCleanupFunc(), kp)
+			e.keyCleanup = runtime.AddCleanup(key, m.getKeyCleanupFunc(), keyValueMapKeyCleanupArg[K, V]{
+				m:   m.m,
+				key: kp,
+			})
 		}
 	}
 	if value != nil {
@@ -62,6 +73,7 @@ func (m *KeyValueMap[K, V]) newEntry(key *K, kp weak.Pointer[K], value *V) (e ke
 		e.value = vp
 		if cleanupEnabled {
 			e.valueCleanup = runtime.AddCleanup(value, m.getValueCleanupFunc(), keyValueMapCleanupArg[K, V]{
+				m:     m.m,
 				key:   kp,
 				value: vp,
 			})
@@ -83,8 +95,8 @@ func (m *KeyValueMap[K, V]) loadKey(kp weak.Pointer[K], e keyValueMapEntry[K, V]
 	return loadWeak(m, kp, e, kp)
 }
 
-func (m *KeyValueMap[K, V]) keyCleanup(kp weak.Pointer[K]) {
-	e, ok := m.m.LoadAndDelete(kp)
+func keyValueMapKeyCleanup[K any, V any](arg keyValueMapKeyCleanupArg[K, V]) {
+	e, ok := arg.m.LoadAndDelete(arg.key)
 	if ok {
 		_, alive := loadPointer(e.value)
 		if alive {
@@ -93,11 +105,11 @@ func (m *KeyValueMap[K, V]) keyCleanup(kp weak.Pointer[K]) {
 	}
 }
 
-func (m *KeyValueMap[K, V]) valueCleanup(mc keyValueMapCleanupArg[K, V]) {
-	e, ok := m.m.Load(mc.key)
-	if ok && e.value == mc.value {
-		m.m.CompareAndDelete(mc.key, e)
-		_, alive := loadPointer(mc.key)
+func keyValueMapValueCleanup[K any, V any](arg keyValueMapCleanupArg[K, V]) {
+	e, ok := arg.m.Load(arg.key)
+	if ok && e.value == arg.value {
+		arg.m.CompareAndDelete(arg.key, e)
+		_, alive := loadPointer(arg.key)
 		if alive {
 			e.keyCleanup.Stop()
 		}
@@ -117,6 +129,7 @@ func (m *KeyValueMap[K, V]) Store(key *K, value *V) {
 
 // Load is like [sync.Map.Load].
 func (m *KeyValueMap[K, V]) Load(key *K) (value *V, ok bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	e, ok := m.m.Load(kp)
 	if !ok {
@@ -133,11 +146,13 @@ func (m *KeyValueMap[K, V]) Delete(key *K) {
 
 // Clear is like [sync.Map.Clear].
 func (m *KeyValueMap[K, V]) Clear() {
-	clearMap(&m.m, m.deleteEntry)
+	m.ensureInit()
+	clearMap(m.m, m.deleteEntry)
 }
 
 // Swap is like [sync.Map.Swap].
 func (m *KeyValueMap[K, V]) Swap(key *K, value *V) (previous *V, loaded bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	e, ok := m.m.Load(kp)
 	if ok {
@@ -158,6 +173,7 @@ func (m *KeyValueMap[K, V]) Swap(key *K, value *V) (previous *V, loaded bool) {
 
 // LoadAndDelete is like [sync.Map.LoadAndDelete].
 func (m *KeyValueMap[K, V]) LoadAndDelete(key *K) (value *V, loaded bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	e, ok := m.m.LoadAndDelete(kp)
 	if ok {
@@ -170,6 +186,7 @@ func (m *KeyValueMap[K, V]) LoadAndDelete(key *K) (value *V, loaded bool) {
 
 // LoadOrStore is like [sync.Map.LoadOrStore].
 func (m *KeyValueMap[K, V]) LoadOrStore(key *K, value *V) (actual *V, loaded bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	for {
 		e, ok := m.m.Load(kp)
@@ -192,6 +209,7 @@ func (m *KeyValueMap[K, V]) LoadOrStore(key *K, value *V) (actual *V, loaded boo
 
 // CompareAndDelete is like [sync.Map.CompareAndDelete].
 func (m *KeyValueMap[K, V]) CompareAndDelete(key *K, old *V) (deleted bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	for {
 		e, ok := m.m.Load(kp)
@@ -214,6 +232,7 @@ func (m *KeyValueMap[K, V]) CompareAndDelete(key *K, old *V) (deleted bool) {
 
 // CompareAndSwap is like [sync.Map.CompareAndSwap].
 func (m *KeyValueMap[K, V]) CompareAndSwap(key *K, oldValue, newValue *V) (swapped bool) {
+	m.ensureInit()
 	kp := weak.Make(key)
 	for {
 		e, ok := m.m.Load(kp)
@@ -245,6 +264,7 @@ func (m *KeyValueMap[K, V]) CompareAndSwap(key *K, oldValue, newValue *V) (swapp
 
 // Range is like [sync.Map.Range].
 func (m *KeyValueMap[K, V]) Range(f func(key *K, value *V) bool) {
+	m.ensureInit()
 	m.m.Range(func(kp weak.Pointer[K], e keyValueMapEntry[K, V]) bool {
 		key, alive := m.loadKey(kp, e)
 		if !alive {

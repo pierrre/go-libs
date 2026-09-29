@@ -6,6 +6,7 @@ import (
 	"runtime"
 	"testing"
 	"time"
+	"weak"
 
 	"github.com/pierrre/assert"
 )
@@ -565,4 +566,32 @@ func valueMapRawEntry[K comparable, V any](m *ValueMap[K, V], key K) (present, a
 	}
 	_, alive = loadPointer(e.value)
 	return true, alive
+}
+
+func TestValueMapCollectedAfterDrop(t *testing.T) {
+	const n = 100
+	v := &[64]byte{}
+	dropped := make([]weak.Pointer[ValueMap[int, [64]byte]], n)
+	for i := range n {
+		m := &ValueMap[int, [64]byte]{}
+		m.Store(i, v)
+		dropped[i] = weak.Make(m)
+	}
+	for range 100 {
+		runtime.GC()
+		allCollected := true
+		for _, w := range dropped {
+			if w.Value() != nil {
+				allCollected = false
+				break
+			}
+		}
+		if allCollected {
+			break
+		}
+	}
+	for i, w := range dropped {
+		assert.True(t, w.Value() == nil, assert.Messagef("map %d still alive", i))
+	}
+	runtime.KeepAlive(v)
 }

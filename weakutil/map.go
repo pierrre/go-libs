@@ -1,6 +1,7 @@
 package weakutil
 
 import (
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"weak"
@@ -8,8 +9,14 @@ import (
 	"github.com/pierrre/go-libs/syncutil"
 )
 
-type commonMap[K comparable, V any] struct {
-	m               syncutil.Map[K, V]
+type mapEntry interface {
+	stopCleanup()
+}
+
+type commonMap[K comparable, E mapEntry] struct {
+	// m is a separate allocation, not an embedded value: the cleanups attached to stored keys and values hold a reference to it, and embedding it would pin the outer map for as long as a stored key or value is alive.
+	// When the outer map is collected, commonMapCleanup stops the cleanups of the stored entries, so that the keys and values no longer hold a reference to m, which can then be collected.
+	m               *syncutil.Map[K, E]
 	initialized     sync.Once
 	cleanupEnabled  atomic.Bool
 	sweepWriteCount atomic.Uint64
@@ -17,13 +24,28 @@ type commonMap[K comparable, V any] struct {
 	sweeping        atomic.Bool
 }
 
-func (m *commonMap[K, V]) ensureInit() {
+func (m *commonMap[K, E]) ensureInit() {
 	m.initialized.Do(m.initialize)
 }
 
-func (m *commonMap[K, V]) initialize() {
+func (m *commonMap[K, E]) initialize() {
+	m.m = &syncutil.Map[K, E]{}
 	m.cleanupEnabled.Store(DefaultMapCleanupEnabled.Load())
 	m.sweepWriteCount.Store(DefaultMapSweepWriteCount.Load())
+	runtime.AddCleanup(m, commonMapCleanup, commonMapCleanupArg[K, E]{
+		m: m.m,
+	})
+}
+
+type commonMapCleanupArg[K comparable, E any] struct {
+	m *syncutil.Map[K, E]
+}
+
+func commonMapCleanup[K comparable, E mapEntry](arg commonMapCleanupArg[K, E]) {
+	arg.m.Range(func(_ K, e E) bool {
+		e.stopCleanup()
+		return true
+	})
 }
 
 // DefaultMapCleanupEnabled configures the default value of IsCleanupEnabled() for new maps.
@@ -41,13 +63,13 @@ func init() {
 
 // IsCleanupEnabled indicates whether the cleanup with [runtime.Cleanup] is enabled.
 // The default value is controlled by [DefaultMapCleanupEnabled].
-func (m *commonMap[K, V]) IsCleanupEnabled() bool {
+func (m *commonMap[K, E]) IsCleanupEnabled() bool {
 	m.ensureInit()
 	return m.cleanupEnabled.Load()
 }
 
 // SetCleanupEnabled configures whether the cleanup with [runtime.Cleanup] is enabled.
-func (m *commonMap[K, V]) SetCleanupEnabled(enabled bool) {
+func (m *commonMap[K, E]) SetCleanupEnabled(enabled bool) {
 	m.ensureInit()
 	m.cleanupEnabled.Store(enabled)
 }
@@ -55,7 +77,7 @@ func (m *commonMap[K, V]) SetCleanupEnabled(enabled bool) {
 // GetSweepWriteCount returns the number of writes between two sweeps.
 // The sweep only runs when cleanup is disabled with [SetCleanupEnabled].
 // A value of 0 disables the sweep.
-func (m *commonMap[K, V]) GetSweepWriteCount() uint64 {
+func (m *commonMap[K, E]) GetSweepWriteCount() uint64 {
 	m.ensureInit()
 	return m.sweepWriteCount.Load()
 }
@@ -63,12 +85,12 @@ func (m *commonMap[K, V]) GetSweepWriteCount() uint64 {
 // SetSweepWriteCount configures the number of writes between two sweeps.
 // The sweep only runs when cleanup is disabled with [SetCleanupEnabled].
 // A value of 0 disables the sweep.
-func (m *commonMap[K, V]) SetSweepWriteCount(count uint64) {
+func (m *commonMap[K, E]) SetSweepWriteCount(count uint64) {
 	m.ensureInit()
 	m.sweepWriteCount.Store(count)
 }
 
-func (m *commonMap[K, V]) maybeSweep(sweep func()) {
+func (m *commonMap[K, E]) maybeSweep(sweep func()) {
 	m.ensureInit()
 	if m.cleanupEnabled.Load() {
 		return

@@ -617,3 +617,31 @@ func keyMapRawEntries[K any, V any](m *KeyMap[K, V]) (total, dead int) {
 	})
 	return total, dead
 }
+
+func TestKeyMapCollectedAfterDrop(t *testing.T) {
+	const n = 100
+	k := &[64]byte{}
+	dropped := make([]weak.Pointer[KeyMap[[64]byte, int]], n)
+	for i := range n {
+		m := &KeyMap[[64]byte, int]{}
+		m.Store(k, i)
+		dropped[i] = weak.Make(m)
+	}
+	for range 100 {
+		runtime.GC()
+		allCollected := true
+		for _, w := range dropped {
+			if w.Value() != nil {
+				allCollected = false
+				break
+			}
+		}
+		if allCollected {
+			break
+		}
+	}
+	for i, w := range dropped {
+		assert.True(t, w.Value() == nil, assert.Messagef("map %d still alive", i))
+	}
+	runtime.KeepAlive(k)
+}
