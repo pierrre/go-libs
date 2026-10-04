@@ -162,7 +162,6 @@ func TestIterStop(t *testing.T) {
 	})
 }
 
-//nolint:dupl // Not duplicated.
 func TestIterContextCancel(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
@@ -229,6 +228,40 @@ func TestIterPanicFunction(t *testing.T) {
 				}
 			})
 			assert.Equal(t, iterCount, 0)
+		})
+	})
+}
+
+//nolint:dupl // Not duplicated.
+func TestIterPanicStopsInput(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			input := make([]int, 100)
+			for i := range input {
+				input[i] = i + 1
+			}
+			var yielded atomic.Int64
+			in := func(yield func(int) bool) {
+				for v := range input {
+					yielded.Add(1)
+					if !yield(v) {
+						return
+					}
+				}
+			}
+			workers := 2
+			f := func(ctx context.Context, v int) int {
+				panic("panic")
+			}
+			out := Iter(ctx, in, workers, f)
+			assert.Panics(t, func() {
+				for range out {
+				}
+			})
+			// The input iterator stops as soon as possible after the first worker panic:
+			// at most one value per worker, plus one in-flight value, may be yielded.
+			assert.LessOrEqual(t, yielded.Load(), int64(workers)+1)
 		})
 	})
 }
@@ -321,7 +354,6 @@ func TestIterOrderedStop(t *testing.T) {
 	})
 }
 
-//nolint:dupl // Not duplicated.
 func TestIterOrderedContextCancel(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
@@ -388,6 +420,40 @@ func TestIterOrderedPanicFunction(t *testing.T) {
 				}
 			})
 			assert.Equal(t, iterCount, 0)
+		})
+	})
+}
+
+//nolint:dupl // Not duplicated.
+func TestIterOrderedPanicStopsInput(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		runIterTest(t, func(t *testing.T) { //nolint:thelper // This is not a helper.
+			ctx := t.Context()
+			input := make([]int, 100)
+			for i := range input {
+				input[i] = i + 1
+			}
+			var yielded atomic.Int64
+			in := func(yield func(int) bool) {
+				for v := range input {
+					yielded.Add(1)
+					if !yield(v) {
+						return
+					}
+				}
+			}
+			workers := 2
+			f := func(ctx context.Context, v int) int {
+				panic("panic")
+			}
+			out := IterOrdered(ctx, in, workers, f)
+			assert.Panics(t, func() {
+				for range out {
+				}
+			})
+			// The input iterator stops as soon as possible after the first worker panic:
+			// at most one value per worker, plus one in-flight value, may be yielded.
+			assert.LessOrEqual(t, yielded.Load(), int64(workers)+1)
 		})
 	})
 }

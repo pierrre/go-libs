@@ -19,6 +19,7 @@ import (
 // If the [context.Context] is canceled, iteration stops as soon as possible.
 // A value already yielded by the input iterator may still be processed, and work already started by workers may still complete and be yielded.
 // This avoids silently discarding a value already consumed from a single-use iterator.
+// If the termination propagation is enabled and a worker panics or calls `runtime.Goexit`, the input iterator stops as soon as possible.
 // If the caller stops iterating the output, the derived context (the one passed to f) is canceled; the caller's own context is left untouched.
 func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func(context.Context, In) Out) iter.Seq[Out] {
 	workers = max(workers, 1) // We need at least 1 worker.
@@ -37,6 +38,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 		runningWorkers := int64(workers)                              // Count of running workers.
 		defer StartN(ctx, workers, func(ctx context.Context, _ int) { // Start the workers.
 			defer func() { // When the workers are stopped.
+				cancel()                                       // Notify the producer to stop sending values (required to handle panic and [runtime.Goexit]).
 				if atomic.AddInt64(&runningWorkers, -1) == 0 { // Wait for all workers to finish.
 					close(outCh)            // Notify the consumer that there are no more values.
 					drainChannel(inCh, nil) // Consume remaining values to avoid blocking the producer.
