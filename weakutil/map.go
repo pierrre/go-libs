@@ -124,12 +124,12 @@ func (l *lazyValue[T]) get(compute func() T) T {
 	return l.value
 }
 
-func clearMap[K comparable, V any](m *syncutil.Map[K, V], del func(K, V) bool) {
+func clearMap[K comparable, E any](m *syncutil.Map[K, E], del func(K, E) bool) {
 	for range 10 {
 		var count int64
-		m.Range(func(k K, v V) bool {
+		m.Range(func(k K, e E) bool {
 			count++
-			del(k, v)
+			del(k, e)
 			return true
 		})
 		if count == 0 {
