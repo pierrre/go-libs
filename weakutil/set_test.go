@@ -106,6 +106,22 @@ func TestSetNilKey(t *testing.T) {
 	assert.True(t, found)
 }
 
+func TestSetCleanupEnabled(t *testing.T) {
+	s := new(Set[[64]byte])
+	assert.True(t, s.IsCleanupEnabled())
+	s.SetCleanupEnabled(false)
+	assert.False(t, s.IsCleanupEnabled())
+}
+
+func TestSetSweepWriteCount(t *testing.T) {
+	s := new(Set[[64]byte])
+	assert.Equal(t, s.GetSweepWriteCount(), uint64(10000))
+	s.SetSweepWriteCount(123)
+	assert.Equal(t, s.GetSweepWriteCount(), uint64(123))
+	s.SetSweepWriteCount(0)
+	assert.Equal(t, s.GetSweepWriteCount(), uint64(0))
+}
+
 func TestSetConcurrentAdd(t *testing.T) {
 	s := new(Set[[64]byte])
 	k := &[64]byte{}
