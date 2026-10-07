@@ -230,6 +230,37 @@ func TestWriterClear(t *testing.T) {
 	assert.SliceEqual(t, w[:cap(w)], make([]byte, 3))
 }
 
+func TestWriterTruncate(t *testing.T) {
+	w := Writer("abcde")
+	w.Truncate(3)
+	assert.BytesEqual(t, w, []byte("abc"))
+	assert.BytesEqual(t, w[3:cap(w)], []byte("de"))
+	w.Truncate(0)
+	assert.SliceEmpty(t, w)
+}
+
+func TestWriterTruncatePanicNegative(t *testing.T) {
+	var w Writer
+	assert.Panics(t, func() {
+		w.Truncate(-1)
+	})
+}
+
+func TestWriterTruncatePanicTooLarge(t *testing.T) {
+	w := Writer("abc")
+	assert.Panics(t, func() {
+		w.Truncate(4)
+	})
+}
+
+func BenchmarkWriterTruncate(b *testing.B) {
+	var w Writer
+	for b.Loop() {
+		w.Append([]byte("abc"))
+		w.Truncate(2)
+	}
+}
+
 func TestWriterGrow(t *testing.T) {
 	var w Writer
 	w.Grow(3)

@@ -98,6 +98,14 @@ func (w *Writer) Clear() {
 	clear((*w)[:cap(*w)])
 }
 
+// Truncate modifies the writer to contain only the first n bytes.
+func (w *Writer) Truncate(n int) {
+	if n < 0 || n > len(*w) {
+		panic("bytesutil.Writer.Truncate: truncation out of range")
+	}
+	*w = (*w)[:n]
+}
+
 // Grow grows the writer's capacity, if necessary, to guarantee space for another n bytes.
 //
 // After Grow(n), at least n bytes can be appended to the writer without another allocation.
