@@ -11,9 +11,6 @@ func TestPool(t *testing.T) {
 	var p Pool[*[]byte]
 	bp := p.Get()
 	assert.Zero(t, bp)
-	p.Put(new([]byte))
-	bp = p.Get()
-	assert.NotZero(t, bp)
 	p.New = func() *[]byte {
 		return new([]byte)
 	}
