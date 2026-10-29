@@ -3,6 +3,8 @@ package iterutil
 
 import (
 	"iter"
+	"sync/atomic"
+	"time"
 )
 
 // SeqToSeq2 converts a [iter.Seq] to a [iter.Seq2].
@@ -95,4 +97,50 @@ func Repeat2[K, V any](seq iter.Seq2[K, V], n int) iter.Seq2[K, V] {
 			})
 		}
 	}
+}
+
+// WithConsumerStallTimeout returns a new [iter.Seq] that stops if the consumer holds a value for longer than stallTimeout.
+// Time spent by seq between two values is not watched: only the time the consumer holds a value counts.
+// If the consumer holds a value for longer than stallTimeout, onStall is called once, on the timer goroutine, and no further values are delivered.
+// Use onStall to release resources pinned by a stalled consumer, for example by canceling the context behind an open database cursor.
+// The returned sequence can be ranged multiple times, but ranges must not overlap: a stall cannot be attributed to a range.
+// To consume a sequence with multiple consumers, wrap it once per consumer.
+// onStall is called on the timer goroutine while the consumer's loop is parked inside the body, so it must be safe to call concurrently with the range.
+// For key-value sequences, see [WithConsumerStallTimeout2].
+// onStall must not be nil, and stallTimeout must be positive.
+func WithConsumerStallTimeout[V any](seq iter.Seq[V], stallTimeout time.Duration, onStall func()) iter.Seq[V] {
+	if onStall == nil {
+		panic("iterutil: onStall must not be nil")
+	}
+	if stallTimeout <= 0 {
+		panic("iterutil: stallTimeout must be positive")
+	}
+	return func(yield func(V) bool) {
+		var stalled atomic.Bool
+		watchdog := time.AfterFunc(stallTimeout, func() {
+			if stalled.CompareAndSwap(false, true) {
+				onStall()
+			}
+		})
+		defer watchdog.Stop()
+		watchdog.Stop()
+		seq(func(v V) bool {
+			if stalled.Load() {
+				return false
+			}
+			watchdog.Reset(stallTimeout)
+			ok := yield(v)
+			watchdog.Stop()
+			return ok
+		})
+	}
+}
+
+// WithConsumerStallTimeout2 is [WithConsumerStallTimeout] for key-value sequences.
+// See [WithConsumerStallTimeout] for the stall semantics.
+func WithConsumerStallTimeout2[K, V any](seq iter.Seq2[K, V], stallTimeout time.Duration, onStall func()) iter.Seq2[K, V] {
+	return SeqToSeq2(
+		WithConsumerStallTimeout(Seq2ToSeq(seq, NewKeyVal[K, V]), stallTimeout, onStall),
+		KeyVal[K, V].Values,
+	)
 }
