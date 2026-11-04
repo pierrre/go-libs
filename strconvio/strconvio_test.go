@@ -89,9 +89,9 @@ func BenchmarkWriteFloat(b *testing.B) {
 var testWriteComplexValues = []complex128{}
 
 func init() {
-	for _, real := range testFloatValues {
-		for _, imag := range testFloatValues {
-			testWriteComplexValues = append(testWriteComplexValues, complex(real, imag))
+	for _, r := range testFloatValues {
+		for _, i := range testFloatValues {
+			testWriteComplexValues = append(testWriteComplexValues, complex(r, i))
 		}
 	}
 }
