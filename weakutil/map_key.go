@@ -146,10 +146,11 @@ func (m *KeyMap[K, V]) LoadOrStore(key *K, value V) (actual V, loaded bool) {
 	kp := weak.Make(key)
 	var e keyMapEntry[V]
 	for {
+		// Stop the cleanup of the entry created by the previous iteration, which lost the race.
+		// It is done at the beginning of the loop so that it is always executed (deterministic test coverage).
 		e.cleanup.Stop()
-		e, ok := m.m.Load(kp)
-		if ok {
-			return e.value, true
+		if cur, ok := m.m.Load(kp); ok {
+			return cur.value, true
 		}
 		e = m.newEntry(key, kp, value)
 		_, loaded = m.m.LoadOrStore(kp, e)
