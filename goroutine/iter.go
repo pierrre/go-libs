@@ -27,7 +27,7 @@ func Iter[In, Out any](ctx context.Context, in iter.Seq[In], workers int, f func
 		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadowing is expected here.
 		defer cancel()
 		inCh := make(chan In)
-		outCh := make(chan Out, workers)             // The buffer prevents blocking the workers if the output iterator is slow.
+		outCh := make(chan Out, workers)             // The buffer absorbs temporary slowness of the output iterator; when full, workers block (backpressure).
 		defer Start(ctx, func(ctx context.Context) { // Send values from the input iterator to the workers.
 			defer close(inCh)      // Notify the workers that there are no more values.
 			in(func(inV In) bool { // Read values from the input iterator.
@@ -69,7 +69,7 @@ func IterOrdered[In, Out any](ctx context.Context, in iter.Seq[In], workers int,
 		ctx, cancel := context.WithCancel(ctx) //nolint:govet // Shadowing is expected here.
 		defer cancel()
 		inCh := make(chan *iterOrderedValue[In, Out])
-		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer prevents blocking the producer if the output iterator is slow.
+		outCh := make(chan *iterOrderedValue[In, Out], workers*2) // The buffer absorbs temporary slowness of the output iterator; when full, the producer blocks (backpressure).
 		defer Start(ctx, func(ctx context.Context) {              // Send values from the input iterator to the workers and the consumer.
 			defer func() {
 				close(inCh)  // Notify the workers that there are no more values.
